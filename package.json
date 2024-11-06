@@ -1,0 +1,39 @@
+{
+  "name": "receipts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@effect-rx/rx-react": "^0.31.2",
+    "@effect/platform": "^0.69.18",
+    "@effect/platform-browser": "^0.48.18",
+    "effect": "^3.10.12",
+    "jazz-browser": "^0.8.15",
+    "jazz-react": "^0.8.15",
+    "jazz-tools": "^0.8.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "@vite-pwa/assets-generator": "^0.2.4",
+    "@vitejs/plugin-react": "^4.2.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.10",
+    "vite-plugin-pwa": "^0.20.0",
+    "workbox-core": "^7.1.0",
+    "workbox-window": "^7.1.0"
+  },
+  "resolutions": {
+    "sharp": "0.32.6",
+    "sharp-ico": "0.1.5"
+  },
+  "packageManager": "pnpm@9.12.2"
+}
