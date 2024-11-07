@@ -1,16 +1,16 @@
-import { createJazzReactApp, PasskeyAuthBasicUI } from "jazz-react"
-import { ReceiptsAccount } from "./Domain/Account.ts"
+import { PasskeyAuthBasicUI } from "jazz-react"
 import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
+import { Provider } from "./lib/Jazz.ts"
+import { RouterProvider, createRouter } from "@tanstack/react-router"
+import { routeTree } from "./routeTree.gen"
 
-export const {
-  Provider,
-  useAccount,
-  useCoState,
-  useAcceptInvite,
-  useAccountOrGuest,
-} = createJazzReactApp({
-  AccountSchema: ReceiptsAccount,
-})
+const router = createRouter({ routeTree })
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router
+  }
+}
 
 function App() {
   const [auth, state] = usePasskeyAuth({ appName: "Receipts" })
@@ -21,20 +21,9 @@ function App() {
         auth={auth}
         peer="wss://cloud.jazz.tools/?key=hello@timsmart.co"
       >
-        <Welcome />
+        <RouterProvider router={router} />
       </Provider>
       {state.state !== "signedIn" && <PasskeyAuthBasicUI state={state} />}
-    </>
-  )
-}
-
-function Welcome() {
-  const account = useAccount()
-
-  return (
-    <>
-      <h1>Welcome {account.me.root?.id}</h1>
-      <button onClick={account.logOut}>Log Out</button>
     </>
   )
 }
