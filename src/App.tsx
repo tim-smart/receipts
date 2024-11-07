@@ -1,15 +1,40 @@
-import { useRxSuspenseSuccess, useRxValue } from "@effect-rx/rx-react"
-import { accountRx, authStateRx } from "./Jazz/rx.ts"
-import { PasskeyAuthBasicUI } from "jazz-react"
+import { createJazzReactApp, PasskeyAuthBasicUI } from "jazz-react"
+import { ReceiptsAccount } from "./Domain/Account.ts"
+import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
+
+export const {
+  Provider,
+  useAccount,
+  useCoState,
+  useAcceptInvite,
+  useAccountOrGuest,
+} = createJazzReactApp({
+  AccountSchema: ReceiptsAccount,
+})
 
 function App() {
-  const state = useRxSuspenseSuccess(authStateRx).value
-  const account = useRxValue(accountRx)
-  console.log(account)
+  const [auth, state] = usePasskeyAuth({ appName: "Receipts" })
 
   return (
     <>
-      <PasskeyAuthBasicUI state={state} />
+      <Provider
+        auth={auth}
+        peer="wss://cloud.jazz.tools/?key=hello@timsmart.co"
+      >
+        <Welcome />
+      </Provider>
+      {state.state !== "signedIn" && <PasskeyAuthBasicUI state={state} />}
+    </>
+  )
+}
+
+function Welcome() {
+  const account = useAccount()
+
+  return (
+    <>
+      <h1>Welcome {account.me.root?.id}</h1>
+      <button onClick={account.logOut}>Log Out</button>
     </>
   )
 }

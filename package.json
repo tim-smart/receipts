@@ -12,6 +12,7 @@
     "@effect-rx/rx-react": "^0.31.2",
     "@effect/platform": "^0.69.18",
     "@effect/platform-browser": "^0.48.18",
+    "cojson": "^0.8.12",
     "effect": "^3.10.12",
     "jazz-browser": "^0.8.15",
     "jazz-react": "^0.8.15",

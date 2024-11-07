@@ -21,6 +21,9 @@ importers:
       '@effect/platform-browser':
         specifier: ^0.48.18
         version: 0.48.18(@effect/platform@0.69.18(effect@3.10.12))(effect@3.10.12)
+      cojson:
+        specifier: ^0.8.12
+        version: 0.8.12
       effect:
         specifier: ^3.10.12
         version: 3.10.12
