@@ -6,7 +6,7 @@ export function TypoH3({
   className,
 }: {
   children: ReactNode
-  className: string
+  className?: string
 }) {
   return (
     <h3

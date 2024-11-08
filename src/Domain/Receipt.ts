@@ -4,7 +4,7 @@ import { Currency } from "./Currency"
 import { ImageList } from "./Image"
 
 export class Receipt extends CoMap {
-  date = co.Date
+  date = co.optional.Date
   description = co.string
   merchant = co.string
   amount = co.string

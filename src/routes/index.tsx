@@ -11,24 +11,14 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
-import {
-  createContext,
-  FormEvent,
-  ReactNode,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react"
+import { FormEvent, useCallback, useMemo, useState } from "react"
 import { Receipt, ReceiptList } from "@/Domain/Receipt"
 import { useAccount, useCoState } from "@/lib/Jazz"
-import { ImageList } from "@/Domain/Image"
-import { createImage } from "jazz-browser-media-images"
 import { Folder } from "@/Domain/Folder"
 import { ReceiptsAccountRoot } from "@/Domain/Account"
 import { Combobox } from "@/components/ui/ComboBox"
 import { Group } from "jazz-tools"
-import { Plus } from "lucide-react"
+import { Plus, Settings } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
   Card,
@@ -37,6 +27,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
+import { FolderProvider, useFolder } from "@/Folders/context"
+import { ReceiptForm } from "@/Receipts/components/Form"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -48,6 +40,7 @@ function ReceiptsScreen() {
       <div className="flex flex-col gap-7">
         <div className="w-full max-w-sm flex gap-2">
           <GroupSelect />
+          <GroupSettings />
           <GroupDrawer />
         </div>
 
@@ -60,19 +53,18 @@ function ReceiptsScreen() {
   )
 }
 
-const FolderContext = createContext<Folder>(undefined as any)
-export const useFolder = () => useContext(FolderContext)
-
 function GroupSelect() {
   const account = useAccount()
   const root = useCoState(ReceiptsAccountRoot, account.me.root?.id)
   const folders = root?.folders
   const options = useMemo(
     () =>
-      folders?.filter(Boolean).map((folder) => ({
-        value: folder!.id,
-        label: folder!.name,
-      })),
+      folders
+        ?.filter((f) => f && f.deleted !== true)
+        .map((folder) => ({
+          value: folder!.id,
+          label: folder!.name,
+        })),
     [folders],
   )
   if (!options) return null
@@ -90,15 +82,6 @@ function GroupSelect() {
   )
 }
 
-function FolderProvider({ children }: { children: ReactNode }) {
-  const account = useAccount()
-  const folder = useCoState(Folder, account.me.root?.currentFolder?.id)
-  if (!folder) return null
-  return (
-    <FolderContext.Provider value={folder!}>{children}</FolderContext.Provider>
-  )
-}
-
 function AddReceiptButton() {
   return (
     <div className="fixed bottom-0 left-0 w-full px-5 pb-safe flex flex-col items-center">
@@ -109,36 +92,7 @@ function AddReceiptButton() {
 }
 
 function ReceiptDrawer() {
-  const folder = useFolder()
   const [open, setOpen] = useState(false)
-
-  const onSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const data = new FormData(event.target as HTMLFormElement)
-    const owner = folder._owner
-    const images = await Promise.all(
-      data
-        .getAll("images")
-        .filter((file) => file instanceof File && file.name !== "")
-        .map((file) => createImage(file as File, { owner })),
-    )
-    folder.items!.push(
-      Receipt.create(
-        {
-          date: new Date(),
-          merchant: data.get("merchant") as string,
-          description: data.get("description") as string,
-          amount: data.get("amount") as string,
-          currency: data.get("currency") as string,
-          images: ImageList.create(images, { owner }),
-          folder,
-          deleted: false,
-        },
-        { owner },
-      ),
-    )
-    setOpen(false)
-  }, [])
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -147,67 +101,11 @@ function ReceiptDrawer() {
       </DrawerTrigger>
 
       <DrawerContent>
-        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
-          <DrawerHeader>
-            <TypoH3>Add receipt</TypoH3>
-          </DrawerHeader>
-          <div className="grid gap-4 py-5 px-3">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
-                Date
-              </Label>
-              <Input id="date" name="date" className="col-span-3" type="date" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="merchant" className="text-right">
-                Merchant
-              </Label>
-              <Input id="merchant" name="merchant" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="description"
-                name="description"
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">
-                Amount
-              </Label>
-              <div className="flex flex-row gap-1 col-span-3">
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step={0.01}
-                  className=""
-                />
-                <CurrencySelect name="currency" initialValue="USD" />
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="images" className="text-right">
-                Images
-              </Label>
-              <Input
-                id="images"
-                name="images"
-                type="file"
-                accept="image/*"
-                multiple
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DrawerFooter>
-            <Button>Create</Button>
-          </DrawerFooter>
-          <div className="h-5"></div>
-        </form>
+        <ReceiptForm
+          onSubmit={() => {
+            setOpen(false)
+          }}
+        />
       </DrawerContent>
     </Drawer>
   )
@@ -225,6 +123,8 @@ function GroupDrawer() {
       {
         name: data.get("name") as string,
         items: ReceiptList.create([], { owner }),
+        defaultCurrency: data.get("defaultCurrency") as string,
+        deleted: false,
       },
       { owner },
     )
@@ -236,7 +136,7 @@ function GroupDrawer() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button className="px-3" variant="outline">
+        <Button className="px-3">
           <Plus />
         </Button>
       </DrawerTrigger>
@@ -254,8 +154,93 @@ function GroupDrawer() {
               <Input id="name" name="name" className="col-span-3" required />
             </div>
           </div>
+          <div className="grid gap-4 py-5 px-3">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="defaultCurrency" className="text-right">
+                Default currency
+              </Label>
+              <CurrencySelect initialValue="USD" name="defaultCurrency" />
+            </div>
+          </div>
           <DrawerFooter>
             <Button>Create</Button>
+          </DrawerFooter>
+          <div className="h-5"></div>
+        </form>
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
+function GroupSettings() {
+  const account = useAccount()
+  const folder = useCoState(Folder, account.me.root?.currentFolder?.id)!
+  const [open, setOpen] = useState(false)
+
+  const onSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const data = new FormData(event.target as HTMLFormElement)
+      folder.name = data.get("name") as string
+      folder.defaultCurrency = data.get("defaultCurrency") as string
+      setOpen(false)
+    },
+    [folder],
+  )
+
+  const onRemove = useCallback(
+    (event: any) => {
+      event.preventDefault()
+      folder.deleted = true
+      account.me.root!.currentFolder = account.me.root!.folders![0]
+      setOpen(false)
+    },
+    [folder],
+  )
+
+  if (!folder) return null
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button className="px-3" variant="outline">
+          <Settings />
+        </Button>
+      </DrawerTrigger>
+
+      <DrawerContent>
+        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
+          <DrawerHeader>
+            <TypoH3>Group settings</TypoH3>
+          </DrawerHeader>
+          <div className="grid gap-4 py-5 px-3">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                className="col-span-3"
+                defaultValue={folder.name}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="defaultCurrency" className="text-right">
+                Default currency
+              </Label>
+              <CurrencySelect
+                initialValue={folder.defaultCurrency}
+                name="defaultCurrency"
+              />
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button variant="destructive" onClick={onRemove}>
+              Delete
+            </Button>
+            <Button>Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
         </form>
@@ -271,11 +256,13 @@ function ReceiptGrid() {
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {receipts!.filter(Boolean).map((receipt) => (
-        <Link key={receipt!.id} to={`/receipt/${receipt!.id}`}>
-          <ReceiptCard>{receipt!}</ReceiptCard>
-        </Link>
-      ))}
+      {receipts!
+        .filter((r) => r && r.deleted !== true)
+        .map((receipt) => (
+          <Link key={receipt!.id} to={`/receipt/${receipt!.id}`}>
+            <ReceiptCard>{receipt!}</ReceiptCard>
+          </Link>
+        ))}
     </div>
   )
 }
