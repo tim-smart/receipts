@@ -31,7 +31,7 @@ function ReceiptScreen() {
   const router = useRouter()
   if (!receipt) return null
   return (
-    <FolderContext.Provider value={receipt.folder}>
+    <FolderContext.Provider value={receipt.folder!}>
       <ReceiptContext.Provider value={receipt}>
         <Scaffold
           heading={receipt.description}

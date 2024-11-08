@@ -1,7 +1,7 @@
-import { Context, Effect, Layer, Redacted, Schema } from "effect"
+import { Context, Effect, Layer, Redacted, Schedule, Schema } from "effect"
 import { AiInput, Completions } from "@effect/ai"
 import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
-import { FetchHttpClient, OpenApiJsonSchema } from "@effect/platform"
+import { FetchHttpClient, HttpClient } from "@effect/platform"
 
 export class OpenAiCreds extends Context.Tag("OpenAiCreds")<
   OpenAiCreds,
@@ -16,7 +16,19 @@ const OpenAiLive = Effect.gen(function* () {
 
   return OpenAiCompletions.layer({
     model,
-  }).pipe(Layer.provideMerge(OpenAiClient.layer({ apiKey })))
+  }).pipe(
+    Layer.provideMerge(
+      Layer.effect(
+        OpenAiClient.OpenAiClient,
+        OpenAiClient.make({
+          apiKey,
+          transformClient: HttpClient.retryTransient({
+            schedule: Schedule.spaced("10 seconds"),
+          }),
+        }),
+      ),
+    ),
+  )
 }).pipe(Layer.unwrapEffect, Layer.provide(FetchHttpClient.layer))
 
 export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
@@ -53,7 +65,7 @@ const inputFromBlob = (blob: Blob) =>
 
 class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
   {
-    date: Schema.optional(
+    date: Schema.NullOr(
       Schema.DateTimeUtc.annotations({
         description: "The date of the purchase, only if it can be found",
       }),
@@ -71,5 +83,3 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
   },
   { description: "Extracted information from a receipt" },
 ) {}
-
-console.log(OpenApiJsonSchema.make(ReceiptMeta))

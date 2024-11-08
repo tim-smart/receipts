@@ -6,11 +6,13 @@ import {
   FiberMap,
   Layer,
   Mailbox,
+  Stream,
 } from "effect"
 import { ReceiptsAccount } from "./Domain/Account"
 import { subscribeToCoValue } from "jazz-tools/src/internal.js"
 import { AiJob, AiJobList } from "./Domain/AiJob"
 import { AiHelpers } from "./Ai"
+import { coStream } from "./lib/Jazz"
 
 export class JazzAccount extends Context.Tag("JazzAccount")<
   JazzAccount,
@@ -69,16 +71,18 @@ export const AiWorkerLive = Effect.gen(function* () {
     Effect.gen(function* () {
       yield* Effect.log("processing")
 
-      const loadedJob = yield* Effect.promise(() =>
-        job.ensureLoaded({ receipt: { images: [] } }),
+      const resolution = yield* coStream(job.receipt!.images![0]!).pipe(
+        Stream.map((image) => image.highestResAvailable()),
+        Stream.debounce(1000),
+        Stream.runHead,
+        Effect.flatten,
+        Effect.flatMap(Effect.fromNullable),
+        Effect.withSpan("highestResAvailable"),
       )
-      let imageStream = yield* Effect.fromNullable(
-        loadedJob?.receipt.images[0]?.highestResAvailable()?.stream,
+
+      const blob = yield* Effect.fromNullable(resolution.stream.toBlob()).pipe(
+        Effect.withSpan("toBlob"),
       )
-      imageStream = yield* Effect.fromNullable(
-        yield* Effect.promise(() => imageStream!.ensureLoaded([])),
-      )
-      const blob = yield* Effect.fromNullable(imageStream.toBlob())
       const metadata = yield* ai.extractReceipt(blob)
 
       job.receipt!.amount = BigDecimal.format(metadata.amount)
