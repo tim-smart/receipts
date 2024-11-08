@@ -5,6 +5,8 @@ import { ReceiptList } from "./Receipt"
 export class ReceiptsAccountRoot extends CoMap {
   folders = co.ref(FolderList)
   currentFolder = co.ref(Folder)
+  openaiApiKey = co.optional.string
+  openaiModel = co.optional.string
 }
 
 export class ReceiptsAccount extends Account {
@@ -19,6 +21,8 @@ export class ReceiptsAccount extends Account {
         {
           name: "My Receipts",
           items: ReceiptList.create([], { owner: group }),
+          defaultCurrency: "USD",
+          deleted: false,
         },
         { owner: group },
       )

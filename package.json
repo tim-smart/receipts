@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@effect-rx/rx-react": "^0.31.2",
+    "@effect/ai": "^0.2.19",
+    "@effect/ai-openai": "^0.4.3",
     "@effect/platform": "^0.69.18",
     "@effect/platform-browser": "^0.48.18",
     "@radix-ui/react-dialog": "^1.1.2",
