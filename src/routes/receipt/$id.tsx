@@ -94,10 +94,10 @@ export function Amount({
 
 function Images({ children }: { children: ImageList }) {
   return (
-    <div className="flex flex-row gap-2 justify-center">
+    <div className="grid grid-cols-3 gap-2 justify-center">
       {children.filter(Boolean).map((image) => (
-        <div key={image!.id} className="flex-1 h-32">
-          <JazzImage src={image!} className="rounded h-full" asLink />
+        <div key={image!.id}>
+          <JazzImage src={image!} className="rounded-lg w-full" asLink />
         </div>
       ))}
     </div>
