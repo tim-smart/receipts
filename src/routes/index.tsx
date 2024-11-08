@@ -41,7 +41,7 @@ export const Route = createFileRoute("/")({
 function ReceiptsScreen() {
   return (
     <Scaffold heading="Receipts">
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 pb-32">
         <div className="w-full max-w-sm flex gap-2">
           <GroupSelect />
           <GroupSettings />
@@ -409,7 +409,7 @@ function Totals() {
     if (!receipts) return null
     const currencies: Record<string, BigDecimal.BigDecimal> = {}
     for (const receipt of receipts) {
-      if (!receipt) continue
+      if (!receipt || receipt.deleted || !Number(receipt.amount)) continue
       const prev = currencies[receipt.currency] ?? BigDecimal.fromNumber(0)
       currencies[receipt.currency] = BigDecimal.sum(
         prev,

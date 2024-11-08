@@ -17,7 +17,7 @@ export function Scaffold({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col", className)}>
+    <div className={cn("flex flex-col pb-safe", className)}>
       <header className="pt-20 relative">
         {leading && <div className="absolute top-5 left-0">{leading}</div>}
         <TypoH1>{heading}</TypoH1>
