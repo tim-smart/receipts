@@ -1,12 +1,4 @@
-import {
-  Context,
-  Effect,
-  JSONSchema,
-  Layer,
-  Redacted,
-  Schedule,
-  Schema,
-} from "effect"
+import { Context, Effect, Layer, Redacted, Schedule, Schema } from "effect"
 import { AiInput, Completions } from "@effect/ai"
 import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
@@ -74,19 +66,21 @@ const inputFromBlob = (blob: Blob) =>
 class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
   {
     date: Schema.NullOr(Schema.DateTimeUtc).annotations({
-      description: "The date of the purchase, only if it can be found",
+      description:
+        "The date of the purchase in the format YYYY-MM-DD, or null if not found",
     }),
     merchant: Schema.String.annotations({
-      description: "The store / merchant the sold the goods or service",
+      description: "The store / merchant that sold the goods or service",
     }),
     description: Schema.String.annotations({
       description: "1-5 words describing the purchase",
     }),
     amount: Schema.BigDecimal.annotations({
-      description: "The total cost from the receipt",
+      jsonSchema: {
+        type: "string",
+        description: "The total cost from the receipt",
+      },
     }),
   },
   { description: "Extracted information from a receipt" },
 ) {}
-
-console.log(JSONSchema.make(ReceiptMeta))
