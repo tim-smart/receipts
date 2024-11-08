@@ -23,6 +23,7 @@
     "cojson": "^0.8.12",
     "effect": "^3.10.12",
     "jazz-browser": "^0.8.15",
+    "jazz-browser-media-images": "^0.8.15",
     "jazz-react": "^0.8.15",
     "jazz-tools": "^0.8.15",
     "lucide-react": "^0.454.0",

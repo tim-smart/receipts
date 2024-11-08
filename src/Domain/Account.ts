@@ -4,6 +4,7 @@ import { ReceiptList } from "./Receipt"
 
 export class ReceiptsAccountRoot extends CoMap {
   folders = co.ref(FolderList)
+  currentFolder = co.ref(Folder)
 }
 
 export class ReceiptsAccount extends Account {
@@ -27,6 +28,7 @@ export class ReceiptsAccount extends Account {
           folders: FolderList.create([firstFolder], {
             owner: this,
           }),
+          currentFolder: firstFolder,
         },
         { owner: this },
       )
