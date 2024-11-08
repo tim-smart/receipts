@@ -367,6 +367,15 @@ function SettingsDrawer() {
             </div>
           </div>
           <DrawerFooter>
+            <Button
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault()
+                account.logOut()
+              }}
+            >
+              Sign out
+            </Button>
             <Button>Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
