@@ -10,6 +10,7 @@ export class ReceiptsAccountRoot extends CoMap {
   currentFolder = co.ref(Folder)
   openaiApiKey = co.optional.string
   openaiModel = co.optional.string
+  openExchangeApiKey = co.optional.string
 }
 
 export class ReceiptsAccount extends Account {

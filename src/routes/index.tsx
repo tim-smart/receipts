@@ -22,6 +22,7 @@ import { Plus, Settings, Settings2 } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -29,7 +30,9 @@ import {
 import { formatCurrency } from "@/Domain/Currency"
 import { FolderProvider, useFolder } from "@/Folders/context"
 import { ReceiptForm } from "@/Receipts/components/Form"
-import { DateTime } from "effect"
+import { BigDecimal, DateTime, Option } from "effect"
+import { useRx } from "@effect-rx/rx-react"
+import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -38,7 +41,7 @@ export const Route = createFileRoute("/")({
 function ReceiptsScreen() {
   return (
     <Scaffold heading="Receipts">
-      <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-5">
         <div className="w-full max-w-sm flex gap-2">
           <GroupSelect />
           <GroupSettings />
@@ -46,6 +49,7 @@ function ReceiptsScreen() {
         </div>
 
         <FolderProvider>
+          <TotalsToggle />
           <ReceiptGrid />
           <AddReceiptButton />
         </FolderProvider>
@@ -306,6 +310,7 @@ function SettingsDrawer() {
       const data = new FormData(event.target as HTMLFormElement)
       root.openaiApiKey = data.get("openaiApiKey") as string
       root.openaiModel = data.get("openaiModel") as string
+      root.openExchangeApiKey = data.get("openExchangeApiKey") as string
       setOpen(false)
     },
     [root],
@@ -326,7 +331,7 @@ function SettingsDrawer() {
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+              <Label htmlFor="openaiApiKey" className="text-right">
                 OpenAI API key
               </Label>
               <Input
@@ -338,7 +343,7 @@ function SettingsDrawer() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+              <Label htmlFor="openaiModel" className="text-right">
                 OpenAI Model
               </Label>
               <Input
@@ -346,6 +351,18 @@ function SettingsDrawer() {
                 name="openaiModel"
                 className="col-span-3"
                 defaultValue={root.openaiModel}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="openExchangeApiKey" className="text-right">
+                Open Exchange Rates API key
+              </Label>
+              <Input
+                id="openExchangeApiKey"
+                name="openExchangeApiKey"
+                className="col-span-3"
+                defaultValue={root.openExchangeApiKey}
+                type="password"
               />
             </div>
           </div>
@@ -357,4 +374,113 @@ function SettingsDrawer() {
       </DrawerContent>
     </Drawer>
   )
+}
+
+function TotalsToggle() {
+  const [open, setOpen] = useState(false)
+  return (
+    <Card>
+      <CardHeader
+        className="px-5 py-3 cursor-pointer"
+        onClick={() => setOpen((_) => !_)}
+      >
+        <CardDescription>{open ? "Hide" : "Show"} totals</CardDescription>
+      </CardHeader>
+      {open && (
+        <CardContent className="px-5 pt-0 pb-3 text-sm">
+          <Totals />
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function Totals() {
+  const account = useAccount()
+  const folder = useFolder()
+  const receipts = folder?.items
+
+  const openExchangeApiKey = account.me.root?.openExchangeApiKey
+
+  const [convertTo, setConvertTo] = useRx(baseCurrencyRx)
+  const [rates, getRates] = useRx(latestRates)
+
+  const totals = useMemo(() => {
+    if (!receipts) return null
+    const currencies: Record<string, BigDecimal.BigDecimal> = {}
+    for (const receipt of receipts) {
+      if (!receipt) continue
+      const prev = currencies[receipt.currency] ?? BigDecimal.fromNumber(0)
+      currencies[receipt.currency] = BigDecimal.sum(
+        prev,
+        BigDecimal.unsafeFromString(receipt.amount),
+      )
+    }
+    return currencies
+  }, [receipts])
+
+  if (!totals) return null
+
+  const converted = useMemo(() => {
+    if (rates._tag !== "Success") return Option.none()
+    let converted: BigDecimal.BigDecimal = BigDecimal.fromNumber(0)
+    for (const [currency, total] of Object.entries(totals)) {
+      const rate = 1 / rates.value[currency]
+      converted = BigDecimal.multiply(total, BigDecimal.fromNumber(rate)).pipe(
+        BigDecimal.sum(converted),
+      )
+    }
+    return Option.some(converted)
+  }, [totals, rates])
+
+  return (
+    <>
+      {Object.entries(totals)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency, total]) => (
+          <div key={currency}>
+            {currency}: ${BigDecimal.format(total)}
+            {rates._tag === "Success" && rates.value[currency] && (
+              <span> ({convert(total, rates.value[currency], convertTo)})</span>
+            )}
+          </div>
+        ))}
+      {openExchangeApiKey && (
+        <div>
+          Convert to:{" "}
+          <CurrencySelect
+            initialValue={convertTo}
+            onChange={(base) => {
+              setConvertTo(base)
+              getRates(openExchangeApiKey)
+            }}
+          />
+        </div>
+      )}
+      {Option.match(converted, {
+        onNone: () => null,
+        onSome: (converted) => (
+          <div>
+            Total in {convertTo}: $
+            {BigDecimal.scale(converted, 2).pipe(BigDecimal.format)}
+          </div>
+        ),
+      })}
+    </>
+  )
+}
+
+const formatRate = (rate: number) => Math.round(rate * 10000) / 10000
+
+const convert = (
+  amount: BigDecimal.BigDecimal,
+  rate: number,
+  currency: string,
+) => {
+  const rateNumber = 1 / rate
+  const converted = BigDecimal.multiply(
+    amount,
+    BigDecimal.fromNumber(rateNumber),
+  ).pipe(BigDecimal.scale(2))
+  return `x${formatRate(rateNumber)} = $${BigDecimal.format(converted)} ${currency}`
 }
