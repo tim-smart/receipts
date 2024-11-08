@@ -52,14 +52,7 @@ export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
 
 const inputFromBlob = (blob: Blob) =>
   Effect.gen(function* () {
-    const buffer = yield* Effect.promise(() => blob.arrayBuffer())
-    const part = new AiInput.ImagePart({
-      image: {
-        data: new Uint8Array(buffer),
-        contentType: blob.type,
-      },
-      quality: "auto",
-    })
+    const part = yield* AiInput.ImagePart.fromBlob(blob)
     return AiInput.make(part)
   })
 
