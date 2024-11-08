@@ -1,3 +1,4 @@
+import { BigDecimal } from "effect"
 import { co } from "jazz-tools"
 
 export const currencies = [
@@ -3553,3 +3554,13 @@ export const options = codes.map(
 )
 
 export const Currency = co.literal(...codes)
+
+export const formatCurrency = (options: {
+  readonly amount: string
+  readonly currency?: string
+}): string => {
+  const amount = BigDecimal.unsafeFromString(options.amount).pipe(
+    BigDecimal.unsafeToNumber,
+  )
+  return `$${amount}${options.currency ? ` ${options.currency}` : ""}`
+}

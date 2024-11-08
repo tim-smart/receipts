@@ -30,6 +30,13 @@ import { Combobox } from "@/components/ui/ComboBox"
 import { Group } from "jazz-tools"
 import { Plus } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { formatCurrency } from "@/Domain/Currency"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -38,15 +45,17 @@ export const Route = createFileRoute("/")({
 function ReceiptsScreen() {
   return (
     <Scaffold heading="Receipts">
-      <div className="w-full max-w-sm flex gap-2">
-        <GroupSelect />
-        <GroupDrawer />
-      </div>
+      <div className="flex flex-col gap-7">
+        <div className="w-full max-w-sm flex gap-2">
+          <GroupSelect />
+          <GroupDrawer />
+        </div>
 
-      <FolderProvider>
-        <ReceiptGrid />
-        <AddReceiptButton />
-      </FolderProvider>
+        <FolderProvider>
+          <ReceiptGrid />
+          <AddReceiptButton />
+        </FolderProvider>
+      </div>
     </Scaffold>
   )
 }
@@ -108,11 +117,16 @@ function ReceiptDrawer() {
     const data = new FormData(event.target as HTMLFormElement)
     const owner = folder._owner
     const images = await Promise.all(
-      data.getAll("images").map((file) => createImage(file as File, { owner })),
+      data
+        .getAll("images")
+        .filter((file) => file instanceof File && file.name !== "")
+        .map((file) => createImage(file as File, { owner })),
     )
     folder.items!.push(
       Receipt.create(
         {
+          date: new Date(),
+          merchant: data.get("merchant") as string,
           description: data.get("description") as string,
           amount: data.get("amount") as string,
           currency: data.get("currency") as string,
@@ -139,6 +153,18 @@ function ReceiptDrawer() {
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date
+              </Label>
+              <Input id="date" name="date" className="col-span-3" type="date" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="merchant" className="text-right">
+                Merchant
+              </Label>
+              <Input id="merchant" name="merchant" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="description" className="text-right">
                 Description
               </Label>
@@ -153,7 +179,13 @@ function ReceiptDrawer() {
                 Amount
               </Label>
               <div className="flex flex-row gap-1 col-span-3">
-                <Input id="amount" name="amount" type="number" className="" />
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  step={0.01}
+                  className=""
+                />
                 <CurrencySelect name="currency" initialValue="USD" />
               </div>
             </div>
@@ -238,12 +270,28 @@ function ReceiptGrid() {
   if (!receipts) return null
 
   return (
-    <ul>
+    <div className="grid grid-cols-2 gap-2">
       {receipts!.filter(Boolean).map((receipt) => (
-        <li key={receipt!.id}>
-          <Link to={`/receipt/${receipt!.id}`}>{receipt!.id}</Link>
-        </li>
+        <Link key={receipt!.id} to={`/receipt/${receipt!.id}`}>
+          <ReceiptCard>{receipt!}</ReceiptCard>
+        </Link>
       ))}
-    </ul>
+    </div>
+  )
+}
+
+function ReceiptCard({ children }: { children: Receipt }) {
+  return (
+    <Card>
+      <CardHeader className="p-4">
+        <CardTitle>{children.description}</CardTitle>
+        <CardDescription>
+          <div className="flex flex-col">
+            {children.merchant && <span>{children.merchant}</span>}
+            <span>{formatCurrency(children)}</span>
+          </div>
+        </CardDescription>
+      </CardHeader>
+    </Card>
   )
 }
