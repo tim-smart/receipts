@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { FormEvent, useCallback, useMemo, useState } from "react"
-import { Receipt, ReceiptList } from "@/Domain/Receipt"
+import { Receipt, ReceiptList, ReceiptOrder } from "@/Domain/Receipt"
 import { useAccount, useCoState } from "@/lib/Jazz"
 import { Folder } from "@/Domain/Folder"
 import { ReceiptsAccountRoot } from "@/Domain/Account"
@@ -261,7 +261,8 @@ function ReceiptGrid() {
   return (
     <div className="grid grid-cols-2 gap-2">
       {receipts!
-        .filter((r) => r && r.deleted !== true)
+        .filter((r): r is Receipt => !!r && r.deleted !== true)
+        .sort(ReceiptOrder)
         .map((receipt) => (
           <Link key={receipt!.id} to={`/receipt/${receipt!.id}`}>
             <ReceiptCard>{receipt!}</ReceiptCard>
