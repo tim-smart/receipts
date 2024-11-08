@@ -6,6 +6,7 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: "/receipts/",
   plugins: [
     TanStackRouterVite(),
     react(),
@@ -29,6 +30,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
+        maximumFileSizeToCacheInBytes: 3_000_000,
       },
 
       devOptions: {
