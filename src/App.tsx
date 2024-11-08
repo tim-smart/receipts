@@ -3,6 +3,7 @@ import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
 import { Provider } from "./lib/Jazz.ts"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
+import { AiWorkerMount } from "./Receipts/components/AiWorkerMount.tsx"
 
 const router = createRouter({ routeTree })
 
@@ -22,6 +23,7 @@ function App() {
         peer="wss://cloud.jazz.tools/?key=hello@timsmart.co"
       >
         <RouterProvider router={router} />
+        <AiWorkerMount />
       </Provider>
       {state.state !== "signedIn" && <PasskeyAuthBasicUI state={state} />}
     </>

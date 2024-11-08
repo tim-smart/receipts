@@ -18,7 +18,7 @@ import { Folder } from "@/Domain/Folder"
 import { ReceiptsAccountRoot } from "@/Domain/Account"
 import { Combobox } from "@/components/ui/ComboBox"
 import { Group } from "jazz-tools"
-import { Plus, Settings } from "lucide-react"
+import { Plus, Settings, Settings2 } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
   Card,
@@ -85,7 +85,10 @@ function GroupSelect() {
 function AddReceiptButton() {
   return (
     <div className="fixed bottom-0 left-0 w-full px-5 pb-safe flex flex-col items-center">
-      <ReceiptDrawer />
+      <div className="flex gap-2 w-full max-w-sm">
+        <ReceiptDrawer />
+        <SettingsDrawer />
+      </div>
       <div className="h-5" />
     </div>
   )
@@ -97,7 +100,7 @@ function ReceiptDrawer() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button className="w-full max-w-sm">Add receipt</Button>
+        <Button className="flex-1">Add receipt</Button>
       </DrawerTrigger>
 
       <DrawerContent>
@@ -280,5 +283,69 @@ function ReceiptCard({ children }: { children: Receipt }) {
         </CardDescription>
       </CardHeader>
     </Card>
+  )
+}
+
+function SettingsDrawer() {
+  const account = useAccount()
+  const root = account.me.root!
+  const [open, setOpen] = useState(false)
+
+  const onSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const data = new FormData(event.target as HTMLFormElement)
+      root.openaiApiKey = data.get("openaiApiKey") as string
+      root.openaiModel = data.get("openaiModel") as string
+      setOpen(false)
+    },
+    [root],
+  )
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button variant="outline" className="px-3">
+          <Settings2 />
+        </Button>
+      </DrawerTrigger>
+
+      <DrawerContent>
+        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
+          <DrawerHeader>
+            <TypoH3>Settings</TypoH3>
+          </DrawerHeader>
+          <div className="grid gap-4 py-5 px-3">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                OpenAI API key
+              </Label>
+              <Input
+                id="openaiApiKey"
+                name="openaiApiKey"
+                className="col-span-3"
+                defaultValue={root.openaiApiKey}
+                type="password"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                OpenAI Model
+              </Label>
+              <Input
+                id="openaiModel"
+                name="openaiModel"
+                className="col-span-3"
+                defaultValue={root.openaiModel}
+              />
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button>Save</Button>
+          </DrawerFooter>
+          <div className="h-5"></div>
+        </form>
+      </DrawerContent>
+    </Drawer>
   )
 }

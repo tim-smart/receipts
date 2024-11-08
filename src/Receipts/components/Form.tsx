@@ -10,6 +10,8 @@ import { useFolder } from "@/Folders/context"
 import { FormEvent, useCallback } from "react"
 import { createImage } from "jazz-browser-media-images"
 import { ImageList } from "@/Domain/Image"
+import { useAccount } from "@/lib/Jazz"
+import { AiJob, AiJobList } from "@/Domain/AiJob"
 
 export function ReceiptForm({
   initialValue,
@@ -18,8 +20,8 @@ export function ReceiptForm({
   initialValue?: Receipt
   onSubmit: () => void
 }) {
+  const account = useAccount().me
   const folder = useFolder()
-  console.log(folder.defaultCurrency)
 
   const onSubmit_ = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -43,23 +45,34 @@ export function ReceiptForm({
         initialValue.images!.push(...images)
       }
     } else {
-      folder.items!.push(
-        Receipt.create(
-          {
-            date: (data.get("date") as string)
-              ? new Date(data.get("date") as string)
-              : undefined,
-            merchant: data.get("merchant") as string,
-            description: data.get("description") as string,
-            amount: data.get("amount") as string,
-            currency: data.get("currency") as string,
-            images: ImageList.create(images, { owner }),
-            folder,
-            deleted: false,
-          },
-          { owner },
-        ),
+      const receipt = Receipt.create(
+        {
+          date: (data.get("date") as string)
+            ? new Date(data.get("date") as string)
+            : undefined,
+          merchant: data.get("merchant") as string,
+          description: data.get("description") as string,
+          amount: data.get("amount") as string,
+          currency: data.get("currency") as string,
+          images: ImageList.create(images, { owner }),
+          folder,
+          deleted: false,
+        },
+        { owner },
       )
+      folder.items!.push(receipt)
+      if (receipt.images!.length > 0 && receipt.amount.trim() === "") {
+        account.root!.aiJobs ??= AiJobList.create([], { owner: account })
+        account.root!.aiJobs.push(
+          AiJob.create(
+            {
+              receipt,
+              processed: false,
+            },
+            { owner: account },
+          ),
+        )
+      }
     }
     onSubmit()
   }, [])

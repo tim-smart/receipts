@@ -1,9 +1,12 @@
 import { Account, CoMap, Group, Profile, co } from "jazz-tools"
 import { Folder, FolderList } from "./Folder"
 import { ReceiptList } from "./Receipt"
+import { AiJobList } from "./AiJob"
 
 export class ReceiptsAccountRoot extends CoMap {
   folders = co.ref(FolderList)
+  aiJobs = co.ref(AiJobList)
+
   currentFolder = co.ref(Folder)
   openaiApiKey = co.optional.string
   openaiModel = co.optional.string
@@ -32,7 +35,9 @@ export class ReceiptsAccount extends Account {
           folders: FolderList.create([firstFolder], {
             owner: this,
           }),
+          aiJobs: AiJobList.create([], { owner: this }),
           currentFolder: firstFolder,
+          openaiModel: "gpt-4o",
         },
         { owner: this },
       )
