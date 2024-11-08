@@ -41,7 +41,7 @@ export const Route = createFileRoute("/")({
 function ReceiptsScreen() {
   return (
     <Scaffold heading="Receipts">
-      <div className="flex flex-col gap-5 pb-32">
+      <div className="flex flex-col gap-5">
         <div className="w-full max-w-sm flex gap-2">
           <GroupSelect />
           <GroupSettings />
