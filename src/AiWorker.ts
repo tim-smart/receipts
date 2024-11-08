@@ -93,7 +93,7 @@ export const AiWorkerLive = Effect.gen(function* () {
         job.receipt!.date = DateTime.toDate(metadata.date)
       }
     }).pipe(
-      Effect.retry({ times: 3, schedule: Schedule.exponential(1000) }),
+      Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),
       Effect.tap(Effect.log("processed")),
       Effect.catchAllCause(Effect.log),
       Effect.tap(removeJob(job)),

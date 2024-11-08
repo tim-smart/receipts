@@ -1,4 +1,12 @@
-import { Context, Effect, Layer, Redacted, Schedule, Schema } from "effect"
+import {
+  Context,
+  Effect,
+  JSONSchema,
+  Layer,
+  Redacted,
+  Schedule,
+  Schema,
+} from "effect"
 import { AiInput, Completions } from "@effect/ai"
 import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
@@ -71,9 +79,14 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
     amount: Schema.BigDecimal.annotations({
       jsonSchema: {
         type: "string",
-        description: "The total cost from the receipt",
+        description:
+          "The total cost from the receipt, excluding the currency. Include the numeric amount only.",
       },
     }),
   },
-  { description: "Extracted information from a receipt" },
+  {
+    description: "Extracted information from a receipt.",
+  },
 ) {}
+
+console.log(JSONSchema.make(ReceiptMeta))
