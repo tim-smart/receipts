@@ -6,6 +6,7 @@ import {
   FiberMap,
   Layer,
   Mailbox,
+  Schedule,
   Stream,
 } from "effect"
 import { ReceiptsAccount } from "./Domain/Account"
@@ -92,9 +93,10 @@ export const AiWorkerLive = Effect.gen(function* () {
         job.receipt!.date = DateTime.toDate(metadata.date)
       }
     }).pipe(
+      Effect.retry({ times: 3, schedule: Schedule.exponential(1000) }),
       Effect.tap(Effect.log("processed")),
-      Effect.ensuring(removeJob(job)),
       Effect.catchAllCause(Effect.log),
+      Effect.tap(removeJob(job)),
       Effect.annotateLogs("job", job.id),
     )
 
