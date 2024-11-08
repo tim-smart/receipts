@@ -373,10 +373,11 @@ function SettingsDrawer() {
                 e.preventDefault()
                 account.logOut()
               }}
+              type="button"
             >
               Sign out
             </Button>
-            <Button>Save</Button>
+            <Button type="submit">Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
         </form>
