@@ -29,6 +29,7 @@ import {
 import { formatCurrency } from "@/Domain/Currency"
 import { FolderProvider, useFolder } from "@/Folders/context"
 import { ReceiptForm } from "@/Receipts/components/Form"
+import { DateTime } from "effect"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -278,7 +279,14 @@ function ReceiptCard({ children }: { children: Receipt }) {
         <CardDescription>
           <div className="flex flex-col">
             {children.merchant && <span>{children.merchant}</span>}
-            <span>{formatCurrency(children)}</span>
+            {children.amount && <span>{formatCurrency(children)}</span>}
+            {children.date && (
+              <span>
+                {DateTime.unsafeFromDate(children.date).pipe(
+                  DateTime.format({ dateStyle: "short" }),
+                )}
+              </span>
+            )}
           </div>
         </CardDescription>
       </CardHeader>
