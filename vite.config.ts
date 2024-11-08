@@ -22,7 +22,7 @@ export default defineConfig({
         name: "Receipts",
         short_name: "receipts",
         description: "A simple receipt tracking app",
-        theme_color: "#27272a",
+        theme_color: "#262626",
       },
 
       workbox: {
