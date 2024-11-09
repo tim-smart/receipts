@@ -1,11 +1,14 @@
 import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
-import { Provider } from "./lib/Jazz.ts"
+import { Provider, useAcceptInvite, useAccount } from "./lib/Jazz.ts"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
 import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { PasskeyAuthUI } from "./Jazz/PasskeyUI.tsx"
 import { useEffect } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
+import { Folder } from "./Domain/Folder.ts"
+import { loadCoValue } from "jazz-tools"
+import { Toaster } from "./components/ui/sonner.tsx"
 
 const router = createRouter({ routeTree })
 
@@ -30,9 +33,12 @@ function App() {
       >
         <RouterProvider router={router} />
         <AiWorkerMount />
+        <FolderInvites />
       </Provider>
+
       <PasskeyAuthUI state={state} />
       <SystemTheme />
+      <Toaster />
     </>
   )
 }
@@ -64,6 +70,26 @@ function SystemTheme() {
     listener()
     return () => matcher.removeEventListener("change", listener)
   }, [])
+  return null
+}
+
+function FolderInvites() {
+  const account = useAccount().me
+
+  useAcceptInvite({
+    invitedObjectSchema: Folder,
+    onAccept: async (folderId) => {
+      const folder = await loadCoValue(Folder, folderId, account, [])
+      if (!folder) return
+      const acc = await account.ensureLoaded({
+        root: { folders: [], currentFolder: [] },
+      })
+      if (acc!.root.folders.find((_) => _?.id === folderId)) return
+      acc!.root.folders.push(folder)
+      acc!.root.currentFolder = folder
+    },
+  })
+
   return null
 }
 

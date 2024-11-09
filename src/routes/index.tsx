@@ -32,6 +32,8 @@ import { ReceiptForm } from "@/Receipts/Form"
 import { BigDecimal, DateTime, Option } from "effect"
 import { useRx } from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
+import { createInviteLink } from "jazz-browser"
+import { toast } from "sonner"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -76,15 +78,14 @@ function GroupSelect() {
         .map((folder) => ({
           value: folder!.id,
           label: folder!.name,
-        })),
+        })) ?? [],
     [folders],
   )
-  if (!options) return null
 
   return (
     <Combobox
       options={options}
-      value={root!.currentFolder?.id as string}
+      value={root?.currentFolder?.id ?? ""}
       onChange={(folderId) => {
         root!.currentFolder = folders?.find((_) => _?.id === folderId)!
       }}
@@ -213,6 +214,16 @@ function GroupSettings() {
     [folder],
   )
 
+  const onShare = useCallback(
+    (e: any) => {
+      e.preventDefault()
+      const link = createInviteLink(folder, "writer")
+      navigator.clipboard.writeText(link)
+      toast("Copied link to the clipboard!")
+    },
+    [folder],
+  )
+
   if (!folder) return null
 
   return (
@@ -252,10 +263,13 @@ function GroupSettings() {
             </div>
           </div>
           <DrawerFooter>
-            <Button variant="destructive" onClick={onRemove}>
+            <Button variant="destructive" onClick={onRemove} type="button">
               Delete
             </Button>
-            <Button>Save</Button>
+            <Button type="button" onClick={onShare}>
+              Share
+            </Button>
+            <Button type="submit">Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
         </form>
