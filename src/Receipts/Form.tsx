@@ -165,7 +165,8 @@ export function ReceiptForm({
             id="images"
             name="images"
             type="file"
-            accept="image/*"
+            accept="image/*;capture=camera"
+            multiple
             className="col-span-3"
           />
         </div>
