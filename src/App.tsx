@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
 import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { PasskeyAuthUI } from "./Jazz/PasskeyUI.tsx"
+import { useEffect, useState } from "react"
 
 const router = createRouter({ routeTree })
 
@@ -26,8 +27,39 @@ function App() {
         <AiWorkerMount />
       </Provider>
       <PasskeyAuthUI state={state} />
+      <SystemTheme />
     </>
   )
+}
+
+function isDarkMode() {
+  return (
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  )
+}
+
+function SystemTheme() {
+  useEffect(() => {
+    const listener = () => {
+      if (isDarkMode()) {
+        document.documentElement.classList.add("dark")
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", "#0a0a0a")
+      } else {
+        document.documentElement.classList.remove("dark")
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", "#ffffff")
+      }
+    }
+    const matcher = window.matchMedia("(prefers-color-scheme: dark)")
+    matcher.addEventListener("change", listener)
+    listener()
+    return () => matcher.removeEventListener("change", listener)
+  }, [])
+  return null
 }
 
 export default App
