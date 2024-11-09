@@ -43,7 +43,11 @@ export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
           schema: ReceiptMeta,
         })
         return yield* result.value
-      })
+      }).pipe(
+        AiInput.provideSystem(`Extract receipt information from the provided image.
+
+The current date is ${new Date().toDateString()}.`),
+      )
 
     return { extractReceipt } as const
   }),
