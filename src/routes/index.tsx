@@ -171,8 +171,6 @@ function GroupDrawer() {
               </Label>
               <Input id="name" name="name" className="col-span-3" required />
             </div>
-          </div>
-          <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="defaultCurrency" className="text-right">
                 Default currency
