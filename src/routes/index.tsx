@@ -290,10 +290,16 @@ function ReceiptCard({ children }: { children: Receipt }) {
   return (
     <Card>
       <CardHeader className="p-4">
-        <CardTitle>{children.description}</CardTitle>
+        <CardTitle className="whitespace-nowrap overflow-ellipsis overflow-hidden">
+          {children.description}
+        </CardTitle>
         <CardDescription>
           <div className="flex flex-col">
-            {children.merchant && <span>{children.merchant}</span>}
+            {children.merchant && (
+              <span className="overflow-ellipsis w-full whitespace-nowrap overflow-hidden">
+                {children.merchant}
+              </span>
+            )}
             {children.amount && <span>{formatCurrency(children)}</span>}
             {children.date && (
               <span>
