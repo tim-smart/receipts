@@ -92,7 +92,7 @@ export function ReceiptForm({
 
   const fileRef = useRef<HTMLInputElement>(null)
   useLayoutEffect(() => {
-    if (!clicked.get(fileRef.current)) {
+    if (!initialValue && !clicked.get(fileRef.current)) {
       clicked.set(fileRef.current, true)
       fileRef.current?.click()
     }
@@ -101,7 +101,7 @@ export function ReceiptForm({
   return (
     <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit_}>
       <DrawerHeader>
-        <TypoH3>Add receipt</TypoH3>
+        <TypoH3>{initialValue ? "Edit" : "Add"} receipt</TypoH3>
       </DrawerHeader>
       <div className="grid gap-4 py-5 px-3">
         <div className="grid grid-cols-4 items-center gap-4">
@@ -175,7 +175,7 @@ export function ReceiptForm({
         </div>
       </div>
       <DrawerFooter>
-        <Button>{initialValue ? "Update" : "Create"}</Button>
+        <Button>{initialValue ? "Save" : "Create"}</Button>
       </DrawerFooter>
       <div className="h-5"></div>
     </form>
