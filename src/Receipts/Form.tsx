@@ -51,6 +51,8 @@ export function ReceiptForm({
         initialValue.images!.push(...images)
       }
     } else {
+      const amount = (data.get("amount") as string).trim()
+      const useAi = amount === "" && images.length > 0
       const receipt = Receipt.create(
         {
           date: (data.get("date") as string)
@@ -63,11 +65,12 @@ export function ReceiptForm({
           images: ImageList.create(images, { owner }),
           folder,
           deleted: false,
+          processed: useAi ? false : true,
         },
         { owner },
       )
       folder.items!.push(receipt)
-      if (receipt.images!.length > 0 && receipt.amount.trim() === "") {
+      if (useAi) {
         account.root!.aiJobs ??= AiJobList.create([], { owner: account })
         account.root!.aiJobs.push(
           AiJob.create(

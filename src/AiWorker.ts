@@ -62,6 +62,7 @@ export const AiWorkerLive = Effect.gen(function* () {
   const removeJob = (job: AiJob) =>
     Effect.sync(() => {
       job.processed = true
+      job.receipt!.processed = true
       const index = jobs?.indexOf(job)
       if (index !== undefined && index >= 0) {
         jobs!.splice(index, 1)

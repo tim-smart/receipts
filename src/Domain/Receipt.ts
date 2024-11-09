@@ -10,6 +10,7 @@ export class Receipt extends CoMap {
   merchant = co.string
   amount = co.string
   currency = Currency
+  processed = co.boolean
   uri = co.optional.string
   images = co.ref(ImageList)
   folder = co.ref(Folder)

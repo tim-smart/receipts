@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/Button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
@@ -302,6 +302,7 @@ function ReceiptCard({ children }: { children: Receipt }) {
                 )}
               </span>
             )}
+            {children.processed === false && <span>Processing...</span>}
           </div>
         </CardDescription>
       </CardHeader>
