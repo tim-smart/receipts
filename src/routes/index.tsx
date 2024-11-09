@@ -11,7 +11,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
-import { FormEvent, useCallback, useMemo, useState } from "react"
+import { FormEvent, useCallback, useMemo, useRef, useState } from "react"
 import { Receipt, ReceiptList, ReceiptOrder } from "@/Domain/Receipt"
 import { useAccount } from "@/lib/Jazz"
 import { Folder } from "@/Domain/Folder"
@@ -34,6 +34,7 @@ import { useRx } from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
 import { createInviteLink } from "jazz-browser"
 import { toast } from "sonner"
+import { Switch } from "@/components/ui/switch"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -213,14 +214,16 @@ function GroupSettings() {
     [folder],
   )
 
+  const readOnlyRef = useRef<HTMLButtonElement>(null)
   const onShare = useCallback(
     (e: any) => {
       e.preventDefault()
-      const link = createInviteLink(folder, "writer")
+      const readOnly = readOnlyRef.current!.value === "on"
+      const link = createInviteLink(folder, readOnly ? "reader" : "writer")
       navigator.clipboard.writeText(link)
       toast("Copied link to the clipboard!")
     },
-    [folder],
+    [folder, readOnlyRef],
   )
 
   if (!folder) return null
@@ -265,9 +268,20 @@ function GroupSettings() {
             <Button variant="destructive" onClick={onRemove} type="button">
               Delete
             </Button>
-            <Button type="button" variant="outline" onClick={onShare}>
-              Share
-            </Button>
+            <div className="flex gap-2 items-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onShare}
+                className="flex-1"
+              >
+                Share
+              </Button>
+              <div className="flex items-center gap-1">
+                <Switch ref={readOnlyRef} id="shareReadOnly" defaultChecked />
+                <Label htmlFor="shareReadOnly">Read-only</Label>
+              </div>
+            </div>
             <Button type="submit">Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
