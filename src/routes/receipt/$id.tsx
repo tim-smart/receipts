@@ -45,15 +45,15 @@ function ReceiptScreen() {
         >
           <div className="flex flex-col gap-7">
             <div>
+              {receipt.amount && (
+                <Amount currency={receipt.currency}>{receipt.amount}</Amount>
+              )}
               {receipt.date && (
-                <h3 className="tracking-tight lg:text-5xl text-center">
+                <h3 className="tracking-tight text-zinc-700 dark:text-zinc-300 font-extrabold text-center">
                   {DateTime.unsafeFromDate(receipt.date).pipe(
                     DateTime.format({ dateStyle: "short" }),
                   )}
                 </h3>
-              )}
-              {receipt.amount && (
-                <Amount currency={receipt.currency}>{receipt.amount}</Amount>
               )}
             </div>
             {receipt.images && receipt.images.length > 0 && (
@@ -86,7 +86,7 @@ export function Amount({
   currency: string
 }) {
   return (
-    <h3 className="scroll-m-20 text-zinc-400 text-3xl font-extrabold tracking-tight lg:text-5xl text-center">
+    <h3 className="scroll-m-20 text-zinc-500 dark:text-zinc-400 text-3xl font-extrabold tracking-tight lg:text-5xl text-center">
       {formatCurrency({ amount: children, currency })}
     </h3>
   )

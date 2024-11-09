@@ -189,7 +189,7 @@ function GroupDrawer() {
 function GroupSettings() {
   const account = useAccount().me
   const root = account.root!
-  const folder = root.currentFolder!
+  const folder = root?.currentFolder!
   const [open, setOpen] = useState(false)
 
   const onSubmit = useCallback(
