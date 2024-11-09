@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { Button } from "@/components/ui/Button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
@@ -11,7 +11,14 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
-import { FormEvent, useCallback, useMemo, useRef, useState } from "react"
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { Receipt, ReceiptList, ReceiptOrder } from "@/Domain/Receipt"
 import { useAccount } from "@/lib/Jazz"
 import { Folder } from "@/Domain/Folder"
@@ -109,6 +116,13 @@ function AddReceiptButton() {
 function ReceiptDrawer() {
   const { action } = Route.useSearch()
   const [open, setOpen] = useState(action === "add")
+  const router = useRouter()
+
+  useEffect(() => {
+    if (action === "add") {
+      router.navigate({ to: "/" })
+    }
+  }, [action])
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>

@@ -96,6 +96,8 @@ export function ReceiptForm({
       clicked.set(fileRef.current, true)
       fileRef.current?.click()
     }
+    fileRef.current?.removeAttribute("capture")
+    fileRef.current?.setAttribute("accept", "image/*;capture=camera")
   }, [fileRef])
 
   return (
@@ -168,7 +170,8 @@ export function ReceiptForm({
             id="images"
             name="images"
             type="file"
-            accept="image/*;capture=camera"
+            accept="image/*"
+            capture="environment"
             multiple
             className="col-span-3"
           />
