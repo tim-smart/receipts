@@ -37,7 +37,7 @@ function ReceiptScreen() {
           heading={receipt.description}
           subHeading={receipt.merchant}
           leading={
-            <Link to="/" className="flex">
+            <Link to="/" className="flex ml-[-6px]">
               <ChevronLeft />
               Back
             </Link>
@@ -65,6 +65,10 @@ function ReceiptScreen() {
 
           <Mutations
             onDelete={() => {
+              const index = receipt.folder!.items!.findIndex(
+                (_) => _?.id === receipt.id,
+              )
+              receipt.folder!.items!.splice(index, 1)
               receipt.deleted = true
               router.navigate({ to: "/" })
             }}
@@ -86,7 +90,7 @@ export function Amount({
   currency: string
 }) {
   return (
-    <h3 className="scroll-m-20 text-zinc-500 dark:text-zinc-400 text-3xl font-extrabold tracking-tight lg:text-5xl text-center">
+    <h3 className="scroll-m-20 text-zinc-600 dark:text-zinc-400 text-3xl font-extrabold tracking-tight lg:text-5xl text-center">
       {formatCurrency({ amount: children, currency })}
     </h3>
   )
@@ -146,7 +150,9 @@ function EditDrawer() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button className="max-w-sm w-full">Edit</Button>
+        <Button variant="outline" className="max-w-sm w-full">
+          Edit
+        </Button>
       </DrawerTrigger>
       <DrawerContent>
         <ReceiptForm

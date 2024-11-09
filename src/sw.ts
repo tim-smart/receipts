@@ -9,7 +9,11 @@ import { NavigationRoute, registerRoute } from "workbox-routing"
 declare let self: ServiceWorkerGlobalScope
 
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting()
+  if (!event.data) return
+  switch (event.data.type) {
+    case "SKIP_WAITING":
+      return self.skipWaiting()
+  }
 })
 
 // self.__WB_MANIFEST is default injection point

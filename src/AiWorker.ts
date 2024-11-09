@@ -88,10 +88,10 @@ export const AiWorkerLive = Effect.gen(function* () {
       const metadata = yield* ai.extractReceipt(blob)
 
       job.receipt!.amount = BigDecimal.format(metadata.amount)
-      if (job.receipt!.merchant.trim() !== "") {
+      if (job.receipt!.merchant.trim() === "") {
         job.receipt!.merchant = metadata.merchant
       }
-      if (job.receipt!.description.trim() !== "") {
+      if (job.receipt!.description.trim() === "") {
         job.receipt!.description = metadata.description
       }
       if (metadata.date) {

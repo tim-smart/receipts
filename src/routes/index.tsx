@@ -29,7 +29,7 @@ import {
 import { formatCurrency } from "@/Domain/Currency"
 import { FolderProvider, useFolder } from "@/Folders/context"
 import { ReceiptForm } from "@/Receipts/Form"
-import { BigDecimal, DateTime, Option } from "effect"
+import { BigDecimal, DateTime, Option, Predicate } from "effect"
 import { useRx } from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
 import { createInviteLink } from "jazz-browser"
@@ -73,12 +73,10 @@ function GroupSelect() {
   const folders = root?.folders
   const options = useMemo(
     () =>
-      folders
-        ?.filter((f) => f && f.deleted !== true)
-        .map((folder) => ({
-          value: folder!.id,
-          label: folder!.name,
-        })) ?? [],
+      folders?.filter(Predicate.isNotNullable).map((folder) => ({
+        value: folder!.id,
+        label: folder!.name,
+      })) ?? [],
     [folders],
   )
 
@@ -141,7 +139,6 @@ function GroupDrawer() {
         name: data.get("name") as string,
         items: ReceiptList.create([], { owner }),
         defaultCurrency: data.get("defaultCurrency") as string,
-        deleted: false,
       },
       { owner },
     )
@@ -207,7 +204,9 @@ function GroupSettings() {
   const onRemove = useCallback(
     (event: any) => {
       event.preventDefault()
-      folder.deleted = true
+      const index = root.folders!.findIndex((f) => f?.id === folder.id)
+      if (index === -1) return
+      root.folders?.splice(index, 1)
       root.currentFolder = root.folders![0]
       setOpen(false)
     },
@@ -266,7 +265,7 @@ function GroupSettings() {
             <Button variant="destructive" onClick={onRemove} type="button">
               Delete
             </Button>
-            <Button type="button" onClick={onShare}>
+            <Button type="button" variant="outline" onClick={onShare}>
               Share
             </Button>
             <Button type="submit">Save</Button>

@@ -26,7 +26,6 @@ export class ReceiptsAccount extends Account {
           name: "My Receipts",
           items: ReceiptList.create([], { owner: group }),
           defaultCurrency: "USD",
-          deleted: false,
         },
         { owner: group },
       )
