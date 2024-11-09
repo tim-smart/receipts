@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
 import { Button } from "@/components/ui/Button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
@@ -29,14 +29,23 @@ import {
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
 import { FolderProvider, useFolder } from "@/Folders/context"
-import { ReceiptForm } from "@/Receipts/components/Form"
+import { ReceiptForm } from "@/Receipts/Form"
 import { BigDecimal, DateTime, Option } from "effect"
 import { useRx } from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
+  validateSearch(search: Record<string, unknown>): ReceiptsSearchParams {
+    return {
+      action: search.action === "add" ? "add" : undefined,
+    }
+  },
 })
+
+interface ReceiptsSearchParams {
+  readonly action?: "add"
+}
 
 function ReceiptsScreen() {
   return (
@@ -100,7 +109,8 @@ function AddReceiptButton() {
 }
 
 function ReceiptDrawer() {
-  const [open, setOpen] = useState(false)
+  const { action } = Route.useSearch()
+  const [open, setOpen] = useState(action === "add")
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>

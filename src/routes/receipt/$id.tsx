@@ -17,7 +17,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { DateTime } from "effect"
-import { ReceiptForm } from "@/Receipts/components/Form"
+import { ReceiptForm } from "@/Receipts/Form"
 import { createContext, useContext, useState } from "react"
 import { FolderContext } from "@/Folders/context"
 

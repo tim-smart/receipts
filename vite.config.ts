@@ -23,6 +23,12 @@ export default defineConfig({
         short_name: "Receipts",
         description: "A simple receipt tracking app",
         theme_color: "#0a0a0a",
+        shortcuts: [
+          {
+            name: "Add receipt",
+            url: "/?action=add",
+          },
+        ],
       },
 
       workbox: {

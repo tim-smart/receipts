@@ -1,12 +1,4 @@
-import {
-  Context,
-  Effect,
-  JSONSchema,
-  Layer,
-  Redacted,
-  Schedule,
-  Schema,
-} from "effect"
+import { Context, Effect, Layer, Redacted, Schedule, Schema } from "effect"
 import { AiInput, Completions } from "@effect/ai"
 import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
@@ -88,5 +80,3 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
     description: "Extracted information from a receipt.",
   },
 ) {}
-
-console.log(JSONSchema.make(ReceiptMeta))

@@ -7,11 +7,17 @@ import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { DateTime } from "effect"
 import { Receipt } from "@/Domain/Receipt"
 import { useFolder } from "@/Folders/context"
-import { FormEvent, useCallback } from "react"
+import { FormEvent, useCallback, useLayoutEffect, useRef } from "react"
 import { createImage } from "jazz-browser-media-images"
 import { ImageList } from "@/Domain/Image"
 import { useAccount } from "@/lib/Jazz"
 import { AiJob, AiJobList } from "@/Domain/AiJob"
+import { globalValue } from "effect/GlobalValue"
+
+const clicked = globalValue(
+  "ReceiptForm/clicked",
+  () => new WeakMap<any, boolean>(),
+)
 
 export function ReceiptForm({
   initialValue,
@@ -81,6 +87,14 @@ export function ReceiptForm({
     ? DateTime.unsafeFromDate(initialValue.date)
     : DateTime.unsafeNow()
 
+  const fileRef = useRef<HTMLInputElement>(null)
+  useLayoutEffect(() => {
+    if (!clicked.get(fileRef.current)) {
+      clicked.set(fileRef.current, true)
+      fileRef.current?.click()
+    }
+  }, [fileRef])
+
   return (
     <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit_}>
       <DrawerHeader>
@@ -147,10 +161,12 @@ export function ReceiptForm({
             Images
           </Label>
           <Input
+            ref={fileRef}
             id="images"
             name="images"
             type="file"
             accept="image/*"
+            capture="environment"
             multiple
             className="col-span-3"
           />

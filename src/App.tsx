@@ -2,7 +2,7 @@ import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
 import { Provider } from "./lib/Jazz.ts"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { AiWorkerMount } from "./Receipts/components/AiWorkerMount.tsx"
+import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { PasskeyAuthUI } from "./Jazz/PasskeyUI.tsx"
 
 const router = createRouter({ routeTree })
