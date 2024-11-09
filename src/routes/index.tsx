@@ -297,7 +297,7 @@ function ReceiptGrid() {
   if (!receipts) return null
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {receipts!
         .filter((r): r is Receipt => !!r && r.deleted !== true)
         .sort(ReceiptOrder)
