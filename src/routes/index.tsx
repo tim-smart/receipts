@@ -13,9 +13,8 @@ import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { FormEvent, useCallback, useMemo, useState } from "react"
 import { Receipt, ReceiptList, ReceiptOrder } from "@/Domain/Receipt"
-import { useAccount, useCoState } from "@/lib/Jazz"
+import { useAccount } from "@/lib/Jazz"
 import { Folder } from "@/Domain/Folder"
-import { ReceiptsAccountRoot } from "@/Domain/Account"
 import { Combobox } from "@/components/ui/ComboBox"
 import { Group } from "jazz-tools"
 import { Plus, Settings, Settings2 } from "lucide-react"
@@ -68,8 +67,7 @@ function ReceiptsScreen() {
 }
 
 function GroupSelect() {
-  const account = useAccount()
-  const root = useCoState(ReceiptsAccountRoot, account.me.root?.id)
+  const root = useAccount().me?.root
   const folders = root?.folders
   const options = useMemo(
     () =>
@@ -189,8 +187,9 @@ function GroupDrawer() {
 }
 
 function GroupSettings() {
-  const account = useAccount()
-  const folder = useCoState(Folder, account.me.root?.currentFolder?.id)!
+  const account = useAccount().me
+  const root = account.root!
+  const folder = root.currentFolder!
   const [open, setOpen] = useState(false)
 
   const onSubmit = useCallback(
@@ -208,7 +207,7 @@ function GroupSettings() {
     (event: any) => {
       event.preventDefault()
       folder.deleted = true
-      account.me.root!.currentFolder = account.me.root!.folders![0]
+      root.currentFolder = root.folders![0]
       setOpen(false)
     },
     [folder],
