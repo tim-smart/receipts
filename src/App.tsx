@@ -4,7 +4,8 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
 import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { PasskeyAuthUI } from "./Jazz/PasskeyUI.tsx"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
+import { useRegisterSW } from "virtual:pwa-register/react"
 
 const router = createRouter({ routeTree })
 
@@ -15,6 +16,10 @@ declare module "@tanstack/react-router" {
 }
 
 function App() {
+  useRegisterSW({
+    immediate: true,
+  })
+
   const [auth, state] = usePasskeyAuth({ appName: "Receipts" })
 
   return (
