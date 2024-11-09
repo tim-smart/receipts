@@ -10,7 +10,7 @@ export default defineConfig({
     TanStackRouterVite(),
     react(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       injectRegister: "auto",
 
       pwaAssets: {
