@@ -73,15 +73,7 @@ export function ReceiptForm({
       folderLoaded.items.push(receipt)
       if (useAi) {
         account.root!.aiJobs ??= AiJobList.create([], { owner: account })
-        account.root!.aiJobs.push(
-          AiJob.create(
-            {
-              receipt,
-              processed: false,
-            },
-            { owner: account },
-          ),
-        )
+        account.root!.aiJobs.push(AiJob.create({ receipt }, { owner: account }))
       }
     }
     onSubmit()

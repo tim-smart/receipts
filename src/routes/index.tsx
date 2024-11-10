@@ -42,6 +42,7 @@ import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
 import { createInviteLink } from "jazz-browser"
 import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
+import { AiJob } from "@/Domain/AiJob"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -325,6 +326,20 @@ function ReceiptGrid() {
 }
 
 function ReceiptCard({ children }: { children: Receipt }) {
+  const account = useAccount().me
+
+  useEffect(() => {
+    if (children.processed || !children.images?.[0] || !account?.root?.aiJobs)
+      return
+    const index = account.root.aiJobs.findIndex(
+      (job) => job?.receipt?.id === children.id,
+    )
+    if (index !== -1) return
+    account.root.aiJobs.push(
+      AiJob.create({ receipt: children }, { owner: account }),
+    )
+  }, [children, account?.root?.aiJobs])
+
   return (
     <Card>
       <CardHeader className="p-4">

@@ -33,11 +33,14 @@ export const AiWorkerLive = Effect.gen(function* () {
   const handleList = (list: AiJobList) => {
     jobs = list
     const toRemove: Array<AiJob> = []
+    while (true) {
+      const index = list.indexOf(null)
+      if (index === -1) break
+      list.splice(index, 1)
+    }
     for (const job of list) {
       if (!job) continue
-      if (job.processed) {
-        toRemove.push(job)
-      } else if (!FiberMap.unsafeHas(fibers, job)) {
+      else if (!FiberMap.unsafeHas(fibers, job)) {
         mailbox.unsafeOffer(job)
       }
     }
@@ -61,7 +64,6 @@ export const AiWorkerLive = Effect.gen(function* () {
 
   const removeJob = (job: AiJob) =>
     Effect.sync(() => {
-      job.processed = true
       job.receipt!.processed = true
       const index = jobs?.indexOf(job)
       if (index !== undefined && index >= 0) {
