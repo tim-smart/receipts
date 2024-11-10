@@ -58,7 +58,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        maximumFileSizeToCacheInBytes: 3_000_000,
+        maximumFileSizeToCacheInBytes: 4_000_000,
       },
 
       devOptions: {
@@ -69,6 +69,14 @@ export default defineConfig({
       },
     }),
   ],
+
+  build: {
+    minify: false,
+    terserOptions: {
+      compress: false,
+      mangle: false,
+    },
+  },
 
   resolve: {
     alias: {
