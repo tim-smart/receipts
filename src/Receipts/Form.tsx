@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { DateTime } from "effect"
-import { Receipt, ReceiptList } from "@/Domain/Receipt"
+import { Receipt } from "@/Domain/Receipt"
 import { useFolder } from "@/Folders/context"
 import { FormEvent, useCallback, useLayoutEffect, useRef } from "react"
 import { createImage } from "jazz-browser-media-images"
@@ -69,8 +69,8 @@ export function ReceiptForm({
         },
         { owner },
       )
-      folder.items ??= ReceiptList.create([], { owner: folder._owner })
-      folder.items.push(receipt)
+      const folderLoaded = (await folder.ensureLoaded({ items: [] }))!
+      folderLoaded.items.push(receipt)
       if (useAi) {
         account.root!.aiJobs ??= AiJobList.create([], { owner: account })
         account.root!.aiJobs.push(
