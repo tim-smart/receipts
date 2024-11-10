@@ -27,11 +27,14 @@ export const Route = createFileRoute("/receipt/$id")({
 
 function ReceiptScreen() {
   const { id } = Route.useParams()
-  const receipt = useCoState(Receipt, id as any)
+  const receipt = useCoState(Receipt, id as any, {
+    images: [],
+    folder: { items: [] },
+  })
   const router = useRouter()
   if (!receipt) return null
   return (
-    <FolderContext.Provider value={receipt.folder!}>
+    <FolderContext.Provider value={receipt.folder}>
       <ReceiptContext.Provider value={receipt}>
         <Scaffold
           heading={receipt.description}
@@ -65,10 +68,10 @@ function ReceiptScreen() {
 
           <Mutations
             onDelete={() => {
-              const index = receipt.folder!.items!.findIndex(
+              const index = receipt.folder.items.findIndex(
                 (_) => _?.id === receipt.id,
               )
-              receipt.folder!.items!.splice(index, 1)
+              receipt.folder.items.splice(index, 1)
               receipt.deleted = true
               router.navigate({ to: "/" })
             }}
