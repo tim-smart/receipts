@@ -24,7 +24,7 @@ import { useAccount } from "@/lib/Jazz"
 import { Folder } from "@/Domain/Folder"
 import { Combobox } from "@/components/ui/ComboBox"
 import { Group } from "jazz-tools"
-import { Plus, Settings, Settings2 } from "lucide-react"
+import { ArrowUpRight, Plus, Settings, Settings2 } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
   Card,
@@ -38,11 +38,12 @@ import { FolderProvider, useFolder } from "@/Folders/context"
 import { ReceiptForm } from "@/Receipts/Form"
 import { BigDecimal, DateTime, Option, Predicate } from "effect"
 import { useRx } from "@effect-rx/rx-react"
-import { baseCurrencyRx, latestRates } from "@/ExchangeRates/rx"
+import { baseCurrencyRx, latestRates, ratesWithRx } from "@/ExchangeRates/rx"
 import { createInviteLink } from "jazz-browser"
 import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
 import { AiJob } from "@/Domain/AiJob"
+import { Workbook } from "exceljs"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -68,7 +69,10 @@ function ReceiptsScreen() {
         </div>
 
         <FolderProvider>
-          <TotalsToggle />
+          <div className="flex gap-2 items-start">
+            <TotalsToggle />
+            <ExportDrawer />
+          </div>
           <ReceiptGrid />
           <AddReceiptButton />
         </FolderProvider>
@@ -459,7 +463,7 @@ function SettingsDrawer() {
 function TotalsToggle() {
   const [open, setOpen] = useState(false)
   return (
-    <Card>
+    <Card className="flex-1">
       <CardHeader
         className="px-5 py-3 cursor-pointer"
         onClick={() => setOpen((_) => !_)}
@@ -558,9 +562,145 @@ const convert = (
   currency: string,
 ) => {
   const rateNumber = 1 / rate
-  const converted = BigDecimal.multiply(
-    amount,
-    BigDecimal.fromNumber(rateNumber),
-  ).pipe(BigDecimal.scale(2))
-  return `x${formatRate(rateNumber)} = $${BigDecimal.format(converted)} ${currency}`
+  const converted = convertString(amount, rateNumber)
+  return `x${formatRate(rateNumber)} = $${converted} ${currency}`
+}
+
+const convertString = (amount: BigDecimal.BigDecimal, rate: number) => {
+  const rateNumber = 1 / rate
+  return BigDecimal.multiply(amount, BigDecimal.fromNumber(rateNumber)).pipe(
+    BigDecimal.scale(2),
+    BigDecimal.format,
+  )
+}
+
+function ExportDrawer() {
+  const [open, setOpen] = useState(false)
+  const [convert, setConvert] = useState(false)
+  const [currency, setCurrency] = useState("USD")
+
+  const account = useAccount().me
+  const folder = useFolder()
+  const receipts = folder.items!
+  const [rates, getRates] = useRx(
+    ratesWithRx(account.root?.openExchangeApiKey!),
+  )
+
+  useEffect(() => {
+    if (convert && currency) getRates(currency)
+  }, [getRates, convert, currency])
+
+  const onExport = useCallback(async () => {
+    const workbook = new Workbook()
+    workbook.created = new Date()
+    workbook.modified = new Date()
+
+    const sheet = workbook.addWorksheet("Receipts")
+    sheet.properties.defaultRowHeight = 80
+    sheet.columns = [
+      {
+        header: "Date",
+        key: "date",
+        width: 20,
+      },
+      {
+        header: "Merchant",
+        key: "merchant",
+        width: 40,
+      },
+      {
+        header: "Description",
+        key: "description",
+        width: 40,
+      },
+      {
+        header: "Amount",
+        key: "amount",
+        width: 20,
+      },
+      {
+        header: "Currency",
+        key: "currency",
+        width: 15,
+      },
+      ...(convert
+        ? [{ header: `Amount (${currency})`, key: "converted", width: 20 }]
+        : []),
+    ]
+
+    for (let receipt of receipts) {
+      if (!receipt) continue
+
+      sheet.addRow({
+        date: receipt.date,
+        merchant: receipt.merchant,
+        description: receipt.description,
+        amount: receipt.amount,
+        currency: receipt.currency,
+        ...(convert && currency
+          ? {
+              converted: convertString(
+                BigDecimal.unsafeFromString(receipt.amount),
+                rates._tag === "Success" ? rates.value[receipt.currency] : 1,
+              ),
+            }
+          : {}),
+      })
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "receipts.xlsx"
+    a.click()
+    URL.revokeObjectURL(url)
+    setOpen(false)
+  }, [receipts, convert, currency, rates])
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button type="button">
+          <ArrowUpRight />
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader>
+          <TypoH3>Export</TypoH3>
+        </DrawerHeader>
+        <div className="grid gap-4 py-5 px-3">
+          {account.root?.openExchangeApiKey && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="convertCurrency" className="text-right">
+                Convert currency
+              </Label>
+              <Switch checked={convert} onCheckedChange={setConvert} />
+            </div>
+          )}
+          {convert && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="currency" className="text-right">
+                Currency
+              </Label>
+              <CurrencySelect
+                name="currency"
+                onChange={setCurrency}
+                initialValue={currency}
+              />
+            </div>
+          )}
+        </div>
+        <DrawerFooter>
+          <Button type="submit" onClick={onExport}>
+            Export
+          </Button>
+        </DrawerFooter>
+        <div className="h-5"></div>
+      </DrawerContent>
+    </Drawer>
+  )
 }
