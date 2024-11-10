@@ -79,6 +79,9 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
           "The total cost from the receipt, excluding the currency. Include the numeric amount only.",
       },
     }),
+    currency: Schema.NullOr(Schema.String).annotations({
+      description: "The 3 letter currency code, e.g. USD, or null if not found",
+    }),
   },
   {
     description: "Extracted information from a receipt.",

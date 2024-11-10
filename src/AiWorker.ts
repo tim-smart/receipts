@@ -88,6 +88,9 @@ export const AiWorkerLive = Effect.gen(function* () {
       const metadata = yield* ai.extractReceipt(blob)
 
       job.receipt!.amount = BigDecimal.format(metadata.amount)
+      if (metadata.currency) {
+        job.receipt!.currency = metadata.currency.toUpperCase()
+      }
       if (job.receipt!.merchant.trim() === "") {
         job.receipt!.merchant = metadata.merchant
       }
