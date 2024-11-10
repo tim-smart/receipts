@@ -127,17 +127,19 @@ function RemoveDrawer({ onDelete }: { onDelete: () => void }) {
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>Are you sure?</DrawerTitle>
-        </DrawerHeader>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button>Cancel</Button>
-          </DrawerClose>
-          <Button variant="destructive" onClick={onDelete}>
-            Delete receipt
-          </Button>
-        </DrawerFooter>
+        <div className="w-full max-w-sm mx-auto">
+          <DrawerHeader>
+            <DrawerTitle>Are you sure?</DrawerTitle>
+          </DrawerHeader>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button>Cancel</Button>
+            </DrawerClose>
+            <Button variant="destructive" onClick={onDelete}>
+              Delete receipt
+            </Button>
+          </DrawerFooter>
+        </div>
       </DrawerContent>
     </Drawer>
   )

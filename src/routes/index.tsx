@@ -69,10 +69,7 @@ function ReceiptsScreen() {
         </div>
 
         <FolderProvider>
-          <div className="flex gap-2 items-start">
-            <TotalsToggle />
-            <ExportDrawer />
-          </div>
+          <TotalsToggle />
           <ReceiptGrid />
           <AddReceiptButton />
         </FolderProvider>
@@ -465,10 +462,13 @@ function TotalsToggle() {
   return (
     <Card className="flex-1">
       <CardHeader
-        className="px-5 py-3 cursor-pointer"
+        className="px-5 py-3 cursor-pointer relative"
         onClick={() => setOpen((_) => !_)}
       >
         <CardDescription>{open ? "Hide" : "Show"} totals</CardDescription>
+        <div className="absolute right-1 top-[-1px]">
+          <ExportDrawer />
+        </div>
       </CardHeader>
       {open && (
         <CardContent className="px-5 pt-0 pb-3 text-sm">
@@ -669,37 +669,39 @@ function ExportDrawer() {
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        <DrawerHeader>
-          <TypoH3>Export</TypoH3>
-        </DrawerHeader>
-        <div className="grid gap-4 py-5 px-3">
-          {account.root?.openExchangeApiKey && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="convertCurrency" className="text-right">
-                Convert currency
-              </Label>
-              <Switch checked={convert} onCheckedChange={setConvert} />
-            </div>
-          )}
-          {convert && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="currency" className="text-right">
-                Currency
-              </Label>
-              <CurrencySelect
-                name="currency"
-                onChange={setCurrency}
-                initialValue={currency}
-              />
-            </div>
-          )}
+        <div className="w-full max-w-sm mx-auto">
+          <DrawerHeader>
+            <TypoH3>Export</TypoH3>
+          </DrawerHeader>
+          <div className="grid gap-4 py-5 px-3">
+            {account.root?.openExchangeApiKey && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="convertCurrency" className="text-right">
+                  Convert currency
+                </Label>
+                <Switch checked={convert} onCheckedChange={setConvert} />
+              </div>
+            )}
+            {convert && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="currency" className="text-right">
+                  Currency
+                </Label>
+                <CurrencySelect
+                  name="currency"
+                  onChange={setCurrency}
+                  initialValue={currency}
+                />
+              </div>
+            )}
+          </div>
+          <DrawerFooter>
+            <Button type="submit" onClick={onExport}>
+              Export
+            </Button>
+          </DrawerFooter>
+          <div className="h-5"></div>
         </div>
-        <DrawerFooter>
-          <Button type="submit" onClick={onExport}>
-            Export
-          </Button>
-        </DrawerFooter>
-        <div className="h-5"></div>
       </DrawerContent>
     </Drawer>
   )
