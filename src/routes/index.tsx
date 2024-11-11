@@ -521,16 +521,21 @@ function Totals() {
 
   return (
     <div className="flex flex-col gap-2">
-      {Object.entries(totals)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([currency, total]) => (
-          <div key={currency}>
-            {currency}: ${BigDecimal.format(total)}
-            {rates._tag === "Success" && rates.value[currency] && (
-              <span> ({convert(total, rates.value[currency], convertTo)})</span>
-            )}
-          </div>
-        ))}
+      <div>
+        {Object.entries(totals)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([currency, total]) => (
+            <div key={currency}>
+              {currency}: ${BigDecimal.format(total)}
+              {rates._tag === "Success" && rates.value[currency] && (
+                <span>
+                  {" "}
+                  ({convert(total, rates.value[currency], convertTo)})
+                </span>
+              )}
+            </div>
+          ))}
+      </div>
       {openExchangeApiKey && (
         <div>
           Convert to:{" "}
