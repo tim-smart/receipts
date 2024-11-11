@@ -636,7 +636,7 @@ function ExportDrawer() {
     ]
 
     for (let receipt of receipts) {
-      if (!receipt) continue
+      if (!receipt || !receipt.deleted || !receipt.amount) continue
 
       sheet.addRow({
         date: receipt.date,
