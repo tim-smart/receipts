@@ -461,12 +461,14 @@ function TotalsToggle() {
   const [open, setOpen] = useState(false)
   return (
     <Card className="flex-1">
-      <CardHeader
-        className="px-5 py-3 cursor-pointer relative"
-        onClick={() => setOpen((_) => !_)}
-      >
-        <CardDescription>{open ? "Hide" : "Show"} totals</CardDescription>
-        <div className="absolute right-1 top-[-1px]">
+      <CardHeader className="pr-2 pl-5 py-2 cursor-pointer">
+        <div className="flex items-center">
+          <CardDescription
+            className="flex-1"
+            onClick={() => setOpen((_) => !_)}
+          >
+            {open ? "Hide" : "Show"} totals
+          </CardDescription>
           <ExportDrawer />
         </div>
       </CardHeader>
@@ -518,7 +520,7 @@ function Totals() {
   }, [totals, rates])
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {Object.entries(totals)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([currency, total]) => (
@@ -550,7 +552,7 @@ function Totals() {
           </div>
         ),
       })}
-    </>
+    </div>
   )
 }
 
@@ -589,6 +591,7 @@ function ExportDrawer() {
   useEffect(() => {
     if (convert && currency) getRates(currency)
   }, [getRates, convert, currency])
+  const loadingRates = convert && rates._tag !== "Success"
 
   const onExport = useCallback(async () => {
     const workbook = new Workbook()
@@ -596,7 +599,6 @@ function ExportDrawer() {
     workbook.modified = new Date()
 
     const sheet = workbook.addWorksheet("Receipts")
-    sheet.properties.defaultRowHeight = 80
     sheet.columns = [
       {
         header: "Date",
@@ -664,7 +666,7 @@ function ExportDrawer() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button type="button">
+        <Button type="button" className="px-3">
           <ArrowUpRight />
         </Button>
       </DrawerTrigger>
@@ -696,8 +698,8 @@ function ExportDrawer() {
             )}
           </div>
           <DrawerFooter>
-            <Button type="submit" onClick={onExport}>
-              Export
+            <Button type="submit" onClick={onExport} disabled={loadingRates}>
+              {loadingRates ? "Loading rates..." : "Export"}
             </Button>
           </DrawerFooter>
           <div className="h-5"></div>
