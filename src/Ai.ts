@@ -23,7 +23,7 @@ const OpenAiLive = Effect.gen(function* () {
         OpenAiClient.make({
           apiKey,
           transformClient: HttpClient.retryTransient({
-            schedule: Schedule.spaced("10 seconds"),
+            schedule: Schedule.spaced("1 seconds"),
           }),
         }),
       ),
