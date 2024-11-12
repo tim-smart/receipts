@@ -16,8 +16,9 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
           HttpClientRequest.prependUrl("https://openexchangerates.org/api"),
         ),
         HttpClient.retryTransient({
-          times: 3,
-          schedule: Schedule.exponential(500),
+          schedule: Schedule.exponential(500).pipe(
+            Schedule.union(Schedule.spaced("10 seconds")),
+          ),
         }),
         HttpClient.transformResponse(HttpClient.withTracerPropagation(false)),
       )
