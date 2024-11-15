@@ -14,22 +14,15 @@ export class OpenAiCreds extends Context.Tag("OpenAiCreds")<
 const OpenAiLive = Effect.gen(function* () {
   const { apiKey, model } = yield* OpenAiCreds
 
-  return OpenAiCompletions.layer({
-    model,
-  }).pipe(
-    Layer.provideMerge(
-      Layer.effect(
-        OpenAiClient.OpenAiClient,
-        OpenAiClient.make({
-          apiKey,
-          transformClient: HttpClient.retryTransient({
-            schedule: Schedule.spaced("10 seconds"),
-          }),
-        }),
-      ),
-    ),
-  )
-}).pipe(Layer.unwrapEffect, Layer.provide(FetchHttpClient.layer))
+  const ClientLive = OpenAiClient.layer({
+    apiKey,
+    transformClient: HttpClient.retryTransient({
+      schedule: Schedule.spaced("10 seconds"),
+    }),
+  }).pipe(Layer.provide(FetchHttpClient.layer))
+
+  return Layer.provide(OpenAiCompletions.layer({ model }), ClientLive)
+}).pipe(Layer.unwrapEffect)
 
 export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
   effect: Effect.gen(function* () {

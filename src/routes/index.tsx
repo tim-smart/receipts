@@ -79,7 +79,7 @@ function ReceiptsScreen() {
 }
 
 function GroupSelect() {
-  const root = useAccount().me?.root
+  const root = useAccount().me.root
   const folders = root?.folders
   const options = useMemo(
     () =>
