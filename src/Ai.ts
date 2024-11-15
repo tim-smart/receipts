@@ -17,7 +17,7 @@ const OpenAiLive = Effect.gen(function* () {
   const ClientLive = OpenAiClient.layer({
     apiKey,
     transformClient: HttpClient.retryTransient({
-      schedule: Schedule.spaced("10 seconds"),
+      schedule: Schedule.spaced("1 seconds"),
     }),
   }).pipe(Layer.provide(FetchHttpClient.layer))
 
