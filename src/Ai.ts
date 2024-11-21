@@ -1,28 +1,5 @@
-import { Context, Effect, Layer, Redacted, Schedule, Schema } from "effect"
+import { Effect, Schema } from "effect"
 import { AiInput, Completions } from "@effect/ai"
-import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
-import { FetchHttpClient, HttpClient } from "@effect/platform"
-
-export class OpenAiCreds extends Context.Tag("OpenAiCreds")<
-  OpenAiCreds,
-  {
-    readonly apiKey: Redacted.Redacted
-    readonly model: string
-  }
->() {}
-
-const OpenAiLive = Effect.gen(function* () {
-  const { apiKey, model } = yield* OpenAiCreds
-
-  const ClientLive = OpenAiClient.layer({
-    apiKey,
-    transformClient: HttpClient.retryTransient({
-      schedule: Schedule.spaced("1 seconds"),
-    }),
-  }).pipe(Layer.provide(FetchHttpClient.layer))
-
-  return Layer.provide(OpenAiCompletions.layer({ model }), ClientLive)
-}).pipe(Layer.unwrapEffect)
 
 export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
   effect: Effect.gen(function* () {
@@ -44,7 +21,6 @@ The current date is ${new Date().toDateString()}.`),
 
     return { extractReceipt } as const
   }),
-  dependencies: [OpenAiLive],
 }) {}
 
 const inputFromBlob = (blob: Blob) =>

@@ -1,20 +1,18 @@
-import { ImageDefinition } from "jazz-tools"
+import { Image } from "@/Domain/Image"
 import { useMemo } from "react"
 
-export function JazzImage({
+export function ImageRender({
   src,
   className,
   asLink = false,
 }: {
-  src: ImageDefinition
+  src: Image
   className?: string
   asLink?: boolean
 }) {
-  const res = src.highestResAvailable()
   const url = useMemo(
-    () =>
-      res ? URL.createObjectURL(res.stream.toBlob()!) : src.placeholderDataURL,
-    [res],
+    () => URL.createObjectURL(new Blob([src.data], { type: src.contentType })),
+    [src],
   )
   return asLink ? (
     <a href={url} target="_blank">

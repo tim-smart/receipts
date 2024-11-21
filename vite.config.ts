@@ -83,4 +83,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+
+  optimizeDeps: {
+    exclude: ["jazz-tools"]
+  }
 })

@@ -1,29 +1,29 @@
-import { OpenAiCreds } from "@/Ai"
-import { AiWorkerLive, JazzAccount } from "@/AiWorker"
-import { ReceiptsAccount } from "@/Domain/Account"
+import { AiWorkerLive } from "@/AiWorker"
+import { openaiApiKey, openaiModel } from "@/Domain/Setting"
+import { eventLogRx } from "@/EventLog"
+import { settingRx } from "@/Settings/rx"
 import { Rx } from "@effect-rx/rx-react"
-import { Data, Hash, Layer, Redacted } from "effect"
+import { OpenAiClient, OpenAiCompletions } from "@effect/ai-openai"
+import { FetchHttpClient, HttpClient } from "@effect/platform"
+import { Effect, Layer, Schedule } from "effect"
 
-export class AiWorkerConfig extends Data.Class<{
-  readonly account: ReceiptsAccount
-  readonly openaiApiKey: Redacted.Redacted
-  readonly openaiModel: string
-}> {
-  [Hash.symbol]() {
-    return Hash.string(Redacted.value(this.openaiApiKey))
-  }
-}
+export const aiWorkerRx = Rx.runtime((get) =>
+  Effect.gen(function* () {
+    const apiKey = yield* get.some(settingRx(openaiApiKey))
+    const model = yield* get.some(settingRx(openaiModel))
 
-export const aiWorkerRx = Rx.family((config: AiWorkerConfig) =>
-  Rx.runtime(
-    AiWorkerLive.pipe(
-      Layer.provide(
-        Layer.succeed(OpenAiCreds, {
-          apiKey: config.openaiApiKey,
-          model: config.openaiModel,
-        }),
-      ),
-      Layer.provide(Layer.succeed(JazzAccount, config.account)),
-    ),
-  ).pipe(Rx.setIdleTTL("10 seconds")),
-)
+    const ClientLive = OpenAiClient.layer({
+      apiKey,
+      transformClient: HttpClient.retryTransient({
+        schedule: Schedule.spaced("1 second"),
+      }),
+    }).pipe(Layer.provide(FetchHttpClient.layer))
+    const CompletionsLive = OpenAiCompletions.layer({ model }).pipe(
+      Layer.provide(ClientLive),
+    )
+
+    return AiWorkerLive.pipe(
+      Layer.provide([CompletionsLive, get(eventLogRx.layer)]),
+    )
+  }).pipe(Layer.unwrapEffect),
+).pipe(Rx.setIdleTTL("10 seconds"))

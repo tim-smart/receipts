@@ -11,19 +11,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
-import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
-import { Receipt, ReceiptList, ReceiptOrder } from "@/Domain/Receipt"
-import { useAccount } from "@/lib/Jazz"
-import { Folder } from "@/Domain/Folder"
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
+import { Receipt } from "@/Domain/Receipt"
 import { Combobox } from "@/components/ui/ComboBox"
-import { Group } from "jazz-tools"
 import { ArrowUpRight, Plus, Settings, Settings2 } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
@@ -34,16 +24,36 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
-import { FolderProvider, useFolder } from "@/Folders/context"
 import { ReceiptForm } from "@/Receipts/Form"
-import { BigDecimal, DateTime, Option, Predicate } from "effect"
-import { useRx } from "@effect-rx/rx-react"
+import { BigDecimal, DateTime, Option, Redacted } from "effect"
+import {
+  useRx,
+  useRxSet,
+  useRxSuspenseSuccess,
+  useRxValue,
+} from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates, ratesWithRx } from "@/ExchangeRates/rx"
-import { createInviteLink } from "jazz-browser"
-import { toast } from "sonner"
 import { Switch } from "@/components/ui/switch"
-import { AiJob } from "@/Domain/AiJob"
 import { Workbook } from "exceljs"
+import {
+  createGroupRx,
+  currentGroupRx,
+  receiptGroupsRx,
+  removeGroupRx,
+  updateGroupRx,
+} from "@/ReceiptGroups/rx"
+import { uuidString } from "@/lib/utils"
+import { setSettingRx, settingRx } from "@/Settings/rx"
+import {
+  currentGroupId,
+  openaiApiKey,
+  openaiModel,
+  openExchangeApiKey,
+} from "@/Domain/Setting"
+import * as Uuid from "uuid"
+import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
+import { currentReceiptsRx } from "@/Receipts/rx"
+import { logoutRx } from "@/Auth"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -68,34 +78,42 @@ function ReceiptsScreen() {
           <GroupDrawer />
         </div>
 
-        <FolderProvider>
-          <TotalsToggle />
-          <ReceiptGrid />
-          <AddReceiptButton />
-        </FolderProvider>
+        <TotalsToggle />
+        <ReceiptGrid />
+        <AddReceiptButton />
       </div>
     </Scaffold>
   )
 }
 
 function GroupSelect() {
-  const root = useAccount().me.root
-  const folders = root?.folders
+  const groups = useRxSuspenseSuccess(receiptGroupsRx).value
+  const groupId = useRxValue(settingRx(currentGroupId))
+  const setGroupId = useRxSet(setSettingRx(currentGroupId))
+  const groupIdString = useMemo(
+    () =>
+      Option.match(groupId, {
+        onNone: () => "",
+        onSome: uuidString,
+      }),
+    [groupId],
+  )
   const options = useMemo(
     () =>
-      folders?.filter(Predicate.isNotNullable).map((folder) => ({
-        value: folder!.id,
-        label: folder!.name,
+      groups.map((folder) => ({
+        value: uuidString(folder.id),
+        label: folder.name,
       })) ?? [],
-    [folders],
+    [groups],
   )
 
   return (
     <Combobox
       options={options}
-      value={root?.currentFolder?.id ?? ""}
-      onChange={(folderId) => {
-        root!.currentFolder = folders?.find((_) => _?.id === folderId)!
+      value={groupIdString}
+      onChange={(groupId) => {
+        const uuid = ReceiptGroupId.make(Uuid.parse(groupId))
+        setGroupId(uuid)
       }}
       placeholder="Select a folder"
       className="w-full"
@@ -144,23 +162,18 @@ function ReceiptDrawer() {
 }
 
 function GroupDrawer() {
-  const { me } = useAccount()
   const [open, setOpen] = useState(false)
+  const createGroup = useRxSet(createGroupRx)
 
   const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.target as HTMLFormElement)
-    const owner = Group.create({ owner: me })
-    const folder = Folder.create(
-      {
+    createGroup(
+      ReceiptGroup.insert.make({
         name: data.get("name") as string,
-        items: ReceiptList.create([], { owner }),
         defaultCurrency: data.get("defaultCurrency") as string,
-      },
-      { owner },
+      }),
     )
-    me.root!.folders?.push(folder)
-    me.root!.currentFolder = folder
     setOpen(false)
   }, [])
 
@@ -202,47 +215,36 @@ function GroupDrawer() {
 }
 
 function GroupSettings() {
-  const account = useAccount().me
-  const root = account.root!
-  const folder = root?.currentFolder!
+  const currentGroup = useRxSuspenseSuccess(currentGroupRx).value
+  const updateGroup = useRxSet(updateGroupRx)
+  const removeGroup = useRxSet(removeGroupRx)
   const [open, setOpen] = useState(false)
 
   const onSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      folder.name = data.get("name") as string
-      folder.defaultCurrency = data.get("defaultCurrency") as string
+      updateGroup(
+        ReceiptGroup.update.make({
+          ...currentGroup,
+          name: data.get("name") as string,
+          defaultCurrency: data.get("defaultCurrency") as string,
+          updatedAt: undefined,
+        }),
+      )
       setOpen(false)
     },
-    [folder],
+    [currentGroup],
   )
 
   const onRemove = useCallback(
     (event: any) => {
       event.preventDefault()
-      const index = root.folders!.findIndex((f) => f?.id === folder.id)
-      if (index === -1) return
-      root.folders?.splice(index, 1)
-      root.currentFolder = root.folders![0]
+      removeGroup(currentGroup.id)
       setOpen(false)
     },
-    [folder],
+    [currentGroup],
   )
-
-  const readOnlyRef = useRef<HTMLButtonElement>(null)
-  const onShare = useCallback(
-    (e: any) => {
-      e.preventDefault()
-      const readOnly = readOnlyRef.current!.value === "on"
-      const link = createInviteLink(folder, readOnly ? "reader" : "writer")
-      navigator.clipboard.writeText(link)
-      toast("Copied link to the clipboard!")
-    },
-    [folder, readOnlyRef],
-  )
-
-  if (!folder) return null
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -266,7 +268,7 @@ function GroupSettings() {
                 id="name"
                 name="name"
                 className="col-span-3"
-                defaultValue={folder.name}
+                defaultValue={currentGroup.name}
                 required
               />
             </div>
@@ -275,7 +277,7 @@ function GroupSettings() {
                 Default currency
               </Label>
               <CurrencySelect
-                initialValue={folder.defaultCurrency}
+                initialValue={currentGroup.defaultCurrency}
                 name="defaultCurrency"
               />
             </div>
@@ -284,20 +286,6 @@ function GroupSettings() {
             <Button variant="destructive" onClick={onRemove} type="button">
               Delete
             </Button>
-            <div className="flex gap-2 items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onShare}
-                className="flex-1"
-              >
-                Share
-              </Button>
-              <div className="flex items-center gap-1">
-                <Switch ref={readOnlyRef} id="shareReadOnly" defaultChecked />
-                <Label htmlFor="shareReadOnly">Read-only</Label>
-              </div>
-            </div>
             <Button type="submit">Save</Button>
           </DrawerFooter>
           <div className="h-5"></div>
@@ -308,39 +296,20 @@ function GroupSettings() {
 }
 
 function ReceiptGrid() {
-  const folder = useFolder()
-  const receipts = folder.items
-  if (!receipts) return null
+  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-      {receipts!
-        .filter((r): r is Receipt => !!r && r.deleted !== true)
-        .sort(ReceiptOrder)
-        .map((receipt) => (
-          <Link key={receipt!.id} to={`/receipt/${receipt!.id}`}>
-            <ReceiptCard>{receipt!}</ReceiptCard>
-          </Link>
-        ))}
+      {receipts.map((receipt) => (
+        <Link key={receipt.idString} to={`/receipt/${receipt.idString}`}>
+          <ReceiptCard>{receipt}</ReceiptCard>
+        </Link>
+      ))}
     </div>
   )
 }
 
 function ReceiptCard({ children }: { children: Receipt }) {
-  const account = useAccount().me
-
-  useEffect(() => {
-    if (children.processed || !children.images?.[0] || !account?.root?.aiJobs)
-      return
-    const index = account.root.aiJobs.findIndex(
-      (job) => job?.receipt?.id === children.id,
-    )
-    if (index !== -1) return
-    account.root.aiJobs.push(
-      AiJob.create({ receipt: children }, { owner: account }),
-    )
-  }, [children, account?.root?.aiJobs])
-
   return (
     <Card>
       <CardHeader className="p-4">
@@ -357,9 +326,7 @@ function ReceiptCard({ children }: { children: Receipt }) {
             {children.amount && <span>{formatCurrency(children)}</span>}
             {children.date && (
               <span>
-                {DateTime.unsafeFromDate(children.date).pipe(
-                  DateTime.format({ dateStyle: "short" }),
-                )}
+                {children.date.pipe(DateTime.format({ dateStyle: "short" }))}
               </span>
             )}
             {children.processed === false && <span>Processing...</span>}
@@ -371,21 +338,31 @@ function ReceiptCard({ children }: { children: Receipt }) {
 }
 
 function SettingsDrawer() {
-  const account = useAccount()
-  const root = account.me.root!
   const [open, setOpen] = useState(false)
-
-  const onSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      const data = new FormData(event.target as HTMLFormElement)
-      root.openaiApiKey = data.get("openaiApiKey") as string
-      root.openaiModel = data.get("openaiModel") as string
-      root.openExchangeApiKey = data.get("openExchangeApiKey") as string
-      setOpen(false)
-    },
-    [root],
+  const currentOpenaiApiKey = useRxValue(settingRx(openaiApiKey)).pipe(
+    Option.map(Redacted.value),
+    Option.getOrElse(() => ""),
   )
+  const currentOpenaiModel = useRxValue(settingRx(openaiModel)).pipe(
+    Option.getOrElse(() => ""),
+  )
+  const currentOpenExchangeKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+    Option.map(Redacted.value),
+    Option.getOrElse(() => ""),
+  )
+  const logout = useRxSet(logoutRx)
+
+  // const onSubmit = useCallback(
+  //   (event: FormEvent<HTMLFormElement>) => {
+  //     event.preventDefault()
+  //     const data = new FormData(event.target as HTMLFormElement)
+  //     // root.openaiApiKey = data.get("openaiApiKey") as string
+  //     // root.openaiModel = data.get("openaiModel") as string
+  //     // root.openExchangeApiKey = data.get("openExchangeApiKey") as string
+  //     setOpen(false)
+  //   },
+  //   [root],
+  // )
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -396,7 +373,7 @@ function SettingsDrawer() {
       </DrawerTrigger>
 
       <DrawerContent>
-        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
+        <form className="mx-auto w-full max-w-sm">
           <DrawerHeader>
             <TypoH3>Settings</TypoH3>
           </DrawerHeader>
@@ -409,7 +386,7 @@ function SettingsDrawer() {
                 id="openaiApiKey"
                 name="openaiApiKey"
                 className="col-span-3"
-                defaultValue={root.openaiApiKey}
+                defaultValue={currentOpenaiApiKey}
                 type="password"
               />
             </div>
@@ -421,7 +398,7 @@ function SettingsDrawer() {
                 id="openaiModel"
                 name="openaiModel"
                 className="col-span-3"
-                defaultValue={root.openaiModel}
+                defaultValue={currentOpenaiModel}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -432,7 +409,7 @@ function SettingsDrawer() {
                 id="openExchangeApiKey"
                 name="openExchangeApiKey"
                 className="col-span-3"
-                defaultValue={root.openExchangeApiKey}
+                defaultValue={currentOpenExchangeKey}
                 type="password"
               />
             </div>
@@ -442,7 +419,7 @@ function SettingsDrawer() {
               variant="destructive"
               onClick={(e) => {
                 e.preventDefault()
-                account.logOut()
+                logout()
               }}
               type="button"
             >
@@ -482,30 +459,20 @@ function TotalsToggle() {
 }
 
 function Totals() {
-  const account = useAccount()
-  const folder = useFolder()
-  const receipts = folder?.items
-
-  const openExchangeApiKey = account.me.root?.openExchangeApiKey
+  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
+  const apiKey = useRxValue(settingRx(openExchangeApiKey))
 
   const [convertTo, setConvertTo] = useRx(baseCurrencyRx)
   const [rates, getRates] = useRx(latestRates)
 
   const totals = useMemo(() => {
-    if (!receipts) return null
     const currencies: Record<string, BigDecimal.BigDecimal> = {}
     for (const receipt of receipts) {
-      if (!receipt || receipt.deleted || !Number(receipt.amount)) continue
       const prev = currencies[receipt.currency] ?? BigDecimal.fromNumber(0)
-      currencies[receipt.currency] = BigDecimal.sum(
-        prev,
-        BigDecimal.unsafeFromString(receipt.amount),
-      )
+      currencies[receipt.currency] = BigDecimal.sum(prev, receipt.amount)
     }
     return currencies
   }, [receipts])
-
-  if (!totals) return null
 
   const converted = useMemo(() => {
     if (rates._tag !== "Success") return Option.none()
@@ -536,14 +503,14 @@ function Totals() {
             </div>
           ))}
       </div>
-      {openExchangeApiKey && (
+      {apiKey._tag === "Some" && (
         <div>
           Convert to:{" "}
           <CurrencySelect
             initialValue={convertTo}
             onChange={(base) => {
               setConvertTo(base)
-              getRates(openExchangeApiKey)
+              getRates(Redacted.value(apiKey.value))
             }}
           />
         </div>
@@ -586,12 +553,12 @@ function ExportDrawer() {
   const [convert, setConvert] = useState(false)
   const [currency, setCurrency] = useState("USD")
 
-  const account = useAccount().me
-  const folder = useFolder()
-  const receipts = folder.items!
-  const [rates, getRates] = useRx(
-    ratesWithRx(account.root?.openExchangeApiKey!),
+  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
+  const apiKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+    Option.map(Redacted.value),
+    Option.getOrElse(() => ""),
   )
+  const [rates, getRates] = useRx(ratesWithRx(apiKey))
 
   useEffect(() => {
     if (convert && currency) getRates(currency)
@@ -636,8 +603,6 @@ function ExportDrawer() {
     ]
 
     for (let receipt of receipts) {
-      if (!receipt || receipt.deleted || !receipt.amount) continue
-
       sheet.addRow({
         date: receipt.date,
         merchant: receipt.merchant,
@@ -647,7 +612,7 @@ function ExportDrawer() {
         ...(convert && currency
           ? {
               converted: convertString(
-                BigDecimal.unsafeFromString(receipt.amount),
+                receipt.amount,
                 rates._tag === "Success" ? rates.value[receipt.currency] : 1,
               ),
             }
@@ -681,7 +646,7 @@ function ExportDrawer() {
             <TypoH3>Export</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
-            {account.root?.openExchangeApiKey && (
+            {apiKey && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="convertCurrency" className="text-right">
                   Convert currency

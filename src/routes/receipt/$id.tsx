@@ -1,10 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { Scaffold } from "@/components/ui/Scaffold"
-import { useCoState } from "@/lib/Jazz"
 import { Receipt } from "@/Domain/Receipt"
 import { ChevronLeft } from "lucide-react"
-import { ImageList } from "@/Domain/Image"
-import { JazzImage } from "@/components/ui/JazzImage"
 import { formatCurrency } from "@/Domain/Currency"
 import { Button } from "@/components/ui/Button"
 import {
@@ -16,10 +13,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { DateTime } from "effect"
+import { BigDecimal, DateTime } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
 import { createContext, useContext, useState } from "react"
-import { FolderContext } from "@/Folders/context"
+import { useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
+import { receiptRx, removeReceiptRx } from "@/Receipts/rx"
+import { Image } from "@/Domain/Image"
+import { ImageRender } from "@/components/ui/ImageRender"
 
 export const Route = createFileRoute("/receipt/$id")({
   component: ReceiptScreen,
@@ -27,55 +27,49 @@ export const Route = createFileRoute("/receipt/$id")({
 
 function ReceiptScreen() {
   const { id } = Route.useParams()
-  const receipt = useCoState(Receipt, id as any)
+  const { receipt, images } = useRxSuspenseSuccess(receiptRx(id)).value
   const router = useRouter()
-  if (!receipt) return null
+
+  const remove = useRxSetPromise(removeReceiptRx)
+
   return (
-    <FolderContext.Provider value={receipt.folder!}>
-      <ReceiptContext.Provider value={receipt}>
-        <Scaffold
-          heading={receipt.description}
-          subHeading={receipt.merchant}
-          leading={
-            <Link to="/" className="flex ml-[-6px]">
-              <ChevronLeft />
-              Back
-            </Link>
-          }
-        >
-          <div className="flex flex-col gap-7">
-            <div>
-              {receipt.amount && (
-                <Amount currency={receipt.currency}>{receipt.amount}</Amount>
-              )}
-              {receipt.date && (
-                <h3 className="tracking-tight text-zinc-700 dark:text-zinc-300 font-extrabold text-center">
-                  {DateTime.unsafeFromDate(receipt.date).pipe(
-                    DateTime.format({ dateStyle: "short" }),
-                  )}
-                </h3>
-              )}
-            </div>
-            {receipt.images && receipt.images.length > 0 && (
-              <section>
-                <Images>{receipt.images}</Images>
-              </section>
+    <ReceiptContext.Provider value={receipt}>
+      <Scaffold
+        heading={receipt.description}
+        subHeading={receipt.merchant}
+        leading={
+          <Link to="/" className="flex ml-[-6px]">
+            <ChevronLeft />
+            Back
+          </Link>
+        }
+      >
+        <div className="flex flex-col gap-7">
+          <div>
+            {receipt.amount && (
+              <Amount currency={receipt.currency}>{receipt.amount}</Amount>
+            )}
+            {receipt.date && (
+              <h3 className="tracking-tight text-zinc-700 dark:text-zinc-300 font-extrabold text-center">
+                {receipt.date.pipe(DateTime.format({ dateStyle: "short" }))}
+              </h3>
             )}
           </div>
+          {images.length > 0 && (
+            <section>
+              <Images>{images}</Images>
+            </section>
+          )}
+        </div>
 
-          <Mutations
-            onDelete={() => {
-              const index = receipt.folder!.items!.findIndex(
-                (_) => _?.id === receipt.id,
-              )
-              receipt.folder!.items!.splice(index, 1)
-              receipt.deleted = true
-              router.navigate({ to: "/" })
-            }}
-          />
-        </Scaffold>
-      </ReceiptContext.Provider>
-    </FolderContext.Provider>
+        <Mutations
+          onDelete={async () => {
+            remove(receipt.id)
+            router.navigate({ to: "/" })
+          }}
+        />
+      </Scaffold>
+    </ReceiptContext.Provider>
   )
 }
 
@@ -86,7 +80,7 @@ export function Amount({
   children,
   currency,
 }: {
-  children: string
+  children: BigDecimal.BigDecimal
   currency: string
 }) {
   return (
@@ -96,12 +90,12 @@ export function Amount({
   )
 }
 
-function Images({ children }: { children: ImageList }) {
+function Images({ children }: { children: ReadonlyArray<Image> }) {
   return (
     <div className="grid grid-cols-3 gap-2 justify-center">
-      {children.filter(Boolean).map((image) => (
-        <div key={image!.id}>
-          <JazzImage src={image!} className="rounded-lg w-full" asLink />
+      {children.map((image) => (
+        <div key={image.idString}>
+          <ImageRender src={image} className="rounded-lg w-full" asLink />
         </div>
       ))}
     </div>

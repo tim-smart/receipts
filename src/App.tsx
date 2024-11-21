@@ -1,14 +1,14 @@
-import { usePasskeyAuth } from "./Jazz/PasskeyAuth.tsx"
-import { Provider, useAcceptInvite, useAccount } from "./lib/Jazz.ts"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
 import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
-import { PasskeyAuthUI } from "./Jazz/PasskeyUI.tsx"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
-import { Folder } from "./Domain/Folder.ts"
-import { loadCoValue } from "jazz-tools"
 import { Toaster } from "./components/ui/sonner.tsx"
+import { useRxSet, useRxValue } from "@effect-rx/rx-react"
+import { createAccountRx, identityRx, loginRx } from "./Auth.ts"
+import { Option } from "effect"
+import { Input } from "./components/ui/input.tsx"
+import { Button } from "./components/ui/Button.tsx"
 
 const router = createRouter({ routeTree })
 
@@ -23,24 +23,22 @@ function App() {
     immediate: true,
   })
 
-  const [auth, state] = usePasskeyAuth({ appName: "Receipts" })
-
   return (
     <>
-      <Provider
-        auth={auth}
-        peer="wss://cloud.jazz.tools/?key=hello@timsmart.co"
-      >
-        <RouterProvider router={router} />
-        <AiWorkerMount />
-        <FolderInvites />
-      </Provider>
-
-      <PasskeyAuthUI state={state} />
+      <Auth />
       <SystemTheme />
       <Toaster />
     </>
   )
+}
+
+function Auth() {
+  const state = useRxValue(identityRx)
+
+  return Option.match(state, {
+    onNone: () => <Login />,
+    onSome: () => <RouterProvider router={router} />,
+  })
 }
 
 function isDarkMode() {
@@ -73,24 +71,34 @@ function SystemTheme() {
   return null
 }
 
-function FolderInvites() {
-  const account = useAccount().me
+export const Login = () => {
+  const [username, setUsername] = useState("")
+  const login = useRxSet(loginRx)
+  const create = useRxSet(createAccountRx)
 
-  useAcceptInvite({
-    invitedObjectSchema: Folder,
-    onAccept: async (folderId) => {
-      const folder = await loadCoValue(Folder, folderId, account, [])
-      if (!folder) return
-      const acc = await account.ensureLoaded({
-        root: { folders: [], currentFolder: [] },
-      })
-      if (acc!.root.folders.find((_) => _?.id === folderId)) return
-      acc!.root.folders.push(folder)
-      acc!.root.currentFolder = folder
-    },
-  })
+  return (
+    <div className="h-screen w-full flex justify-center items-center">
+      <div className="max-w-sm flex flex-col gap-4">
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            create(username)
+          }}
+        >
+          <Input
+            placeholder="Display name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="webauthn"
+          />
+          <Button type="submit">Sign up</Button>
+        </form>
 
-  return null
+        <Button onClick={() => login()}>Log in with existing account</Button>
+      </div>
+    </div>
+  )
 }
 
 export default App
