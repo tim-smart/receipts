@@ -29,6 +29,7 @@ import { BigDecimal, DateTime, Effect, Option, Redacted } from "effect"
 import {
   useRx,
   useRxSet,
+  useRxSetPromise,
   useRxSuspenseSuccess,
   useRxValue,
 } from "@effect-rx/rx-react"
@@ -50,7 +51,7 @@ import {
   openExchangeApiKey,
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
-import { currentReceiptsRx } from "@/Receipts/rx"
+import { currentReceiptsRx, exportReceiptsRx } from "@/Receipts/rx"
 import { clientRx } from "@/EventLog"
 import * as Uuid from "uuid"
 import { Model } from "@effect/sql"
@@ -581,7 +582,8 @@ function ExportDrawer() {
   const [convert, setConvert] = useState(false)
   const [currency, setCurrency] = useState("USD")
 
-  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
+  const groupId = useRxValue(settingRx(currentGroupId))
+  const exportReceipts = useRxSetPromise(exportReceiptsRx)
   const apiKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
@@ -594,53 +596,14 @@ function ExportDrawer() {
   const loadingRates = convert && rates._tag !== "Success"
 
   const onExport = useCallback(async () => {
-    const rows = [
-      [
-        "Date",
-        "Merchant",
-        "Description",
-        "Amount",
-        "Currency",
-        ...(convert ? [`Amount (${currency})`] : []),
-      ],
-    ]
-
-    for (let receipt of receipts) {
-      rows.push([
-        DateTime.formatIsoDate(receipt.date),
-        receipt.merchant,
-        receipt.description,
-        BigDecimal.format(receipt.amount),
-        receipt.currency,
-        ...(convert && currency
-          ? [
-              convertString(
-                receipt.amount,
-                rates._tag === "Success" ? rates.value[receipt.currency] : 1,
-              ),
-            ]
-          : []),
-      ])
-    }
-
-    const blob = new Blob(
-      [
-        new TextEncoder().encode(
-          rows.map((row) => row.join(",")).join("\n") + "\n",
-        ),
-      ],
-      {
-        type: "text/csv",
-      },
-    )
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `receipts-${new Date().toISOString()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    if (groupId._tag === "None") return
+    await exportReceipts({
+      groupId: groupId.value,
+      rates: rates._tag === "Success" ? rates.value : undefined,
+      currency,
+    })
     setOpen(false)
-  }, [receipts, convert, currency, rates])
+  }, [convert, currency, rates, exportReceipts, groupId])
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>

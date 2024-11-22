@@ -4,6 +4,7 @@ import { Effect, Layer, Stream } from "effect"
 import { eventLogRx } from "@/EventLog"
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import * as Uuid from "uuid"
+import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 
 const runtime = Rx.runtime((get) =>
   ReceiptRepo.Default.pipe(Layer.provide(get(eventLogRx.layer))),
@@ -23,6 +24,14 @@ export const receiptRx = Rx.family((id: string) =>
       Stream.unwrap,
     ),
   ),
+)
+
+export const exportReceiptsRx = runtime.fn(
+  (options: {
+    readonly groupId: typeof ReceiptGroupId.Type
+    readonly rates?: Record<string, number>
+    readonly currency?: string
+  }) => ReceiptRepo.pipe(Effect.flatMap((_) => _.exportForGroup(options))),
 )
 
 export const createReceiptRx = runtime.fn((id: typeof Receipt.insert.Type) =>
