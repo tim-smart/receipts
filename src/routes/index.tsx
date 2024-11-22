@@ -34,7 +34,6 @@ import {
 } from "@effect-rx/rx-react"
 import { baseCurrencyRx, latestRates, ratesWithRx } from "@/ExchangeRates/rx"
 import { Switch } from "@/components/ui/switch"
-import { Workbook } from "exceljs"
 import {
   createGroupRx,
   currentGroupRx,
@@ -595,68 +594,49 @@ function ExportDrawer() {
   const loadingRates = convert && rates._tag !== "Success"
 
   const onExport = useCallback(async () => {
-    const workbook = new Workbook()
-    workbook.created = new Date()
-    workbook.modified = new Date()
-
-    const sheet = workbook.addWorksheet("Receipts")
-    sheet.columns = [
-      {
-        header: "Date",
-        key: "date",
-        width: 20,
-      },
-      {
-        header: "Merchant",
-        key: "merchant",
-        width: 40,
-      },
-      {
-        header: "Description",
-        key: "description",
-        width: 40,
-      },
-      {
-        header: "Amount",
-        key: "amount",
-        width: 20,
-      },
-      {
-        header: "Currency",
-        key: "currency",
-        width: 15,
-      },
-      ...(convert
-        ? [{ header: `Amount (${currency})`, key: "converted", width: 20 }]
-        : []),
+    const rows = [
+      [
+        "Date",
+        "Merchant",
+        "Description",
+        "Amount",
+        "Currency",
+        ...(convert ? [`Amount (${currency})`] : []),
+      ],
     ]
 
     for (let receipt of receipts) {
-      sheet.addRow({
-        date: DateTime.toDateUtc(receipt.date),
-        merchant: receipt.merchant,
-        description: receipt.description,
-        amount: BigDecimal.unsafeToNumber(receipt.amount),
-        currency: receipt.currency,
+      rows.push([
+        DateTime.formatIsoDate(receipt.date),
+        receipt.merchant,
+        receipt.description,
+        BigDecimal.format(receipt.amount),
+        receipt.currency,
         ...(convert && currency
-          ? {
-              converted: convertString(
+          ? [
+              convertString(
                 receipt.amount,
                 rates._tag === "Success" ? rates.value[receipt.currency] : 1,
               ),
-            }
-          : {}),
-      })
+            ]
+          : []),
+      ])
     }
 
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    })
+    const blob = new Blob(
+      [
+        new TextEncoder().encode(
+          rows.map((row) => row.join(",")).join("\n") + "\n",
+        ),
+      ],
+      {
+        type: "text/csv",
+      },
+    )
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "receipts.xlsx"
+    a.download = `receipts-${new Date().toISOString()}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setOpen(false)
