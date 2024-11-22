@@ -2,7 +2,7 @@ import { Effect, Layer } from "effect"
 import { Auth } from "./Auth"
 import { EventLog, Reactivity } from "@effect/experimental"
 import { SqlClient } from "@effect/sql"
-import { runMigrations, SqlLive } from "./Sql"
+import { SqlLive } from "./Sql"
 import { Rx } from "@effect-rx/rx-react"
 import { eventLogRx } from "./EventLog"
 
@@ -12,7 +12,6 @@ export class Session extends Effect.Service<Session>()("Session", {
     const sql = yield* SqlClient.SqlClient
     const auth = yield* Auth
     const log = yield* EventLog.EventLog
-    const reactivity = yield* Reactivity.Reactivity
 
     const destroy = Effect.gen(function* () {
       const tables = yield* sql<{
@@ -21,10 +20,9 @@ export class Session extends Effect.Service<Session>()("Session", {
       for (const table of tables) {
         yield* sql`DROP TABLE IF EXISTS ${sql(table.name)}`.withoutTransform
       }
-      yield* runMigrations.pipe(Effect.provideService(SqlClient.SqlClient, sql))
-      yield* reactivity.invalidate(tables.map((t) => t.name))
       yield* log.destroy
       yield* auth.logout
+      location.reload()
     }).pipe(Effect.catchAllCause(Effect.log))
 
     return { destroy } as const
