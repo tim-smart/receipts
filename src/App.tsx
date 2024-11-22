@@ -1,6 +1,5 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { useEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"

@@ -15,13 +15,9 @@ export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
     const sql = yield* SqlClient.SqlClient
 
     return handlers
-      .handle("ReceiptCreate", ({ payload }) => {
-        console.log("ReceiptCreate", payload)
-        return repo.insert(payload)
-      })
+      .handle("ReceiptCreate", ({ payload }) => repo.insert(payload))
       .handle("ReceiptUpdate", ({ payload, conflicts }) =>
         Effect.gen(function* () {
-          console.log("ReceiptUpdate", payload, conflicts)
           let merged = Object.assign({}, payload)
           for (const conflict in conflicts) {
             Object.assign(merged, conflict)

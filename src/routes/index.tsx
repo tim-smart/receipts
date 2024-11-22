@@ -52,10 +52,10 @@ import {
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsRx } from "@/Receipts/rx"
-import { logoutRx } from "@/Auth"
 import { clientRx } from "@/EventLog"
 import * as Uuid from "uuid"
 import { Model } from "@effect/sql"
+import { sessionDestroyRx } from "@/Session"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -357,7 +357,7 @@ function SettingsDrawer() {
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const logout = useRxSet(logoutRx)
+  const logout = useRxSet(sessionDestroyRx)
 
   const onSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

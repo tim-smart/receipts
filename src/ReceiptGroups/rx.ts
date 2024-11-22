@@ -4,10 +4,9 @@ import { Effect, identity, Layer, Stream } from "effect"
 import { eventLogRx } from "@/EventLog"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 
-const runtime = Rx.runtime((get) => {
-  console.log("receipts runtime")
-  return ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogRx.layer)))
-})
+const runtime = Rx.runtime((get) =>
+  ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogRx.layer))),
+)
 
 export const receiptGroupsRx = runtime
   .rx(
