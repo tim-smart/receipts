@@ -1,4 +1,5 @@
 import { AiWorkerLive } from "@/AiWorker"
+import { identityRx } from "@/Auth"
 import { openaiApiKey, openaiModel } from "@/Domain/Setting"
 import { eventLogRx } from "@/EventLog"
 import { settingRx } from "@/Settings/rx"
@@ -9,6 +10,7 @@ import { Effect, Layer, Schedule } from "effect"
 
 export const aiWorkerRx = Rx.runtime((get) =>
   Effect.gen(function* () {
+    yield* get.some(identityRx)
     const apiKey = yield* get.some(settingRx(openaiApiKey))
     const model = yield* get.some(settingRx(openaiModel))
 

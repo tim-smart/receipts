@@ -22,7 +22,6 @@ function App() {
   useRegisterSW({
     immediate: true,
   })
-  useRxMount(aiWorkerRx)
 
   return (
     <>
@@ -38,8 +37,13 @@ function Auth() {
 
   return Option.match(state, {
     onNone: () => <Login />,
-    onSome: () => <RouterProvider router={router} />,
+    onSome: () => <Authenticated />,
   })
+}
+
+function Authenticated() {
+  useRxMount(aiWorkerRx)
+  return <RouterProvider router={router} />
 }
 
 function isDarkMode() {

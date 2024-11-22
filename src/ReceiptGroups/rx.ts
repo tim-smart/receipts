@@ -8,24 +8,20 @@ const runtime = Rx.runtime((get) =>
   ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogRx.layer))),
 )
 
-export const receiptGroupsRx = runtime
-  .rx(
-    ReceiptGroupRepo.pipe(
-      Effect.map((_) => _.stream),
-      Stream.unwrap,
-    ),
-  )
-  .pipe(Rx.keepAlive)
+export const receiptGroupsRx = runtime.rx(
+  ReceiptGroupRepo.pipe(
+    Effect.map((_) => _.stream),
+    Stream.unwrap,
+  ),
+)
 
-export const currentGroupRx = runtime
-  .rx(
-    ReceiptGroupRepo.pipe(
-      Effect.map((_) => _.current),
-      Stream.unwrap,
-      Stream.filterMap(identity),
-    ),
-  )
-  .pipe(Rx.keepAlive)
+export const currentGroupRx = runtime.rx(
+  ReceiptGroupRepo.pipe(
+    Effect.map((_) => _.current),
+    Stream.unwrap,
+    Stream.filterMap(identity),
+  ),
+)
 
 export const createGroupRx = runtime.fn((_: typeof ReceiptGroup.insert.Type) =>
   Effect.gen(function* () {

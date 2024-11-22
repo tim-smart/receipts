@@ -13,6 +13,10 @@ const ClientLive = SqliteClient.layer({
   transformResultNames: String.snakeToCamel,
 })
 
-export const SqlLive = SqliteMigrator.layer({
+export const runMigrations = SqliteMigrator.run({
   loader: SqliteMigrator.fromGlob(import.meta.glob("./Sql/migrations/*")),
-}).pipe(Layer.provideMerge(ClientLive))
+})
+
+export const SqlLive = Layer.effectDiscard(runMigrations).pipe(
+  Layer.provideMerge(ClientLive),
+)

@@ -1,8 +1,8 @@
 import { Effect, Layer } from "effect"
 import { Auth } from "./Auth"
-import { EventLog } from "@effect/experimental"
+import { EventLog, Reactivity } from "@effect/experimental"
 import { SqlClient } from "@effect/sql"
-import { SqlLive } from "./Sql"
+import { runMigrations, SqlLive } from "./Sql"
 import { Rx } from "@effect-rx/rx-react"
 import { eventLogRx } from "./EventLog"
 
@@ -12,21 +12,25 @@ export class Session extends Effect.Service<Session>()("Session", {
     const sql = yield* SqlClient.SqlClient
     const auth = yield* Auth
     const log = yield* EventLog.EventLog
+    const reactivity = yield* Reactivity.Reactivity
 
     const destroy = Effect.gen(function* () {
-      yield* sql`DROP TABLE IF EXISTS effect_sql_migrations`
-      yield* sql`DROP TABLE IF EXISTS receipts`
-      yield* sql`DROP TABLE IF EXISTS receipt_groups`
-      yield* sql`DROP TABLE IF EXISTS images`
-      yield* sql`DROP TABLE IF EXISTS settings`
-
+      const tables = yield* sql<{
+        name: string
+      }>`SELECT name FROM sqlite_master WHERE type='table'`
+      for (const table of tables) {
+        yield* sql`DROP TABLE IF EXISTS ${sql(table.name)}`.withoutTransform
+      }
+      yield* reactivity.invalidate(tables.map((t) => t.name))
       yield* log.destroy
       yield* auth.logout
+
+      yield* runMigrations.pipe(Effect.provideService(SqlClient.SqlClient, sql))
     }).pipe(Effect.catchAllCause(Effect.log))
 
     return { destroy } as const
   }),
-  dependencies: [SqlLive, Auth.Default],
+  dependencies: [SqlLive, Auth.Default, Reactivity.layer],
 }) {}
 
 const runtime = Rx.runtime((get) =>
