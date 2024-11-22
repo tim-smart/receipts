@@ -2,7 +2,7 @@ import { BigDecimal, Effect, FiberMap, Layer, Schedule } from "effect"
 import { AiHelpers } from "./Ai"
 import { ReceiptRepo } from "./Receipts/Repo"
 import { ImagesRepo } from "./Images/Repo"
-import { EventLogClient } from "./EventLog"
+import { EventLogClient } from "@/EventLog"
 import { uuidString } from "./lib/utils"
 import { Receipt } from "./Domain/Receipt"
 
