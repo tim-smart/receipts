@@ -25,10 +25,18 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
     const client = yield* EventLogClient
     const zip = yield* Zip
 
-    const forGroup = (groupId: typeof ReceiptGroupId.Type) =>
-      sql`select * from receipts where group_id = ${groupId} order by date desc, merchant asc, description asc`.pipe(
-        Effect.flatMap(Schema.decodeUnknown(Receipt.Array)),
-      )
+    const forGroup = (
+      groupId: typeof ReceiptGroupId.Type,
+      options?: {
+        readonly sort?: "asc" | "desc"
+      },
+    ) =>
+      sql`
+        select *
+        from receipts
+        where group_id = ${groupId}
+        order by date ${sql.literal(options?.sort ?? "desc")}, merchant asc, description asc
+      `.pipe(Effect.flatMap(Schema.decodeUnknown(Receipt.Array)))
 
     const exportForGroup = (options: {
       readonly groupId: typeof ReceiptGroupId.Type
@@ -36,7 +44,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
       readonly currency?: string
     }) =>
       Effect.gen(function* () {
-        const receipts = yield* forGroup(options.groupId)
+        const receipts = yield* forGroup(options.groupId, { sort: "asc" })
         const allImages = yield* Effect.forEach(
           receipts,
           (receipt) => imageRepo.forReceipt(receipt.id),
