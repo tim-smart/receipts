@@ -132,17 +132,6 @@ export function ReceiptForm({
           />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="merchant" className="text-right">
-            Merchant
-          </Label>
-          <Input
-            id="merchant"
-            name="merchant"
-            className="col-span-3"
-            defaultValue={initialValue?.merchant}
-          />
-        </div>
-        <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="description" className="text-right">
             Description
           </Label>
@@ -151,6 +140,17 @@ export function ReceiptForm({
             name="description"
             className="col-span-3"
             defaultValue={initialValue?.description}
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="merchant" className="text-right">
+            Merchant
+          </Label>
+          <Input
+            id="merchant"
+            name="merchant"
+            className="col-span-3"
+            defaultValue={initialValue?.merchant}
           />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
