@@ -90,7 +90,7 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 
     const logout = Effect.gen(function* () {
       localStorage.removeItem(storageKey)
-      yield* SubscriptionRef.set(state, Option.none())
+      location.reload()
     })
 
     return { state: state.changes, create, login, logout } as const

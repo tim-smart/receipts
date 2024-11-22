@@ -24,7 +24,6 @@ export class Session extends Effect.Service<Session>()("Session", {
       }
       yield* log.destroy
       yield* auth.logout
-      location.reload()
     }).pipe(Effect.catchAllCause(Effect.log))
 
     return { destroy } as const
