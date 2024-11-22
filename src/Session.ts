@@ -18,7 +18,9 @@ export class Session extends Effect.Service<Session>()("Session", {
         name: string
       }>`SELECT name FROM sqlite_master WHERE type='table'`
       for (const table of tables) {
-        yield* sql`DROP TABLE IF EXISTS ${sql(table.name)}`.withoutTransform
+        yield* sql`DROP TABLE IF EXISTS ${sql(table.name)}`.withoutTransform.pipe(
+          Effect.ignore,
+        )
       }
       yield* log.destroy
       yield* auth.logout
