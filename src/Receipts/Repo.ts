@@ -23,7 +23,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
     const client = yield* EventLogClient
 
     const forGroup = (groupId: typeof ReceiptGroupId.Type) =>
-      sql`select * from receipts where group_id = ${groupId} order by description asc, merchant asc`.pipe(
+      sql`select * from receipts where group_id = ${groupId} order by date desc, merchant asc, description asc`.pipe(
         Effect.flatMap(Schema.decodeUnknown(Receipt.Array)),
       )
 
