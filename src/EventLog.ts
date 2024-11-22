@@ -18,7 +18,7 @@ const EventLogLayer = EventLog.layer(ReceiptAppEvents).pipe(
 )
 
 const EventRemoteLive = EventLogRemote.layerWebSocketBrowser(
-  "ws://localhost:3000",
+  "wss://eventlog.office.timsmart.co",
 ).pipe(Layer.provide(EventLogLayer))
 
 export const EventLogLive = Layer.merge(EventLogLayer, EventRemoteLive)
