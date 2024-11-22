@@ -1,6 +1,13 @@
 import { Result, Rx } from "@effect-rx/rx-react"
 import { Identity } from "@effect/experimental/EventLog"
-import { Effect, Option, Redacted, Schema, SubscriptionRef } from "effect"
+import {
+  Effect,
+  Option,
+  Redacted,
+  Schema,
+  Stream,
+  SubscriptionRef,
+} from "effect"
 
 const storageKey = "receipts_auth"
 const appName = "Receipts"
@@ -86,7 +93,7 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
       yield* SubscriptionRef.set(state, Option.none())
     })
 
-    return { state, create, login, logout } as const
+    return { state: state.changes, create, login, logout } as const
   }),
 }) {}
 
@@ -95,7 +102,12 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 const runtime = Rx.runtime(Auth.Default)
 
 export const identityRx = runtime
-  .subscribable(Effect.map(Auth, (_) => _.state))
+  .rx(
+    Auth.pipe(
+      Effect.map((auth) => auth.state),
+      Stream.unwrap,
+    ),
+  )
   .pipe(
     Rx.map(Result.getOrElse(() => Option.none<typeof Identity.Service>())),
     Rx.keepAlive,
