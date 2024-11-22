@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
 import { ReceiptForm } from "@/Receipts/Form"
-import { BigDecimal, DateTime, Option, Redacted } from "effect"
+import { BigDecimal, DateTime, Effect, Option, Redacted } from "effect"
 import {
   useRx,
   useRxSet,
@@ -50,10 +50,12 @@ import {
   openaiModel,
   openExchangeApiKey,
 } from "@/Domain/Setting"
-import * as Uuid from "uuid"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsRx } from "@/Receipts/rx"
 import { logoutRx } from "@/Auth"
+import { clientRx } from "@/EventLog"
+import * as Uuid from "uuid"
+import { Model } from "@effect/sql"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -164,16 +166,20 @@ function ReceiptDrawer() {
 function GroupDrawer() {
   const [open, setOpen] = useState(false)
   const createGroup = useRxSet(createGroupRx)
+  const setCurrentGroup = useRxSet(setSettingRx(currentGroupId))
 
   const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.target as HTMLFormElement)
+    const groupId = ReceiptGroupId.make(Uuid.v4({}, new Uint8Array(16)))
     createGroup(
       ReceiptGroup.insert.make({
+        id: Model.Override(groupId),
         name: data.get("name") as string,
         defaultCurrency: data.get("defaultCurrency") as string,
       }),
     )
+    setCurrentGroup(groupId)
     setOpen(false)
   }, [])
 
@@ -339,6 +345,7 @@ function ReceiptCard({ children }: { children: Receipt }) {
 
 function SettingsDrawer() {
   const [open, setOpen] = useState(false)
+  const client = useRxSuspenseSuccess(clientRx).value
   const currentOpenaiApiKey = useRxValue(settingRx(openaiApiKey)).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
@@ -352,17 +359,36 @@ function SettingsDrawer() {
   )
   const logout = useRxSet(logoutRx)
 
-  // const onSubmit = useCallback(
-  //   (event: FormEvent<HTMLFormElement>) => {
-  //     event.preventDefault()
-  //     const data = new FormData(event.target as HTMLFormElement)
-  //     // root.openaiApiKey = data.get("openaiApiKey") as string
-  //     // root.openaiModel = data.get("openaiModel") as string
-  //     // root.openExchangeApiKey = data.get("openExchangeApiKey") as string
-  //     setOpen(false)
-  //   },
-  //   [root],
-  // )
+  const onSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const data = new FormData(event.target as HTMLFormElement)
+      Effect.runPromise(
+        client("SettingChange", {
+          name: openaiApiKey.name,
+          json: openaiApiKey.encodeSync(
+            Redacted.make(data.get("openaiApiKey") as string),
+          ),
+        }),
+      )
+      Effect.runPromise(
+        client("SettingChange", {
+          name: openaiModel.name,
+          json: openaiModel.encodeSync(data.get("openaiModel") as string),
+        }),
+      )
+      await Effect.runPromise(
+        client("SettingChange", {
+          name: openExchangeApiKey.name,
+          json: openExchangeApiKey.encodeSync(
+            Redacted.make(data.get("openExchangeApiKey") as string),
+          ),
+        }),
+      )
+      setOpen(false)
+    },
+    [client],
+  )
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -373,7 +399,7 @@ function SettingsDrawer() {
       </DrawerTrigger>
 
       <DrawerContent>
-        <form className="mx-auto w-full max-w-sm">
+        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
           <DrawerHeader>
             <TypoH3>Settings</TypoH3>
           </DrawerHeader>
@@ -460,7 +486,10 @@ function TotalsToggle() {
 
 function Totals() {
   const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
-  const apiKey = useRxValue(settingRx(openExchangeApiKey))
+  const apiKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+    Option.map(Redacted.value),
+    Option.getOrElse(() => ""),
+  )
 
   const [convertTo, setConvertTo] = useRx(baseCurrencyRx)
   const [rates, getRates] = useRx(latestRates)
@@ -503,14 +532,14 @@ function Totals() {
             </div>
           ))}
       </div>
-      {apiKey._tag === "Some" && (
+      {apiKey && (
         <div>
           Convert to:{" "}
           <CurrencySelect
             initialValue={convertTo}
             onChange={(base) => {
               setConvertTo(base)
-              getRates(Redacted.value(apiKey.value))
+              getRates(apiKey)
             }}
           />
         </div>
@@ -604,10 +633,10 @@ function ExportDrawer() {
 
     for (let receipt of receipts) {
       sheet.addRow({
-        date: receipt.date,
+        date: DateTime.toDateUtc(receipt.date),
         merchant: receipt.merchant,
         description: receipt.description,
-        amount: receipt.amount,
+        amount: BigDecimal.unsafeToNumber(receipt.amount),
         currency: receipt.currency,
         ...(convert && currency
           ? {

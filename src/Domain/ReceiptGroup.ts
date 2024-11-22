@@ -6,8 +6,13 @@ export const ReceiptGroupId = Schema.Uint8ArrayFromSelf.pipe(
   Schema.brand("ReceiptGroupId"),
 )
 
-export const ReceiptGroupIdJson = Schema.Uint8Array.pipe(
-  Schema.compose(ReceiptGroupId),
+export const ReceiptGroupIdJson = Schema.transform(
+  Schema.Uint8ArrayFromHex,
+  ReceiptGroupId,
+  {
+    decode: (value) => value as any,
+    encode: (value) => value,
+  },
 )
 
 export class ReceiptGroup extends Model.Class<ReceiptGroup>("ReceiptGroup")({

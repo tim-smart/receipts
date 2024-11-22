@@ -4,24 +4,29 @@ import { Effect, identity, Layer, Stream } from "effect"
 import { eventLogRx } from "@/EventLog"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 
-const runtime = Rx.runtime((get) =>
-  ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogRx.layer))),
-)
+const runtime = Rx.runtime((get) => {
+  console.log("receipts runtime")
+  return ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogRx.layer)))
+})
 
-export const receiptGroupsRx = runtime.rx(
-  ReceiptGroupRepo.pipe(
-    Effect.map((_) => _.stream),
-    Stream.unwrap,
-  ),
-)
+export const receiptGroupsRx = runtime
+  .rx(
+    ReceiptGroupRepo.pipe(
+      Effect.map((_) => _.stream),
+      Stream.unwrap,
+    ),
+  )
+  .pipe(Rx.keepAlive)
 
-export const currentGroupRx = runtime.rx(
-  ReceiptGroupRepo.pipe(
-    Effect.map((_) => _.current),
-    Stream.unwrap,
-    Stream.filterMap(identity),
-  ),
-)
+export const currentGroupRx = runtime
+  .rx(
+    ReceiptGroupRepo.pipe(
+      Effect.map((_) => _.current),
+      Stream.unwrap,
+      Stream.filterMap(identity),
+    ),
+  )
+  .pipe(Rx.keepAlive)
 
 export const createGroupRx = runtime.fn((_: typeof ReceiptGroup.insert.Type) =>
   Effect.gen(function* () {

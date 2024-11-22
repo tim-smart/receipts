@@ -4,11 +4,12 @@ import { AiWorkerMount } from "./Receipts/AiWorkerMount.tsx"
 import { useEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"
-import { useRxSet, useRxValue } from "@effect-rx/rx-react"
+import { useRxMount, useRxSet, useRxValue } from "@effect-rx/rx-react"
 import { createAccountRx, identityRx, loginRx } from "./Auth.ts"
 import { Option } from "effect"
 import { Input } from "./components/ui/input.tsx"
 import { Button } from "./components/ui/Button.tsx"
+import { aiWorkerRx } from "./AiWorker/rx.ts"
 
 const router = createRouter({ routeTree })
 
@@ -22,6 +23,7 @@ function App() {
   useRegisterSW({
     immediate: true,
   })
+  useRxMount(aiWorkerRx)
 
   return (
     <>

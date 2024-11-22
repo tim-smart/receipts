@@ -1,5 +1,5 @@
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
-import { currentGroupId } from "@/Domain/Setting"
+import { currentGroupId, openaiModel } from "@/Domain/Setting"
 import { SqlClient } from "@effect/sql"
 import { Effect } from "effect"
 
@@ -21,11 +21,11 @@ export default Effect.gen(function* () {
 
   yield* sql`INSERT INTO settings ${sql.insert([
     {
-      name: "currentGroupId",
+      name: currentGroupId.name,
       json: currentGroupId.encodeSync(initialReceiptGroupId),
     },
     {
-      name: "openAiModel",
+      name: openaiModel.name,
       json: JSON.stringify("gpt-4o"),
     },
   ])}`

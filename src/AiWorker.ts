@@ -16,7 +16,7 @@ export const AiWorkerLive = Effect.gen(function* () {
   yield* Effect.log("starting worker")
 
   const mailbox = yield* receiptRepo.unprocessed
-  mailbox.take.pipe(
+  yield* mailbox.take.pipe(
     Effect.tap((receipts) =>
       Effect.gen(function* () {
         for (const receipt of receipts) {

@@ -29,7 +29,7 @@ export const setSettingRx = Rx.family(
     runtime.fn((value: S["Type"]) =>
       Effect.gen(function* () {
         const settings = yield* SettingRepo
-        return settings.set(setting, value)
+        return yield* settings.set(setting, value)
       }),
     ),
 )

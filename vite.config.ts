@@ -85,6 +85,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ["jazz-tools"]
+    exclude: ["@effect/wa-sqlite"]
   }
 })

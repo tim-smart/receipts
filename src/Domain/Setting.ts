@@ -8,13 +8,14 @@ export class Setting<
   constructor(
     readonly name: Name,
     readonly schema: S,
-  ) {}
-
-  readonly json: Schema.Schema<S["Type"], string, S["Context"]> =
-    Schema.parseJson(this.schema)
-
-  readonly encodeSync = Schema.encodeSync(this.json)
-  readonly decode = Schema.decode(this.json)
+  ) {
+    this.json = Schema.parseJson(schema)
+    this.encodeSync = Schema.encodeSync(this.json)
+    this.decode = Schema.decode(this.json)
+  }
+  readonly json: Schema.Schema<S["Type"], string, S["Context"]>
+  readonly encodeSync
+  readonly decode
 }
 
 export const currentGroupId = new Setting("currentGroupId", ReceiptGroupIdJson)

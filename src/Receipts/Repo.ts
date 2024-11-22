@@ -54,8 +54,9 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
 
     const unprocessed = reactivity.query(
       ["receipts", "images"],
-      sql`select * from receipts where processed = 0 order by rowid asc`.pipe(
+      sql`select * from receipts where processed = 0`.pipe(
         Effect.flatMap(Schema.decodeUnknown(Receipt.Array)),
+        Effect.delay("1 second"),
       ),
     )
 

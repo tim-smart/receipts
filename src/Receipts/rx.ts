@@ -26,13 +26,13 @@ export const receiptRx = Rx.family((id: string) =>
 )
 
 export const createReceiptRx = runtime.fn((id: typeof Receipt.insert.Type) =>
-  ReceiptRepo.pipe(Effect.map((_) => _.create(id))),
+  ReceiptRepo.pipe(Effect.flatMap((_) => _.create(id))),
 )
 
 export const updateReceiptRx = runtime.fn((id: typeof Receipt.update.Type) =>
-  ReceiptRepo.pipe(Effect.map((_) => _.update(id))),
+  ReceiptRepo.pipe(Effect.flatMap((_) => _.update(id))),
 )
 
 export const removeReceiptRx = runtime.fn((id: typeof ReceiptId.Type) =>
-  ReceiptRepo.pipe(Effect.map((_) => _.remove(id))),
+  ReceiptRepo.pipe(Effect.flatMap((_) => _.remove(id))),
 )

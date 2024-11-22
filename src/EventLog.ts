@@ -41,7 +41,7 @@ export const eventLogRx = Rx.runtime((get) =>
       Layer.provideMerge(Layer.succeed(Identity, identity)),
     )
   }).pipe(Layer.unwrapEffect),
-)
+).pipe(Rx.keepAlive)
 
 export const clientRx = eventLogRx.rx(makeClient)
 export type EventClient = Rx.Rx.InferSuccess<typeof clientRx>

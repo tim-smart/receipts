@@ -1,8 +1,6 @@
 import { Result, Rx } from "@effect-rx/rx-react"
-import { MsgPack } from "@effect/experimental"
 import { Identity } from "@effect/experimental/EventLog"
 import { Effect, Option, Redacted, Schema, SubscriptionRef } from "effect"
-import * as Uuid from "uuid"
 
 const storageKey = "receipts_auth"
 const appName = "Receipts"
@@ -13,14 +11,6 @@ const IdentitySchema = Schema.parseJson(
     privateKey: Schema.Redacted(Schema.Uint8Array),
   }),
 )
-const IdentityMsgpack = MsgPack.schema(
-  Schema.Struct({
-    publicKey: Schema.String,
-    privateKey: Schema.Redacted(Schema.Uint8ArrayFromSelf),
-  }),
-)
-const encodeIdentity = Schema.encodeSync(IdentityMsgpack)
-const decodeIdentity = Schema.decode(IdentityMsgpack)
 
 export class Auth extends Effect.Service<Auth>()("Auth", {
   effect: Effect.gen(function* () {
@@ -33,11 +23,7 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 
     const create = (options: { readonly username: string }) =>
       Effect.gen(function* () {
-        const identity = Identity.of({
-          publicKey: Uuid.v4(),
-          privateKey: Redacted.make(Uuid.v4({}, new Uint8Array(16))),
-        })
-        const identityEncoded = encodeIdentity(identity)
+        const secret = crypto.getRandomValues(new Uint8Array(32))
         const credential = yield* Effect.promise(() =>
           navigator.credentials.create({
             publicKey: {
@@ -47,7 +33,7 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
                 id: location.hostname,
               },
               user: {
-                id: identityEncoded,
+                id: secret,
                 name: options.username + ` (${new Date().toLocaleString()})`,
                 displayName: options.username,
               },
@@ -63,6 +49,10 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
           }),
         )
         if (!credential) return
+        const identity = Identity.of({
+          publicKey: credential.id,
+          privateKey: Redacted.make(secret),
+        })
         localStorage[storageKey] = Schema.encodeSync(IdentitySchema)(identity)
         yield* SubscriptionRef.set(state, Option.some(identity))
       })
@@ -82,7 +72,11 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
       const {
         response: { userHandle },
       } = credential as unknown as { response: { userHandle: ArrayBuffer } }
-      const identity = yield* decodeIdentity(new Uint8Array(userHandle))
+      const secret = new Uint8Array(userHandle)
+      const identity = Identity.of({
+        publicKey: credential.id,
+        privateKey: Redacted.make(secret),
+      })
       localStorage[storageKey] = Schema.encodeSync(IdentitySchema)(identity)
       yield* SubscriptionRef.set(state, Option.some(identity))
     })
@@ -98,11 +92,14 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
 
 // rx
 
-const runtime = Rx.runtime(Auth.Default).pipe(Rx.keepAlive)
+const runtime = Rx.runtime(Auth.Default)
 
 export const identityRx = runtime
   .subscribable(Effect.map(Auth, (_) => _.state))
-  .pipe(Rx.map(Result.getOrElse(() => Option.none<typeof Identity.Service>())))
+  .pipe(
+    Rx.map(Result.getOrElse(() => Option.none<typeof Identity.Service>())),
+    Rx.keepAlive,
+  )
 
 export const loginRx = runtime.fn(() =>
   Effect.gen(function* () {

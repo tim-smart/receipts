@@ -1,7 +1,7 @@
 import * as SqliteClient from "@effect/sql-sqlite-wasm/SqliteClient"
 import * as SqliteMigrator from "@effect/sql-sqlite-wasm/SqliteMigrator"
 import { Effect, Layer, String } from "effect"
-import SqlWorker from "./Sql/worker.js?worker"
+import SqlWorker from "./Sql/worker?worker"
 
 const ClientLive = SqliteClient.layer({
   worker: Effect.acquireRelease(
@@ -14,5 +14,5 @@ const ClientLive = SqliteClient.layer({
 })
 
 export const SqlLive = SqliteMigrator.layer({
-  loader: SqliteMigrator.fromGlob(import.meta.glob("./migrations/*")),
+  loader: SqliteMigrator.fromGlob(import.meta.glob("./Sql/migrations/*")),
 }).pipe(Layer.provideMerge(ClientLive))

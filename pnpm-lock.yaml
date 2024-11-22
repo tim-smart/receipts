@@ -20,10 +20,10 @@ importers:
         version: 0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/ai-openai':
         specifier: ^0.4.8
-        version: 0.4.8(@effect/ai@0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+        version: 0.4.8(@effect/ai@0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/experimental':
-        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17
-        version: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+        specifier: file:effect-experimental-0.32.8.tgz
+        version: file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/platform':
         specifier: ^0.69.24
         version: 0.69.24(effect@3.10.15)
@@ -31,11 +31,14 @@ importers:
         specifier: ^0.48.24
         version: 0.48.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/sql':
-        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17
-        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422
+        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/sql-sqlite-wasm':
         specifier: ^0.21.1
-        version: 0.21.1(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/wa-sqlite@0.1.2)(effect@3.10.15)
+        version: 0.21.1(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/wa-sqlite@0.1.2)(effect@3.10.15)
+      '@effect/wa-sqlite':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@radix-ui/react-dialog':
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -740,8 +743,8 @@ packages:
       '@effect/platform': ^0.69.24
       effect: ^3.10.15
 
-  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17':
-    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17}
+  '@effect/experimental@file:effect-experimental-0.32.8.tgz':
+    resolution: {integrity: sha512-D9+dqMvpq35QjgK1bO0EXBdZ5laqqRuzNQ7ki0u84b0/hdfNxzf1ovC7FHq+cXQbHXd1RI4DdvzgJO38diW78Q==, tarball: file:effect-experimental-0.32.8.tgz}
     version: 0.32.8
     peerDependencies:
       '@effect/platform': ^0.69.24
@@ -779,13 +782,13 @@ packages:
       '@effect/wa-sqlite': ^0.1.2
       effect: ^3.10.15
 
-  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17':
-    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17}
-    version: 0.20.8
+  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422':
+    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422}
+    version: 0.20.9
     peerDependencies:
-      '@effect/experimental': ^0.32.8
-      '@effect/platform': ^0.69.24
-      effect: ^3.10.15
+      '@effect/experimental': ^0.32.9
+      '@effect/platform': ^0.69.25
+      effect: ^3.10.16
 
   '@effect/wa-sqlite@0.1.2':
     resolution: {integrity: sha512-2JvJ9BDkBOwfeY/gXsC0XwEKC0AwisP2W5ABJ6mx14QyXTK12MGDIybDlHieuZt1TEFSMiKfpg7yyqyRWRooJQ==}
@@ -4547,10 +4550,10 @@ snapshots:
     dependencies:
       effect: 3.10.15
 
-  '@effect/ai-openai@0.4.8(@effect/ai@0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
+  '@effect/ai-openai@0.4.8(@effect/ai@0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
     dependencies:
       '@effect/ai': 0.2.24(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
-      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+      '@effect/experimental': file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/platform': 0.69.24(effect@3.10.15)
       effect: 3.10.15
       gpt-tokenizer: 2.6.2
@@ -4560,7 +4563,7 @@ snapshots:
       '@effect/platform': 0.69.24(effect@3.10.15)
       effect: 3.10.15
 
-  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
+  '@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
     dependencies:
       '@effect/platform': 0.69.24(effect@3.10.15)
       effect: 3.10.15
@@ -4579,16 +4582,16 @@ snapshots:
       find-my-way-ts: 0.1.5
       multipasta: 0.2.5
 
-  '@effect/sql-sqlite-wasm@0.21.1(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/wa-sqlite@0.1.2)(effect@3.10.15)':
+  '@effect/sql-sqlite-wasm@0.21.1(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/wa-sqlite@0.1.2)(effect@3.10.15)':
     dependencies:
-      '@effect/sql': https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+      '@effect/sql': https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/wa-sqlite': 0.1.2
       '@opentelemetry/semantic-conventions': 1.28.0
       effect: 3.10.15
 
-  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@b22fb17(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
+  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@e31b422(@effect/experimental@file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15))(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)':
     dependencies:
-      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@b22fb17(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
+      '@effect/experimental': file:effect-experimental-0.32.8.tgz(@effect/platform@0.69.24(effect@3.10.15))(effect@3.10.15)
       '@effect/platform': 0.69.24(effect@3.10.15)
       '@opentelemetry/semantic-conventions': 1.28.0
       effect: 3.10.15
