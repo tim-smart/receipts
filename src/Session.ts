@@ -21,11 +21,10 @@ export class Session extends Effect.Service<Session>()("Session", {
       for (const table of tables) {
         yield* sql`DROP TABLE IF EXISTS ${sql(table.name)}`.withoutTransform
       }
+      yield* runMigrations.pipe(Effect.provideService(SqlClient.SqlClient, sql))
       yield* reactivity.invalidate(tables.map((t) => t.name))
       yield* log.destroy
       yield* auth.logout
-
-      yield* runMigrations.pipe(Effect.provideService(SqlClient.SqlClient, sql))
     }).pipe(Effect.catchAllCause(Effect.log))
 
     return { destroy } as const
