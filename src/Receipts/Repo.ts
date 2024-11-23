@@ -79,10 +79,11 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
           ])
           for (let j = 0; j < allImages[i].length; j++) {
             const image = allImages[i][j]
+            const id = String(i + 1).padStart(3, "0")
             images.push(
               new File(
                 [image.data],
-                `images/${i + 1}-${j}.${image.contentType.split("/")[1]}`,
+                `images/${id}-${j}.${image.contentType.split("/")[1]}`,
                 { type: image.contentType },
               ),
             )
