@@ -569,13 +569,11 @@ const convert = (
   return `x${formatRate(rateNumber)} = $${converted} ${currency}`
 }
 
-const convertString = (amount: BigDecimal.BigDecimal, rate: number) => {
-  const rateNumber = 1 / rate
-  return BigDecimal.multiply(amount, BigDecimal.fromNumber(rateNumber)).pipe(
+const convertString = (amount: BigDecimal.BigDecimal, rate: number) =>
+  BigDecimal.multiply(amount, BigDecimal.fromNumber(rate)).pipe(
     BigDecimal.scale(2),
     BigDecimal.format,
   )
-}
 
 function ExportDrawer() {
   const [open, setOpen] = useState(false)
