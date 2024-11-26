@@ -98,7 +98,7 @@ export function ReceiptForm({
             currency: data.get("currency") as string,
             processed:
               images.length === 0 ||
-              BigDecimal.isZero(amount) ||
+              !BigDecimal.isZero(amount) ||
               Option.isNone(openaiKey),
           }),
         )
