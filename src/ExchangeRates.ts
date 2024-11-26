@@ -37,28 +37,24 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
         capacity: 2,
       })
 
-      const rates = (appId: string, base: string) => {
-        if (base === "") {
-          return Effect.fail(new Cause.NoSuchElementException())
-        }
-        return latest.get(appId).pipe(
-          Effect.flatMap(({ rates }) =>
-            Effect.gen(function* () {
-              if (base === "USD") {
-                return rates
-              }
-              const usdRate = yield* Effect.fromNullable(rates[base])
-              const adjustment = 1 / usdRate
-              return Object.fromEntries(
-                Object.entries(rates).map(([key, value]) => [
-                  key,
-                  key === base ? 1 : value * adjustment,
-                ]),
-              )
-            }),
-          ),
-        )
-      }
+      const rates = (appId: string, base: string) =>
+        Effect.gen(function* () {
+          if (base === "") {
+            return yield* new Cause.NoSuchElementException()
+          }
+          const { rates } = yield* latest.get(appId)
+          if (base === "USD") {
+            return rates
+          }
+          const baseRate = yield* Effect.fromNullable(rates[base])
+          const adjustment = 1 / baseRate
+          return Object.fromEntries(
+            Object.entries(rates).map(([key, value]) => [
+              key,
+              key === base ? 1 : value * adjustment,
+            ]),
+          )
+        })
 
       return { rates } as const
     }),
