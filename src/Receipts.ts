@@ -36,3 +36,31 @@ export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
       )
   }),
 ).pipe(Layer.provide(SqlLive))
+
+export const ReceiptsCompactionLive = EventLog.groupCompaction(
+  ReceiptEvents,
+  ({ events, write }) =>
+    Effect.gen(function* () {
+      if (events.some((_) => _._tag === "ReceiptDelete")) return
+      let create = false
+      const payload = {} as any
+      for (const event of events) {
+        switch (event._tag) {
+          case "ReceiptCreate": {
+            create = true
+            Object.assign(payload, event.payload)
+            break
+          }
+          case "ReceiptUpdate": {
+            Object.assign(payload, event.payload)
+            break
+          }
+          case "ReceiptSetProcessed": {
+            payload.processed = event.payload.processed
+            break
+          }
+        }
+      }
+      yield* write(create ? "ReceiptCreate" : "ReceiptUpdate", payload)
+    }),
+)

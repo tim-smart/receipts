@@ -1,27 +1,44 @@
 import { Rx } from "@effect-rx/rx-react"
-import { EventJournal, EventLog, EventLogRemote } from "@effect/experimental"
+import {
+  EventJournal,
+  EventLog,
+  EventLogEncryption,
+  EventLogRemote,
+} from "@effect/experimental"
 import { Identity } from "@effect/experimental/EventLog"
 import { Context, Effect, Layer } from "effect"
 import { ReceiptAppEvents } from "./Events"
 import { ReceiptGroupsLive } from "./ReceiptGroups"
-import { ReceiptsLive } from "./Receipts"
-import { SettingsLive } from "./Settings"
+import { ReceiptsCompactionLive, ReceiptsLive } from "./Receipts"
+import { SettingsCompactionLive, SettingsLive } from "./Settings"
 import { ImagesLive } from "./Images"
 import { identityRx } from "./Auth"
+import { Socket } from "@effect/platform"
 
 const EventLogLayer = EventLog.layer(ReceiptAppEvents).pipe(
-  Layer.provide(ReceiptGroupsLive),
-  Layer.provide(ReceiptsLive),
-  Layer.provide(SettingsLive),
-  Layer.provide(ImagesLive),
+  Layer.provide([ReceiptGroupsLive, ReceiptsLive, SettingsLive, ImagesLive]),
   Layer.provide(EventJournal.layerIndexedDb()),
 )
 
-const EventRemoteLive = EventLogRemote.layerWebSocketBrowser(
-  "wss://eventlog.office.timsmart.co",
+const EventRemoteLive = EventLogRemote.layerWebSocket(
+  "ws://localhost:3000",
 ).pipe(Layer.provide(EventLogLayer))
 
-export const EventLogLive = Layer.merge(EventLogLayer, EventRemoteLive)
+const CompactionLive = Layer.mergeAll(
+  ReceiptsCompactionLive,
+  SettingsCompactionLive,
+).pipe(Layer.provide(EventLogLayer))
+
+export const EventLogLive = Layer.mergeAll(
+  EventLogLayer,
+  EventRemoteLive,
+  CompactionLive,
+).pipe(
+  Layer.provide([
+    EventLogEncryption.layerSubtle,
+    Socket.layerWebSocketConstructorGlobal,
+  ]),
+)
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
 

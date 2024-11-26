@@ -9,12 +9,18 @@ import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { FormEvent, useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import { globalValue } from "effect/GlobalValue"
 import { Image } from "@/Domain/Image"
-import { useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
+import {
+  useRxSetPromise,
+  useRxSuspenseSuccess,
+  useRxValue,
+} from "@effect-rx/rx-react"
 import { createReceiptRx, updateReceiptRx } from "./rx"
 import { currentGroupRx } from "@/ReceiptGroups/rx"
 import * as Uuid from "uuid"
 import { createImageRx } from "@/Images/rx"
 import { Model } from "@effect/sql"
+import { openaiApiKey } from "@/Domain/Setting"
+import { settingRx } from "@/Settings/rx"
 
 const clicked = globalValue(
   "ReceiptForm/clicked",
@@ -29,6 +35,7 @@ export function ReceiptForm({
   onSubmit: () => void
 }) {
   const group = useRxSuspenseSuccess(currentGroupRx).value
+  const openaiKey = useRxValue(settingRx(openaiApiKey))
   const createReceipt = useRxSetPromise(createReceiptRx)
   const updateReceipt = useRxSetPromise(updateReceiptRx)
   const createImage = useRxSetPromise(createImageRx)
@@ -89,7 +96,10 @@ export function ReceiptForm({
             description: data.get("description") as string,
             amount,
             currency: data.get("currency") as string,
-            processed: images.length === 0 && BigDecimal.isZero(amount),
+            processed:
+              images.length === 0 ||
+              BigDecimal.isZero(amount) ||
+              Option.isNone(openaiKey),
           }),
         )
       }
