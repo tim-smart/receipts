@@ -39,14 +39,11 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
       description: "The store / merchant that sold the goods or service",
     }),
     description: Schema.String.annotations({
-      description: "1-5 words describing the purchase",
+      description: "A 1-5 word title describing the purchase",
     }),
     amount: Schema.BigDecimal.annotations({
-      jsonSchema: {
-        type: "string",
-        description:
-          "The total cost from the receipt, excluding the currency. Include the numeric amount only.",
-      },
+      description:
+        "The total cost from the receipt, excluding the currency. Include the numeric amount only.",
     }),
     currency: Schema.NullOr(Schema.String).annotations({
       description: "The 3 letter currency code, e.g. USD, or null if not found",
