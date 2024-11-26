@@ -41,7 +41,12 @@ export const ReceiptsCompactionLive = EventLog.groupCompaction(
   ReceiptEvents,
   ({ events, write }) =>
     Effect.gen(function* () {
-      if (events.some((_) => _._tag === "ReceiptDelete")) return
+      const remove = events.find((_) => _._tag === "ReceiptDelete")
+      if (remove) {
+        yield* write("ReceiptDelete", remove.payload)
+        return
+      }
+
       let create = false
       const payload = {} as any
       for (const event of events) {
