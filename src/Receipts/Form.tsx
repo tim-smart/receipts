@@ -120,7 +120,6 @@ export function ReceiptForm({
       fileRef.current?.click()
     }
     fileRef.current?.removeAttribute("capture")
-    fileRef.current?.setAttribute("accept", "image/*;capture=camera")
   }, [fileRef])
 
   return (
