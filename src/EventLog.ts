@@ -8,9 +8,17 @@ import {
 import { Identity } from "@effect/experimental/EventLog"
 import { Context, Effect, Layer } from "effect"
 import { ReceiptAppEvents } from "./Events"
-import { ReceiptGroupsLive } from "./ReceiptGroups"
-import { ReceiptsCompactionLive, ReceiptsLive } from "./Receipts"
-import { SettingsCompactionLive, SettingsLive } from "./Settings"
+import { ReceiptGroupsLive, ReceiptGroupsReactivityLive } from "./ReceiptGroups"
+import {
+  ReceiptsCompactionLive,
+  ReceiptsLive,
+  ReceiptsReactivityLive,
+} from "./Receipts"
+import {
+  SettingsCompactionLive,
+  SettingsLive,
+  SettingsReactivityLive,
+} from "./Settings"
 import { ImagesLive } from "./Images"
 import { identityRx } from "./Auth"
 import { Socket } from "@effect/platform"
@@ -25,8 +33,11 @@ const EventRemoteLive = EventLogRemote.layerWebSocket(
 ).pipe(Layer.provide(EventLogLayer))
 
 const CompactionLive = Layer.mergeAll(
+  ReceiptGroupsReactivityLive,
   ReceiptsCompactionLive,
+  ReceiptsReactivityLive,
   SettingsCompactionLive,
+  SettingsReactivityLive,
 ).pipe(Layer.provide(EventLogLayer))
 
 export const EventLogLive = Layer.mergeAll(

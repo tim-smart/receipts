@@ -3,6 +3,7 @@ import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
 import { EventLogClient } from "@/EventLog"
 import { ImagesRepo } from "@/Images/Repo"
+import { uuidString } from "@/lib/utils"
 import { SettingRepo } from "@/Settings/Repo"
 import { SqlLive } from "@/Sql"
 import { Zip } from "@/Zip"
@@ -14,7 +15,6 @@ import FileSaver from "file-saver"
 export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
-    const reactivity = yield* Reactivity.Reactivity
     const imageRepo = yield* ImagesRepo
     const settings = yield* SettingRepo
     const repo = yield* Model.makeRepository(Receipt, {
@@ -99,7 +99,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
         FileSaver.saveAs(blob, `receipts-${new Date().toISOString()}.zip`)
       })
 
-    const current = reactivity.stream(
+    const current = sql.reactive(
       ["receipts", "settings"],
       Effect.gen(function* () {
         const groupId = yield* settings.get(currentGroupId)
@@ -109,8 +109,8 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
     )
 
     const byId = (id: typeof ReceiptId.Type) =>
-      reactivity.stream(
-        ["receipts", "images"],
+      sql.reactive(
+        { receipts: [uuidString(id)] },
         Effect.gen(function* () {
           const receipt = yield* repo.findById(id).pipe(Effect.flatten)
           const images = yield* imageRepo.forReceipt(id)
@@ -124,7 +124,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
       client("ReceiptUpdate", receipt)
     const remove = (id: typeof ReceiptId.Type) => client("ReceiptDelete", id)
 
-    const unprocessed = reactivity.query(
+    const unprocessed = sql.reactiveMailbox(
       ["receipts", "images"],
       sql`select * from receipts where processed = 0`.pipe(
         Effect.flatMap(Schema.decodeUnknown(Receipt.Array)),

@@ -8,7 +8,6 @@ const ClientLive = SqliteClient.layer({
     Effect.sync(() => new SqlWorker()),
     (worker) => Effect.sync(() => worker.terminate()),
   ),
-  installReactivityHooks: true,
   transformQueryNames: String.camelToSnake,
   transformResultNames: String.snakeToCamel,
 })

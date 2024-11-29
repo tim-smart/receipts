@@ -27,3 +27,7 @@ export const SettingsCompactionLive = EventLog.groupCompaction(
       yield* write("SettingChange", last.value.payload)
     }),
 )
+
+export const SettingsReactivityLive = EventLog.groupReactivity(SettingEvents, [
+  "settings",
+])

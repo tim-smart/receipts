@@ -62,3 +62,7 @@ export const ReceiptsCompactionLive = EventLog.groupCompaction(
       yield* write(create ? "ReceiptCreate" : "ReceiptUpdate", payload)
     }),
 )
+
+export const ReceiptsReactivityLive = EventLog.groupReactivity(ReceiptEvents, [
+  "receipts",
+])

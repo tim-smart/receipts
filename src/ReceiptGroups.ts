@@ -29,3 +29,8 @@ export const ReceiptGroupsLive = EventLog.group(
         .handle("GroupDelete", ({ payload }) => repo.delete(payload))
     }),
 ).pipe(Layer.provide(SqlLive))
+
+export const ReceiptGroupsReactivityLive = EventLog.groupReactivity(
+  ReceiptGroupEvents,
+  ["receipt_groups"],
+)
