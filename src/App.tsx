@@ -1,6 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { useEffect, useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"
 import { useRxMount, useRxSet, useRxValue } from "@effect-rx/rx-react"
@@ -54,7 +54,7 @@ function isDarkMode() {
 }
 
 function SystemTheme() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const listener = () => {
       if (isDarkMode()) {
         document.documentElement.classList.add("dark")
