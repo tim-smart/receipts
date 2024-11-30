@@ -25,7 +25,15 @@ import {
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
 import { ReceiptForm } from "@/Receipts/Form"
-import { BigDecimal, DateTime, Effect, Option, Redacted } from "effect"
+import {
+  BigDecimal,
+  DateTime,
+  Effect,
+  Option,
+  pipe,
+  Redacted,
+  String,
+} from "effect"
 import {
   useRx,
   useRxSet,
@@ -52,7 +60,7 @@ import {
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsRx, exportReceiptsRx } from "@/Receipts/rx"
-import { clientRx } from "@/EventLog"
+import { clientRx, remoteAddressRx } from "@/EventLog"
 import * as Uuid from "uuid"
 import { Model } from "@effect/sql"
 import { sessionDestroyRx } from "@/Session"
@@ -357,6 +365,7 @@ function SettingsDrawer() {
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
+  const [currentRemoteAddress, setRemoteAddress] = useRx(remoteAddressRx)
   const logout = useRxSet(sessionDestroyRx)
 
   const onSubmit = useCallback(
@@ -385,6 +394,13 @@ function SettingsDrawer() {
           ),
         }),
       )
+      setRemoteAddress(
+        pipe(
+          data.get("remoteAddress") as string,
+          String.trim,
+          Option.liftPredicate(String.isNonEmpty),
+        ),
+      )
       setOpen(false)
     },
     [client],
@@ -404,6 +420,19 @@ function SettingsDrawer() {
             <TypoH3>Settings</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="remoteAddress" className="text-right">
+                Remote address
+              </Label>
+              <Input
+                id="remoteAddress"
+                name="remoteAddress"
+                className="col-span-3"
+                defaultValue={Option.getOrElse(currentRemoteAddress, () => "")}
+                placeholder="wss://example.com"
+                type="text"
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="openaiApiKey" className="text-right">
                 OpenAI API key

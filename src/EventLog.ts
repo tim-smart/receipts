@@ -22,15 +22,12 @@ import {
 import { ImagesLive } from "./Images"
 import { identityRx } from "./Auth"
 import { Socket } from "@effect/platform"
+import { localStorageRx } from "./lib/utils"
 
 const EventLogLayer = EventLog.layer(ReceiptAppEvents).pipe(
   Layer.provide([ReceiptGroupsLive, ReceiptsLive, SettingsLive, ImagesLive]),
   Layer.provide(EventJournal.layerIndexedDb()),
 )
-
-const EventRemoteLive = EventLogRemote.layerWebSocket(
-  "wss://eventlog.office.timsmart.co",
-).pipe(Layer.provide(EventLogLayer))
 
 const CompactionLive = Layer.mergeAll(
   ReceiptGroupsReactivityLive,
@@ -40,11 +37,7 @@ const CompactionLive = Layer.mergeAll(
   SettingsReactivityLive,
 ).pipe(Layer.provide(EventLogLayer))
 
-export const EventLogLive = Layer.mergeAll(
-  EventLogLayer,
-  EventRemoteLive,
-  CompactionLive,
-).pipe(
+export const EventLogLive = Layer.mergeAll(EventLogLayer, CompactionLive).pipe(
   Layer.provide([
     EventLogEncryption.layerSubtle,
     Socket.layerWebSocketConstructorGlobal,
@@ -73,3 +66,14 @@ export const eventLogRx = Rx.runtime((get) =>
 
 export const clientRx = eventLogRx.rx(makeClient)
 export type EventClient = Rx.Rx.InferSuccess<typeof clientRx>
+
+export const remoteAddressRx = localStorageRx("receipts_remote_address")
+
+export const remoteRx = Rx.runtime((get) =>
+  Effect.gen(function* () {
+    const remoteAddress = yield* get.some(remoteAddressRx)
+    return EventLogRemote.layerWebSocketBrowser(remoteAddress).pipe(
+      Layer.provide(get(eventLogRx.layer)),
+    )
+  }).pipe(Layer.unwrapEffect),
+)

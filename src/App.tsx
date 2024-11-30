@@ -9,6 +9,7 @@ import { Option } from "effect"
 import { Input } from "./components/ui/input.tsx"
 import { Button } from "./components/ui/Button.tsx"
 import { aiWorkerRx } from "./AiWorker/rx.ts"
+import { remoteRx } from "./EventLog.ts"
 
 const router = createRouter({ routeTree })
 
@@ -43,6 +44,7 @@ function Auth() {
 
 function Authenticated() {
   useRxMount(aiWorkerRx)
+  useRxMount(remoteRx)
   return <RouterProvider router={router} />
 }
 
