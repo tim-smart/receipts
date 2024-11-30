@@ -1,10 +1,9 @@
-import { EventLog, Reactivity } from "@effect/experimental"
+import { EventLog } from "@effect/experimental"
 import { Model } from "@effect/sql"
-import { Effect, Layer, pipe } from "effect"
+import { Effect, Layer } from "effect"
 import { SqlLive } from "./Sql"
 import { Image } from "./Domain/Image"
 import { ImageEvents } from "./Images/Events"
-import { uuidString } from "./lib/utils"
 
 export const ImagesLive = EventLog.group(ImageEvents, (handlers) =>
   Effect.gen(function* () {
@@ -13,24 +12,9 @@ export const ImagesLive = EventLog.group(ImageEvents, (handlers) =>
       idColumn: "id",
       spanPrefix: "Images",
     })
-    const reactivity = yield* Reactivity.Reactivity
 
     return handlers
-      .handle("ImageCreate", ({ payload }) =>
-        pipe(
-          repo.insert(payload),
-          Effect.zipLeft(
-            reactivity.invalidate({
-              receipts: [uuidString(payload.receiptId)],
-            }),
-          ),
-        ),
-      )
-      .handle("ImageDelete", ({ payload }) =>
-        pipe(
-          repo.delete(payload),
-          Effect.zipLeft(reactivity.invalidate(["receipts"])),
-        ),
-      )
+      .handle("ImageCreate", ({ payload }) => repo.insert(payload))
+      .handle("ImageDelete", ({ payload }) => repo.delete(payload))
   }),
-).pipe(Layer.provide([SqlLive, Reactivity.layer]))
+).pipe(Layer.provide([SqlLive]))
