@@ -1,30 +1,22 @@
-# React + TypeScript + Vite
+# Receipt scanner + tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple local-first receipt scanner and tracker.
 
-Currently, two official plugins are available:
+![Screenshot](./screenshots/desktop.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- Use OpenAI's GPT-4o to extract information from receipt images.
+- Store receipt information in a local SQLite database.
+- Supports syncing with a remote server, to share receipts across devices.
+- Supports offline mode, with automatic sync when the server is available.
+- Install as a PWA on your phone or desktop.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Installation
 
-- Configure the top-level `parserOptions` property like this:
+1. The client is hosted on Vercel at https://receipts.timsmart.co
+2. You can run a remote sync server using Docker: https://hub.docker.com/r/timsmart/effect-eventlog-sqlite
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
+   - `docker run -d -p 3000:3000 -v /path/to/data:/data timsmart/effect-eventlog-sqlite`
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+3. Set the remote server URL in the client settings.
