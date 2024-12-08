@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "w-deploy": "pnpm dlx wrangler deploy --config ./server/wrangler.toml",
+    "w-dev": "pnpm dlx wrangler dev --config ./server/wrangler.toml",
+    "w-start": "pnpm dlx wrangler dev --config ./server/wrangler.toml"
   },
   "dependencies": {
     "@effect-rx/rx-react": "^0.31.5",
@@ -44,6 +47,7 @@
     "workbox-routing": "^7.3.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241205.0",
     "@tanstack/router-devtools": "^1.85.5",
     "@tanstack/router-plugin": "^1.85.3",
     "@types/file-saver": "^2.0.7",
