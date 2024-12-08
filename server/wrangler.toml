@@ -1,0 +1,14 @@
+name = "receipts-sync-workers"
+main = "index.ts"
+compatibility_date = "2024-12-05"
+
+[observability]
+enabled = true
+
+[[durable_objects.bindings]]
+name = "MY_DURABLE_OBJECT"
+class_name = "MyDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MyDurableObject"]
