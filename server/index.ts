@@ -1,9 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import * as EventLogServer from "@effect/experimental/EventLogServer"
-import * as HttpServerRequest from "@effect/platform/HttpServerRequest"
 import * as Socket from "@effect/platform/Socket"
-import { SqlClient } from "@effect/sql/SqlClient"
 import { layerStorageSubtle } from "@effect/sql/SqlEventLogServer"
 import { DurableObject } from "cloudflare:workers"
 import * as Effect from "effect/Effect"
@@ -19,7 +17,7 @@ export class MyDurableObject extends DurableObject {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
 
-    const layer = layerStorageSubtle().pipe(
+    const layer = layerStorageSubtle({ insertBatchSize: 25 }).pipe(
       Layer.provide(DOSqlite.layer({ db: ctx.storage.sql })),
       Layer.provideMerge(Logger.minimumLogLevel(LogLevel.All)),
       Layer.orDie,
