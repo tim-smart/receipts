@@ -11,6 +11,8 @@ import * as Effect from "effect/Effect"
 import { identity } from "effect/Function"
 import * as Layer from "effect/Layer"
 import type * as Scope from "effect/Scope"
+import * as Stream from "effect/Stream"
+import * as Chunk from "effect/Chunk"
 
 /**
  * @category type ids
@@ -70,12 +72,29 @@ export const make = (
     const makeConnection = Effect.gen(function* () {
       const db = options.db
 
+      function* runIterator(
+        sql: string,
+        params: ReadonlyArray<Statement.Primitive> = [],
+      ) {
+        const cursor = db.exec(sql, ...params)
+        const columns = cursor.columnNames
+        for (const result of cursor.raw()) {
+          const obj: any = {}
+          for (let i = 0; i < columns.length; i++) {
+            const value = result[i]
+            obj[columns[i]] =
+              value instanceof ArrayBuffer ? new Uint8Array(value) : value
+          }
+          yield obj
+        }
+      }
+
       const runStatement = (
         sql: string,
         params: ReadonlyArray<Statement.Primitive> = [],
       ): Effect.Effect<ReadonlyArray<any>, SqlError, never> =>
         Effect.try({
-          try: () => db.exec(sql, ...params).toArray(),
+          try: () => Array.from(runIterator(sql, params)),
           catch: (cause) =>
             new SqlError({ cause, message: `Failed to execute statement` }),
         })
@@ -85,17 +104,15 @@ export const make = (
         params: ReadonlyArray<Statement.Primitive> = [],
       ): Effect.Effect<ReadonlyArray<any>, SqlError, never> =>
         Effect.try({
-          try: () => {
-            let cursor = db.exec(sql, ...params)
-            let results = []
-            let next = cursor.next()
-            while (!next.done) {
-              let i = [Object.entries(next.value)]
-              results.push(i)
-              next = cursor.next()
-            }
-            return results
-          },
+          try: () =>
+            Array.from(db.exec(sql, ...params).raw(), (row) => {
+              for (let i = 0; i < row.length; i++) {
+                const value = row[i]
+                row[i] =
+                  value instanceof ArrayBuffer ? new Uint8Array(value) : value
+              }
+              return row
+            }),
           catch: (cause) =>
             new SqlError({ cause, message: `Failed to execute statement` }),
         })
@@ -117,8 +134,19 @@ export const make = (
             ? Effect.map(runStatement(sql, params), transformRows)
             : runStatement(sql, params)
         },
-        executeStream(_sql, _params) {
-          return Effect.dieMessage("executeStream not implemented")
+        executeStream(sql, params, transformRows) {
+          return Stream.suspend(() => {
+            const iterator = runIterator(sql, params)
+            return Stream.fromIteratorSucceed(iterator, 16)
+          }).pipe(
+            transformRows
+              ? Stream.mapChunks((chunk) =>
+                  Chunk.unsafeFromArray(
+                    transformRows(Chunk.toReadonlyArray(chunk)),
+                  ),
+                )
+              : identity,
+          )
         },
       })
     })

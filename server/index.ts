@@ -1,7 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import * as EventLogServer from "@effect/experimental/EventLogServer"
-import * as Reactivity from "@effect/experimental/Reactivity"
 import * as HttpServerRequest from "@effect/platform/HttpServerRequest"
 import * as Socket from "@effect/platform/Socket"
 import { SqlClient } from "@effect/sql/SqlClient"
@@ -11,45 +10,38 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as DOSqlite from "./effect-sqlite-in-do"
+import * as Logger from "effect/Logger"
+import * as LogLevel from "effect/LogLevel"
 
 export class MyDurableObject extends DurableObject {
-  readonly runtime: ManagedRuntime.ManagedRuntime<
-    SqlClient | EventLogServer.Storage | DOSqlite.DOClient,
-    never
-  >
+  readonly runtime: ManagedRuntime.ManagedRuntime<EventLogServer.Storage, never>
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
 
-    const layer = Layer.empty.pipe(
-      Layer.provideMerge(layerStorageSubtle()),
-      Layer.provideMerge(DOSqlite.layer({ db: ctx.storage.sql })),
-      Layer.provide(Reactivity.layer),
+    const layer = layerStorageSubtle().pipe(
+      Layer.provide(DOSqlite.layer({ db: ctx.storage.sql })),
+      Layer.provideMerge(Logger.minimumLogLevel(LogLevel.All)),
       Layer.orDie,
     )
 
     this.runtime = ManagedRuntime.make(layer)
   }
 
-  async fetch(request: Request): Promise<Response> {
+  async fetch(): Promise<Response> {
     const webSocketPair = new WebSocketPair()
     const [client, server] = Object.values(webSocketPair)
 
-    server.accept()
-
-    const handle = EventLogServer.makeHttpHandler.pipe(this.runtime.runSync)
-    const fakeUpgrade = Socket.fromWebSocket(Effect.succeed(server))
-
-    handle.pipe(
-      Effect.provideService(
-        HttpServerRequest.HttpServerRequest,
-        HttpServerRequest.HttpServerRequest.of({
-          upgrade: fakeUpgrade,
-        } as unknown as HttpServerRequest.HttpServerRequest),
-      ),
-      Effect.scoped,
-      this.runtime.runFork,
-    )
+    Effect.gen(function* () {
+      const handler = yield* EventLogServer.makeHandler
+      server.accept()
+      const socket = yield* Socket.fromWebSocket(
+        Effect.acquireRelease(Effect.succeed(server), (ws) =>
+          Effect.sync(() => ws.close()),
+        ),
+      )
+      yield* handler(socket)
+    }).pipe(Effect.scoped, this.runtime.runFork)
 
     return new Response(null, {
       status: 101,
@@ -59,14 +51,14 @@ export class MyDurableObject extends DurableObject {
 }
 
 export default {
-  async fetch(request, env, ctx): Promise<Response> {
-    let pathname = new URL(request.url).pathname
+  async fetch(request, env): Promise<Response> {
+    const url = new URL(request.url)
 
-    if (request.method === "GET" && pathname === "/") {
+    if (request.method === "GET" && url.pathname === "/") {
       return new Response("ok")
     }
 
-    if (request.method === "GET" && pathname === "/sync") {
+    if (request.method === "GET" && url.pathname === "/sync") {
       const upgradeHeader = request.headers.get("Upgrade")
       if (!upgradeHeader || upgradeHeader !== "websocket") {
         return new Response(null, {
@@ -78,12 +70,16 @@ export default {
         })
       }
 
-      /**
-       * Hardcoded username for now
-       */
-      const username = "foo"
-      let id: DurableObjectId = env.MY_DURABLE_OBJECT.idFromName(username)
-      let stub = env.MY_DURABLE_OBJECT.get(id)
+      const publicKey = url.searchParams.get("publicKey")
+      if (!publicKey) {
+        return Response.json(
+          { error: "publicKey is required" },
+          { status: 400 },
+        )
+      }
+
+      const id = env.MY_DURABLE_OBJECT.idFromName(publicKey)
+      const stub = env.MY_DURABLE_OBJECT.get(id)
 
       return stub.fetch(request)
     }
