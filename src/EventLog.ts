@@ -71,8 +71,11 @@ export const remoteAddressRx = localStorageRx("receipts_remote_address")
 
 export const remoteRx = Rx.runtime((get) =>
   Effect.gen(function* () {
+    const identity = yield* get.some(identityRx)
     const remoteAddress = yield* get.some(remoteAddressRx)
-    return EventLogRemote.layerWebSocketBrowser(remoteAddress).pipe(
+    const url = new URL(remoteAddress)
+    url.searchParams.set("publicKey", identity.publicKey)
+    return EventLogRemote.layerWebSocketBrowser(url.toString()).pipe(
       Layer.provide(get(eventLogRx.layer)),
     )
   }).pipe(Layer.unwrapEffect),
