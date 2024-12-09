@@ -12,7 +12,7 @@
     "w-start": "pnpm dlx wrangler dev --config ./server/wrangler.toml"
   },
   "dependencies": {
-    "@effect-rx/rx-react": "^0.31.5",
+    "@effect-rx/rx-react": "^0.31.6",
     "@effect/ai": "^0.3.6",
     "@effect/ai-openai": "^0.5.6",
     "@effect/experimental": "https://pkg.pr.new/Effect-TS/effect/@effect/experimental@d157ea9",
@@ -26,7 +26,7 @@
     "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.1",
-    "@tanstack/react-router": "^1.87.1",
+    "@tanstack/react-router": "^1.87.2",
     "class-variance-authority": "^0.7.1",
     "client-zip": "^2.4.6",
     "clsx": "^2.1.1",
@@ -48,12 +48,12 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241205.0",
-    "@tanstack/router-devtools": "^1.87.1",
+    "@tanstack/router-devtools": "^1.87.2",
     "@tanstack/router-plugin": "^1.86.0",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.1",
-    "@types/react-dom": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
     "@vite-pwa/assets-generator": "^0.2.6",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",

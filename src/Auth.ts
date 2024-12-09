@@ -106,8 +106,6 @@ export const identityRx = runtime
     Auth.pipe(
       Effect.map((auth) => auth.state),
       Stream.unwrap,
-      // TODO: bug in rx?
-      Stream.tap(() => Effect.void),
     ),
   )
   .pipe(
