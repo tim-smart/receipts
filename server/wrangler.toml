@@ -1,9 +1,17 @@
 name = "receipts-sync-workers"
+
 main = "index.ts"
+
 compatibility_date = "2024-12-05"
 
 [observability]
 enabled = true
+
+[observability.logs]
+invocation_logs = false
+
+[placement]
+mode = "smart"
 
 [[durable_objects.bindings]]
 name = "MY_DURABLE_OBJECT"

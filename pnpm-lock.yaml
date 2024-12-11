@@ -20,10 +20,10 @@ importers:
         version: 0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
       '@effect/ai-openai':
         specifier: ^0.5.6
-        version: 0.5.6(@effect/ai@0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
+        version: 0.5.6(@effect/ai@0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
       '@effect/experimental':
-        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22
-        version: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
+        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995
+        version: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
       '@effect/platform':
         specifier: ^0.70.5
         version: 0.70.6(effect@3.11.4)
@@ -31,11 +31,11 @@ importers:
         specifier: ^0.49.6
         version: 0.49.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
       '@effect/sql':
-        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22
-        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
+        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995
+        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
       '@effect/sql-sqlite-wasm':
-        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@1b0bf22
-        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/wa-sqlite@0.1.2)(effect@3.11.4)
+        specifier: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@9fa9995
+        version: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/wa-sqlite@0.1.2)(effect@3.11.4)
       '@effect/wa-sqlite':
         specifier: ^0.1.2
         version: 0.1.2
@@ -813,13 +813,13 @@ packages:
       '@effect/platform': ^0.70.6
       effect: ^3.11.4
 
-  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22':
-    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22}
-    version: 0.33.6
+  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995':
+    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995}
+    version: 0.33.7
     peerDependencies:
-      '@effect/platform': ^0.70.6
-      '@effect/platform-node': ^0.65.6
-      effect: ^3.11.4
+      '@effect/platform': ^0.70.7
+      '@effect/platform-node': ^0.65.7
+      effect: ^3.11.5
       ioredis: ^5
       lmdb: ^3
       ws: ^8
@@ -844,22 +844,22 @@ packages:
     peerDependencies:
       effect: ^3.11.4
 
-  '@effect/sql-sqlite-wasm@https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@1b0bf22':
-    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@1b0bf22}
-    version: 0.23.6
+  '@effect/sql-sqlite-wasm@https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@9fa9995':
+    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@9fa9995}
+    version: 0.23.7
     peerDependencies:
-      '@effect/experimental': ^0.33.6
-      '@effect/sql': ^0.22.6
+      '@effect/experimental': ^0.33.7
+      '@effect/sql': ^0.22.7
       '@effect/wa-sqlite': ^0.1.2
-      effect: ^3.11.4
+      effect: ^3.11.5
 
-  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22':
-    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22}
-    version: 0.22.6
+  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995':
+    resolution: {tarball: https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995}
+    version: 0.22.7
     peerDependencies:
-      '@effect/experimental': ^0.33.6
-      '@effect/platform': ^0.70.6
-      effect: ^3.11.4
+      '@effect/experimental': ^0.33.7
+      '@effect/platform': ^0.70.7
+      effect: ^3.11.5
 
   '@effect/wa-sqlite@0.1.2':
     resolution: {integrity: sha512-2JvJ9BDkBOwfeY/gXsC0XwEKC0AwisP2W5ABJ6mx14QyXTK12MGDIybDlHieuZt1TEFSMiKfpg7yyqyRWRooJQ==}
@@ -4871,10 +4871,10 @@ snapshots:
     dependencies:
       effect: 3.11.4
 
-  '@effect/ai-openai@0.5.6(@effect/ai@0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)':
+  '@effect/ai-openai@0.5.6(@effect/ai@0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)':
     dependencies:
       '@effect/ai': 0.3.6(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
-      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
+      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
       '@effect/platform': 0.70.6(effect@3.11.4)
       effect: 3.11.4
       gpt-tokenizer: 2.7.0
@@ -4884,7 +4884,7 @@ snapshots:
       '@effect/platform': 0.70.6(effect@3.11.4)
       effect: 3.11.4
 
-  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)':
+  '@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)':
     dependencies:
       '@effect/platform': 0.70.6(effect@3.11.4)
       effect: 3.11.4
@@ -4905,17 +4905,17 @@ snapshots:
       find-my-way-ts: 0.1.5
       multipasta: 0.2.5
 
-  '@effect/sql-sqlite-wasm@https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/wa-sqlite@0.1.2)(effect@3.11.4)':
+  '@effect/sql-sqlite-wasm@https://pkg.pr.new/Effect-TS/effect/@effect/sql-sqlite-wasm@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4))(@effect/wa-sqlite@0.1.2)(effect@3.11.4)':
     dependencies:
-      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
-      '@effect/sql': https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
+      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
+      '@effect/sql': https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)
       '@effect/wa-sqlite': 0.1.2
       '@opentelemetry/semantic-conventions': 1.28.0
       effect: 3.11.4
 
-  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@1b0bf22(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)':
+  '@effect/sql@https://pkg.pr.new/Effect-TS/effect/@effect/sql@9fa9995(@effect/experimental@https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0))(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)':
     dependencies:
-      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@1b0bf22(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
+      '@effect/experimental': https://pkg.pr.new/Effect-TS/effect/@effect/experimental@9fa9995(@effect/platform@0.70.6(effect@3.11.4))(effect@3.11.4)(ws@8.18.0)
       '@effect/platform': 0.70.6(effect@3.11.4)
       '@opentelemetry/semantic-conventions': 1.28.0
       effect: 3.11.4
