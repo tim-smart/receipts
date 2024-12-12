@@ -26,7 +26,11 @@ export class SettingRepo extends Effect.Service<SettingRepo>()("SettingRepo", {
       sql<{
         json: string
       }>`SELECT json FROM settings WHERE name = ${setting.name}`.pipe(
-        Effect.flatMap(Array.head),
+        Effect.flatMap((rows) =>
+          Array.head(rows).pipe(
+            Option.filter((_) => _.json !== null && _.json !== '""'),
+          ),
+        ),
         Effect.flatMap((_) => setting.decode(_.json)),
         Effect.option,
       )

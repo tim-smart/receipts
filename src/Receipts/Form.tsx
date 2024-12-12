@@ -83,7 +83,7 @@ export function ReceiptForm({
         )
       } else {
         const amount = BigDecimal.fromString(data.get("amount") as string).pipe(
-          Option.getOrElse(() => BigDecimal.fromNumber(0)),
+          Option.getOrElse(() => BigDecimal.unsafeFromNumber(0)),
         )
         await createReceipt(
           Receipt.insert.make({
