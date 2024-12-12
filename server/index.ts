@@ -4,43 +4,24 @@
 import { RemoteId } from "@effect/experimental/EventJournal"
 import * as EventLogRemote from "@effect/experimental/EventLogRemote"
 import * as EventLogServer from "@effect/experimental/EventLogServer"
-import * as Socket from "@effect/platform/Socket"
 import { layerStorageSubtle } from "@effect/sql/SqlEventLogServer"
 import { DurableObject } from "cloudflare:workers"
 import * as Effect from "effect/Effect"
-import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Logger from "effect/Logger"
 import * as LogLevel from "effect/LogLevel"
 import * as ManagedRuntime from "effect/ManagedRuntime"
-import * as Stream from "effect/Stream"
 import * as DOSqlite from "./effect-sqlite-in-do"
+import { EncryptedRemoteEntry } from "@effect/experimental/EventLogEncryption"
 
 export class MyDurableObject extends DurableObject {
-  readonly messagesWriter: WritableStreamDefaultWriter
-
   readonly runtime: ManagedRuntime.ManagedRuntime<EventLogServer.Storage, never>
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
 
     // https://developers.cloudflare.com/durable-objects/api/state/#gethibernatablewebsocketeventtimeout
-    this.ctx.setHibernatableWebSocketEventTimeout(500)
-
-    const messagesStream = new TransformStream<
-      Uint8Array | ArrayBuffer,
-      Uint8Array
-    >({
-      transform(chunk, controller) {
-        controller.enqueue(
-          chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : chunk,
-        )
-      },
-    })
-    const messagesWriter = messagesStream.writable.getWriter()
-    const broadcastStream = new TransformStream<Uint8Array, Uint8Array>()
-
-    this.messagesWriter = messagesWriter
+    this.ctx.setHibernatableWebSocketEventTimeout(5000)
 
     const layer = layerStorageSubtle({ insertBatchSize: 25 }).pipe(
       Layer.provide(DOSqlite.layer({ db: ctx.storage.sql })),
@@ -49,41 +30,108 @@ export class MyDurableObject extends DurableObject {
     )
 
     this.runtime = ManagedRuntime.make(layer)
-
-    const broadcast = (message: Uint8Array) =>
-      Effect.sync(() =>
-        this.ctx.getWebSockets().forEach((ws) => ws.send(message)),
-      )
-
-    Effect.gen(function* () {
-      const handler = yield* EventLogServer.makeHandler
-
-      const socket = yield* Socket.fromTransformStream(
-        Effect.succeed({
-          readable: messagesStream.readable,
-          writable: broadcastStream.writable,
-        }),
-      )
-
-      yield* pipe(
-        Stream.fromReadableStream({
-          evaluate: () => broadcastStream.readable,
-          onError: (error) => console.error("broadcast readable error", error),
-        }),
-        Stream.tap((msg) => broadcast(msg)),
-        Stream.runDrain,
-        Effect.fork,
-      )
-
-      yield* handler(socket)
-    }).pipe(Effect.scoped, this.runtime.runFork)
   }
 
-  webSocketMessage(
-    _ws: WebSocket,
-    message: string | ArrayBuffer,
-  ): Promise<void> {
-    return this.messagesWriter.write(message)
+  webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    return this.handleRequest(
+      ws,
+      EventLogRemote.decodeRequest(
+        message instanceof ArrayBuffer
+          ? new Uint8Array(message)
+          : new TextEncoder().encode(message),
+      ),
+    )
+  }
+
+  private chunks = new Map<
+    number,
+    {
+      readonly parts: Array<Uint8Array>
+      count: number
+      bytes: number
+    }
+  >()
+  private async handleRequest(
+    ws: WebSocket,
+    request: typeof EventLogRemote.ProtocolRequest.Type,
+  ) {
+    switch (request._tag) {
+      case "WriteEntries": {
+        return Effect.gen(this, function* () {
+          const storage = yield* EventLogServer.Storage
+          const entries = request.encryptedEntries.map(
+            ({ encryptedEntry, entryId }) =>
+              new EventLogServer.PersistedEntry({
+                entryId,
+                iv: request.iv,
+                encryptedEntry,
+              }),
+          )
+          const encryptedEntries = yield* storage.write(
+            request.publicKey,
+            entries,
+          )
+          ws.send(
+            EventLogRemote.encodeResponse(
+              new EventLogRemote.Ack({
+                id: request.id,
+                sequenceNumbers: encryptedEntries.map((_) => _.sequence),
+              }),
+            ),
+          )
+          const changes = this.encodeChanges(
+            request.publicKey,
+            encryptedEntries,
+          )
+          for (const peer of this.ctx.getWebSockets()) {
+            if (peer === ws) continue
+            for (const change of changes) {
+              peer.send(change)
+            }
+          }
+        }).pipe(this.runtime.runPromise)
+      }
+      case "ChunkedMessage": {
+        const data = EventLogRemote.ChunkedMessage.join(this.chunks, request)
+        if (!data) return
+        return this.handleRequest(ws, EventLogRemote.decodeRequest(data))
+      }
+      case "RequestChanges": {
+        return Effect.gen(this, function* () {
+          const storage = yield* EventLogServer.Storage
+          const entries = yield* storage.entries(
+            request.publicKey,
+            request.startSequence,
+          )
+          if (entries.length === 0) return
+          const changes = this.encodeChanges(request.publicKey, entries)
+          for (const change of changes) {
+            ws.send(change)
+          }
+        }).pipe(this.runtime.runPromise)
+      }
+    }
+  }
+
+  private encodeChanges(
+    publicKey: string,
+    entries: ReadonlyArray<EncryptedRemoteEntry>,
+  ) {
+    let changes = [
+      EventLogRemote.encodeResponse(
+        new EventLogRemote.Changes({
+          publicKey,
+          entries,
+        }),
+      ),
+    ]
+    if (changes[0].byteLength > 512_000) {
+      changes = EventLogRemote.ChunkedMessage.split(
+        Math.floor(Math.random() * 1_000_000_000),
+        changes[0],
+      ).map((_) => EventLogRemote.encodeResponse(_))
+    }
+    return changes
   }
 
   webSocketError(_ws: WebSocket, error: Error): void {
