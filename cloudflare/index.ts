@@ -6,7 +6,7 @@ import { layerStorageSubtle } from "@effect/sql/SqlEventLogServer"
 import * as Layer from "effect/Layer"
 import * as Logger from "effect/Logger"
 import * as LogLevel from "effect/LogLevel"
-import * as DOSqlite from "./effect-sqlite-in-do"
+import { SqliteClient } from "@effect/sql-sqlite-do"
 
 export class MyDurableObject extends EventLogDurableObject {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -14,7 +14,7 @@ export class MyDurableObject extends EventLogDurableObject {
       ctx,
       env,
       storageLayer: layerStorageSubtle({ insertBatchSize: 25 }).pipe(
-        Layer.provide(DOSqlite.layer({ db: ctx.storage.sql })),
+        Layer.provide(SqliteClient.layer({ db: ctx.storage.sql })),
         Layer.provideMerge(Logger.minimumLogLevel(LogLevel.All)),
         Layer.orDie,
       ),
