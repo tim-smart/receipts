@@ -10,10 +10,12 @@ export class Setting<
     readonly schema: S,
   ) {
     this.json = Schema.parseJson(schema)
+    this.encode = Schema.encode(this.json)
     this.encodeSync = Schema.encodeSync(this.json)
     this.decode = Schema.decode(this.json)
   }
   readonly json: Schema.Schema<S["Type"], string, S["Context"]>
+  readonly encode
   readonly encodeSync
   readonly decode
 }

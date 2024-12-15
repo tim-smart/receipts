@@ -526,7 +526,8 @@ function Totals() {
   const totals = useMemo(() => {
     const currencies: Record<string, BigDecimal.BigDecimal> = {}
     for (const receipt of receipts) {
-      const prev = currencies[receipt.currency] ?? BigDecimal.fromNumber(0)
+      const prev =
+        currencies[receipt.currency] ?? BigDecimal.unsafeFromNumber(0)
       currencies[receipt.currency] = BigDecimal.sum(prev, receipt.amount)
     }
     return currencies
@@ -534,12 +535,13 @@ function Totals() {
 
   const converted = useMemo(() => {
     if (rates._tag !== "Success") return Option.none()
-    let converted: BigDecimal.BigDecimal = BigDecimal.fromNumber(0)
+    let converted: BigDecimal.BigDecimal = BigDecimal.unsafeFromNumber(0)
     for (const [currency, total] of Object.entries(totals)) {
       const rate = 1 / rates.value[currency]
-      converted = BigDecimal.multiply(total, BigDecimal.fromNumber(rate)).pipe(
-        BigDecimal.sum(converted),
-      )
+      converted = BigDecimal.multiply(
+        total,
+        BigDecimal.unsafeFromNumber(rate),
+      ).pipe(BigDecimal.sum(converted))
     }
     return Option.some(converted)
   }, [totals, rates])
@@ -599,7 +601,7 @@ const convert = (
 }
 
 const convertString = (amount: BigDecimal.BigDecimal, rate: number) =>
-  BigDecimal.multiply(amount, BigDecimal.fromNumber(rate)).pipe(
+  BigDecimal.multiply(amount, BigDecimal.unsafeFromNumber(rate)).pipe(
     BigDecimal.scale(2),
     BigDecimal.format,
   )
