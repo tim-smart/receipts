@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "w-deploy": "pnpm dlx wrangler deploy --config ./server/wrangler.toml",
-    "w-dev": "pnpm dlx wrangler dev --config ./server/wrangler.toml",
-    "w-start": "pnpm dlx wrangler dev --config ./server/wrangler.toml"
+    "w-deploy": "pnpm dlx wrangler deploy --config ./cloudflare/wrangler.toml",
+    "w-dev": "pnpm dlx wrangler dev --config ./cloudflare/wrangler.toml",
+    "w-start": "pnpm dlx wrangler dev --config ./cloudflare/wrangler.toml"
   },
   "dependencies": {
     "@effect-rx/rx-react": "^0.31.6",
