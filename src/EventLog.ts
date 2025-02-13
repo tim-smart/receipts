@@ -75,8 +75,8 @@ export const remoteRx = Rx.runtime((get) =>
     const remoteAddress = yield* get.some(remoteAddressRx)
     const url = new URL(remoteAddress)
     url.searchParams.set("publicKey", identity.publicKey)
-    return EventLogRemote.layerWebSocketBrowser(url.toString(), {
-      disablePing: true,
-    }).pipe(Layer.provide(get(eventLogRx.layer)))
+    return EventLogRemote.layerWebSocketBrowser(url.toString()).pipe(
+      Layer.provide(get(eventLogRx.layer)),
+    )
   }).pipe(Layer.unwrapEffect),
 )
