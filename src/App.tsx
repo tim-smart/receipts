@@ -11,7 +11,7 @@ import { Button } from "./components/ui/Button.tsx"
 import { aiWorkerRx } from "./AiWorker/rx.ts"
 import { remoteRx } from "./EventLog.ts"
 
-const router = createRouter({ routeTree })
+const router = createRouter({ routeTree, scrollRestoration: true })
 
 declare module "@tanstack/react-router" {
   interface Register {

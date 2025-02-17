@@ -85,6 +85,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ["@effect/wa-sqlite"]
-  }
+    exclude: ["@effect/wa-sqlite"],
+  },
 })
