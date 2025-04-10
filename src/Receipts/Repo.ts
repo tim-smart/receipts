@@ -11,6 +11,7 @@ import { Reactivity } from "@effect/experimental"
 import { Model, SqlClient } from "@effect/sql"
 import { BigDecimal, DateTime, Effect, Schema } from "effect"
 import FileSaver from "file-saver"
+import * as Csv from "csv-stringify/browser/esm/sync"
 
 export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
   effect: Effect.gen(function* () {
@@ -90,7 +91,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
           }
         }
 
-        const csv = rows.map((row) => row.join(",")).join("\n") + "\n"
+        const csv = Csv.stringify(rows)
         const blob = yield* zip.make([
           new File([csv], "receipts.csv", { type: "text/csv" }),
           ...images,

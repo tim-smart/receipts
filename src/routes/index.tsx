@@ -323,27 +323,27 @@ function ReceiptGrid() {
   )
 }
 
-function ReceiptCard({ children }: { children: Receipt }) {
+function ReceiptCard({ children: receipt }: { children: Receipt }) {
   return (
     <Card>
       <CardHeader className="p-4">
         <CardTitle className="whitespace-nowrap overflow-ellipsis overflow-hidden">
-          {children.description}
+          {receipt.description}
         </CardTitle>
         <CardDescription>
           <div className="flex flex-col">
-            {children.merchant && (
+            {receipt.merchant && (
               <span className="overflow-ellipsis w-full whitespace-nowrap overflow-hidden">
-                {children.merchant}
+                {receipt.merchant}
               </span>
             )}
-            {children.amount && <span>{formatCurrency(children)}</span>}
-            {children.date && (
+            {receipt.amount && <span>{formatCurrency(receipt)}</span>}
+            {receipt.date && (
               <span>
-                {children.date.pipe(DateTime.format({ dateStyle: "short" }))}
+                {receipt.date.pipe(DateTime.format({ dateStyle: "short" }))}
               </span>
             )}
-            {children.processed === false && <span>Processing...</span>}
+            {receipt.processed === false && <span>Processing...</span>}
           </div>
         </CardDescription>
       </CardHeader>
