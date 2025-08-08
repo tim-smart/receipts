@@ -66,3 +66,9 @@ export const ReceiptsCompactionLive = EventLog.groupCompaction(
 export const ReceiptsReactivityLive = EventLog.groupReactivity(ReceiptEvents, [
   "receipts",
 ])
+
+export const ReceiptsLayer = Layer.mergeAll(
+  ReceiptsLive,
+  ReceiptsCompactionLive,
+  ReceiptsReactivityLive,
+)

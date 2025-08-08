@@ -36,7 +36,9 @@ export const AiWorkerLive = Effect.gen(function* () {
       const images = yield* imageRepo.forReceipt(receipt.id)
       if (images.length === 0) return
       const image = images[0]
-      const blob = new Blob([image.data], { type: image.contentType })
+      const blob = new Blob([image.data as Uint8Array<ArrayBuffer>], {
+        type: image.contentType,
+      })
       const metadata = yield* ai.extractReceipt(blob)
       const update = {
         ...receipt,

@@ -1,10 +1,10 @@
 import { Effect, Layer } from "effect"
 import { Auth } from "./Auth"
-import { EventLog, Reactivity } from "@effect/experimental"
+import { EventLog } from "@effect/experimental"
 import { SqlClient } from "@effect/sql"
 import { SqlLive } from "./Sql"
-import { Rx } from "@effect-rx/rx-react"
-import { eventLogRx } from "./EventLog"
+import { Atom } from "@effect-atom/atom-react"
+import { eventLogAtom } from "./EventLog"
 
 export class Session extends Effect.Service<Session>()("Session", {
   accessors: true,
@@ -28,11 +28,11 @@ export class Session extends Effect.Service<Session>()("Session", {
 
     return { destroy } as const
   }),
-  dependencies: [SqlLive, Auth.Default, Reactivity.layer],
+  dependencies: [SqlLive, Auth.Default],
 }) {}
 
-const runtime = Rx.runtime((get) =>
-  Session.Default.pipe(Layer.provide(get(eventLogRx.layer))),
+const runtime = Atom.runtime((get) =>
+  Session.Default.pipe(Layer.provide(get(eventLogAtom.layer))),
 )
 
-export const sessionDestroyRx = runtime.fn(() => Session.destroy)
+export const sessionDestroyAtom = runtime.fn(() => Session.destroy)

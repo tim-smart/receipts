@@ -1,28 +1,28 @@
 import { Setting } from "@/Domain/Setting"
-import { Result, Rx } from "@effect-rx/rx-react"
+import { Result, Atom } from "@effect-atom/atom-react"
 import { Effect, Layer, Option, Schema, Stream } from "effect"
 import { SettingRepo } from "./Repo"
-import { eventLogRx } from "@/EventLog"
+import { eventLogAtom } from "@/EventLog"
 
-const runtime = Rx.runtime((get) =>
-  SettingRepo.Default.pipe(Layer.provide(get(eventLogRx.layer))),
+const runtime = Atom.runtime((get) =>
+  SettingRepo.Default.pipe(Layer.provide(get(eventLogAtom.layer))),
 )
 
-export const settingRx = Rx.family(
+export const settingAtom = Atom.family(
   <Name extends string, S extends Schema.Schema.AnyNoContext>(
     setting: Setting<Name, S>,
   ) =>
     runtime
-      .rx(
+      .atom(
         Effect.gen(function* () {
           const settings = yield* SettingRepo
           return settings.stream(setting)
         }).pipe(Stream.unwrap),
       )
-      .pipe(Rx.map(Result.getOrElse(() => Option.none<S["Type"]>()))),
+      .pipe(Atom.map(Result.getOrElse(() => Option.none<S["Type"]>()))),
 )
 
-export const setSettingRx = Rx.family(
+export const setSettingAtom = Atom.family(
   <Name extends string, S extends Schema.Schema.AnyNoContext>(
     setting: Setting<Name, S>,
   ) =>

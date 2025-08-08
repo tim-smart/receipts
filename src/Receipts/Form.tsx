@@ -10,17 +10,17 @@ import { FormEvent, useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import { globalValue } from "effect/GlobalValue"
 import { Image } from "@/Domain/Image"
 import {
-  useRxSetPromise,
-  useRxSuspenseSuccess,
-  useRxValue,
-} from "@effect-rx/rx-react"
-import { createReceiptRx, updateReceiptRx } from "./rx"
-import { currentGroupRx } from "@/ReceiptGroups/rx"
+  useAtomSet,
+  useAtomSuspense,
+  useAtomValue,
+} from "@effect-atom/atom-react"
+import { createReceiptAtom, updateReceiptAtom } from "./atoms"
+import { currentGroupAtom } from "@/ReceiptGroups/atoms"
 import * as Uuid from "uuid"
-import { createImageRx } from "@/Images/rx"
+import { createImageAtom } from "@/Images/atoms"
 import { Model } from "@effect/sql"
 import { openaiApiKey } from "@/Domain/Setting"
-import { settingRx } from "@/Settings/rx"
+import { settingAtom } from "@/Settings/atoms"
 
 const clicked = globalValue(
   "ReceiptForm/clicked",
@@ -34,11 +34,11 @@ export function ReceiptForm({
   initialValue?: Receipt
   onSubmit: () => void
 }) {
-  const group = useRxSuspenseSuccess(currentGroupRx).value
-  const openaiKey = useRxValue(settingRx(openaiApiKey))
-  const createReceipt = useRxSetPromise(createReceiptRx)
-  const updateReceipt = useRxSetPromise(updateReceiptRx)
-  const createImage = useRxSetPromise(createImageRx)
+  const group = useAtomSuspense(currentGroupAtom).value
+  const openaiKey = useAtomValue(settingAtom(openaiApiKey))
+  const createReceipt = useAtomSet(createReceiptAtom, { mode: "promise" })
+  const updateReceipt = useAtomSet(updateReceiptAtom, { mode: "promise" })
+  const createImage = useAtomSet(createImageAtom, { mode: "promise" })
 
   const onSubmit_ = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

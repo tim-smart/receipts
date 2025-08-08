@@ -1,4 +1,4 @@
-import { Result, Rx } from "@effect-rx/rx-react"
+import { Result, Atom } from "@effect-atom/atom-react"
 import { Identity } from "@effect/experimental/EventLog"
 import {
   Effect,
@@ -97,37 +97,37 @@ export class Auth extends Effect.Service<Auth>()("Auth", {
   }),
 }) {}
 
-// rx
+// atom
 
-const runtime = Rx.runtime(Auth.Default)
+const runtime = Atom.runtime(Auth.Default)
 
-export const identityRx = runtime
-  .rx(
+export const identityAtom = runtime
+  .atom(
     Auth.pipe(
       Effect.map((auth) => auth.state),
       Stream.unwrap,
     ),
   )
   .pipe(
-    Rx.map(Result.getOrElse(() => Option.none<typeof Identity.Service>())),
-    Rx.keepAlive,
+    Atom.map(Result.getOrElse(() => Option.none<typeof Identity.Service>())),
+    Atom.keepAlive,
   )
 
-export const loginRx = runtime.fn(() =>
+export const loginAtom = runtime.fn(() =>
   Effect.gen(function* () {
     const auth = yield* Auth
     yield* auth.login
   }),
 )
 
-export const createAccountRx = runtime.fn((username: string) =>
+export const createAccountAtom = runtime.fn((username: string) =>
   Effect.gen(function* () {
     const auth = yield* Auth
     yield* auth.create({ username })
   }),
 )
 
-export const logoutRx = runtime.fn(() =>
+export const logoutAtom = runtime.fn(() =>
   Effect.gen(function* () {
     const auth = yield* Auth
     yield* auth.logout

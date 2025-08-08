@@ -1,23 +1,22 @@
 import { Effect, Schema } from "effect"
-import { AiInput, Completions } from "@effect/ai"
+import { AiInput, AiLanguageModel } from "@effect/ai"
 
 export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
   effect: Effect.gen(function* () {
-    const completions = yield* Completions.Completions
+    const completions = yield* AiLanguageModel.AiLanguageModel
 
     const extractReceipt = (blob: Blob) =>
       Effect.gen(function* () {
         const input = yield* inputFromBlob(blob)
-        const result = yield* completions.structured({
-          input,
+        const result = yield* completions.generateObject({
+          system: `Extract receipt information from the provided image.
+
+The current date is ${new Date().toDateString()}.`,
+          prompt: input,
           schema: ReceiptMeta,
         })
-        return yield* result.value
-      }).pipe(
-        AiInput.provideSystem(`Extract receipt information from the provided image.
-
-The current date is ${new Date().toDateString()}.`),
-      )
+        return result.value
+      })
 
     return { extractReceipt } as const
   }),
@@ -25,8 +24,11 @@ The current date is ${new Date().toDateString()}.`),
 
 const inputFromBlob = (blob: Blob) =>
   Effect.gen(function* () {
-    const part = yield* AiInput.ImagePart.fromBlob(blob)
-    return AiInput.make(part)
+    const uint8Array = yield* Effect.promise(() =>
+      blob.arrayBuffer().then((buffer) => new Uint8Array(buffer)),
+    )
+    const part = new AiInput.ImagePart({ data: uint8Array })
+    return AiInput.make(new AiInput.UserMessage({ parts: [part] }))
   })
 
 class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(

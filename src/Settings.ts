@@ -31,3 +31,9 @@ export const SettingsCompactionLive = EventLog.groupCompaction(
 export const SettingsReactivityLive = EventLog.groupReactivity(SettingEvents, [
   "settings",
 ])
+
+export const SettingsLayer = Layer.mergeAll(
+  SettingsLive,
+  SettingsCompactionLive,
+  SettingsReactivityLive,
+)

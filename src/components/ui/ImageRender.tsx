@@ -11,7 +11,12 @@ export function ImageRender({
   asLink?: boolean
 }) {
   const url = useMemo(
-    () => URL.createObjectURL(new Blob([src.data], { type: src.contentType })),
+    () =>
+      URL.createObjectURL(
+        new Blob([src.data as Uint8Array<ArrayBuffer>], {
+          type: src.contentType,
+        }),
+      ),
     [src],
   )
   return asLink ? (

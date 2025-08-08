@@ -34,3 +34,8 @@ export const ReceiptGroupsReactivityLive = EventLog.groupReactivity(
   ReceiptGroupEvents,
   ["receipt_groups"],
 )
+
+export const ReceiptGroupsLayer = Layer.mergeAll(
+  ReceiptGroupsLive,
+  ReceiptGroupsReactivityLive,
+)

@@ -83,7 +83,7 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
             const id = String(i + 1).padStart(3, "0")
             images.push(
               new File(
-                [image.data],
+                [image.data as Uint8Array<ArrayBuffer>],
                 `images/${id}-${j}.${image.contentType.split("/")[1]}`,
                 { type: image.contentType },
               ),
@@ -156,8 +156,8 @@ export class ReceiptRepo extends Effect.Service<ReceiptRepo>()("ReceiptRepo", {
 
 const convertString = (amount: BigDecimal.BigDecimal, rate: number) => {
   const rateNumber = 1 / rate
-  return BigDecimal.multiply(amount, BigDecimal.fromNumber(rateNumber)).pipe(
-    BigDecimal.scale(2),
-    BigDecimal.format,
-  )
+  return BigDecimal.multiply(
+    amount,
+    BigDecimal.unsafeFromNumber(rateNumber),
+  ).pipe(BigDecimal.scale(2), BigDecimal.format)
 }

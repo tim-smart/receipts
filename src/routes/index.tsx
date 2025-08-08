@@ -35,23 +35,26 @@ import {
   String,
 } from "effect"
 import {
-  useRx,
-  useRxSet,
-  useRxSetPromise,
-  useRxSuspenseSuccess,
-  useRxValue,
-} from "@effect-rx/rx-react"
-import { baseCurrencyRx, latestRates, ratesWithRx } from "@/ExchangeRates/rx"
+  useAtom,
+  useAtomSet,
+  useAtomSuspense,
+  useAtomValue,
+} from "@effect-atom/atom-react"
+import {
+  baseCurrencyAtom,
+  latestRates,
+  ratesWithAtom,
+} from "@/ExchangeRates/atoms"
 import { Switch } from "@/components/ui/switch"
 import {
-  createGroupRx,
-  currentGroupRx,
-  receiptGroupsRx,
-  removeGroupRx,
-  updateGroupRx,
-} from "@/ReceiptGroups/rx"
+  createGroupAtom,
+  currentGroupAtom,
+  receiptGroupsAtom,
+  removeGroupAtom,
+  updateGroupAtom,
+} from "@/ReceiptGroups/atoms"
 import { uuidString } from "@/lib/utils"
-import { setSettingRx, settingRx } from "@/Settings/rx"
+import { setSettingAtom, settingAtom } from "@/Settings/atoms"
 import {
   currentGroupId,
   openaiApiKey,
@@ -59,11 +62,11 @@ import {
   openExchangeApiKey,
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
-import { currentReceiptsRx, exportReceiptsRx } from "@/Receipts/rx"
-import { clientRx, remoteAddressRx } from "@/EventLog"
+import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
+import { clientAtom, remoteAddressAtom } from "@/EventLog"
 import * as Uuid from "uuid"
 import { Model } from "@effect/sql"
-import { sessionDestroyRx } from "@/Session"
+import { sessionDestroyAtom } from "@/Session"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -97,9 +100,9 @@ function ReceiptsScreen() {
 }
 
 function GroupSelect() {
-  const groups = useRxSuspenseSuccess(receiptGroupsRx).value
-  const groupId = useRxValue(settingRx(currentGroupId))
-  const setGroupId = useRxSet(setSettingRx(currentGroupId))
+  const groups = useAtomSuspense(receiptGroupsAtom).value
+  const groupId = useAtomValue(settingAtom(currentGroupId))
+  const setGroupId = useAtomSet(setSettingAtom(currentGroupId))
   const groupIdString = useMemo(
     () =>
       Option.match(groupId, {
@@ -173,8 +176,8 @@ function ReceiptDrawer() {
 
 function GroupDrawer() {
   const [open, setOpen] = useState(false)
-  const createGroup = useRxSet(createGroupRx)
-  const setCurrentGroup = useRxSet(setSettingRx(currentGroupId))
+  const createGroup = useAtomSet(createGroupAtom)
+  const setCurrentGroup = useAtomSet(setSettingAtom(currentGroupId))
 
   const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -229,9 +232,9 @@ function GroupDrawer() {
 }
 
 function GroupSettings() {
-  const currentGroup = useRxSuspenseSuccess(currentGroupRx).value
-  const updateGroup = useRxSet(updateGroupRx)
-  const removeGroup = useRxSet(removeGroupRx)
+  const currentGroup = useAtomSuspense(currentGroupAtom).value
+  const updateGroup = useAtomSet(updateGroupAtom)
+  const removeGroup = useAtomSet(removeGroupAtom)
   const [open, setOpen] = useState(false)
 
   const onSubmit = useCallback(
@@ -310,12 +313,16 @@ function GroupSettings() {
 }
 
 function ReceiptGrid() {
-  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
+  const receipts = useAtomSuspense(currentReceiptsAtom).value
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
       {receipts.map((receipt) => (
-        <Link key={receipt.idString} to={`/receipt/${receipt.idString}`}>
+        <Link
+          key={receipt.idString}
+          to="/receipt/$id"
+          params={{ id: receipt.idString }}
+        >
           <ReceiptCard>{receipt}</ReceiptCard>
         </Link>
       ))}
@@ -353,20 +360,22 @@ function ReceiptCard({ children: receipt }: { children: Receipt }) {
 
 function SettingsDrawer() {
   const [open, setOpen] = useState(false)
-  const client = useRxSuspenseSuccess(clientRx).value
-  const currentOpenaiApiKey = useRxValue(settingRx(openaiApiKey)).pipe(
+  const client = useAtomSuspense(clientAtom).value
+  const currentOpenaiApiKey = useAtomValue(settingAtom(openaiApiKey)).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const currentOpenaiModel = useRxValue(settingRx(openaiModel)).pipe(
+  const currentOpenaiModel = useAtomValue(settingAtom(openaiModel)).pipe(
     Option.getOrElse(() => ""),
   )
-  const currentOpenExchangeKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+  const currentOpenExchangeKey = useAtomValue(
+    settingAtom(openExchangeApiKey),
+  ).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const [currentRemoteAddress, setRemoteAddress] = useRx(remoteAddressRx)
-  const logout = useRxSet(sessionDestroyRx)
+  const [currentRemoteAddress, setRemoteAddress] = useAtom(remoteAddressAtom)
+  const logout = useAtomSet(sessionDestroyAtom)
 
   const onSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -514,14 +523,14 @@ function TotalsToggle() {
 }
 
 function Totals() {
-  const receipts = useRxSuspenseSuccess(currentReceiptsRx).value
-  const apiKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+  const receipts = useAtomSuspense(currentReceiptsAtom).value
+  const apiKey = useAtomValue(settingAtom(openExchangeApiKey)).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
 
-  const [convertTo, setConvertTo] = useRx(baseCurrencyRx)
-  const [rates, getRates] = useRx(latestRates)
+  const [convertTo, setConvertTo] = useAtom(baseCurrencyAtom)
+  const [rates, getRates] = useAtom(latestRates)
 
   const totals = useMemo(() => {
     const currencies: Record<string, BigDecimal.BigDecimal> = {}
@@ -611,13 +620,13 @@ function ExportDrawer() {
   const [convert, setConvert] = useState(false)
   const [currency, setCurrency] = useState("USD")
 
-  const groupId = useRxValue(settingRx(currentGroupId))
-  const exportReceipts = useRxSetPromise(exportReceiptsRx)
-  const apiKey = useRxValue(settingRx(openExchangeApiKey)).pipe(
+  const groupId = useAtomValue(settingAtom(currentGroupId))
+  const exportReceipts = useAtomSet(exportReceiptsAtom, { mode: "promise" })
+  const apiKey = useAtomValue(settingAtom(openExchangeApiKey)).pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const [rates, getRates] = useRx(ratesWithRx(apiKey))
+  const [rates, getRates] = useAtom(ratesWithAtom(apiKey))
 
   useEffect(() => {
     if (convert && currency) getRates(currency)

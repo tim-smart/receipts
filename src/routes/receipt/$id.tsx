@@ -16,8 +16,8 @@ import {
 import { BigDecimal, DateTime } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
 import { createContext, useContext, useState } from "react"
-import { useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
-import { receiptRx, removeReceiptRx } from "@/Receipts/rx"
+import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
+import { receiptAtom, removeReceiptAtom } from "@/Receipts/atoms"
 import { Image } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
 
@@ -27,10 +27,10 @@ export const Route = createFileRoute("/receipt/$id")({
 
 function ReceiptScreen() {
   const { id } = Route.useParams()
-  const { receipt, images } = useRxSuspenseSuccess(receiptRx(id)).value
+  const { receipt, images } = useAtomSuspense(receiptAtom(id)).value
   const router = useRouter()
 
-  const remove = useRxSetPromise(removeReceiptRx)
+  const remove = useAtomSet(removeReceiptAtom, { mode: "promise" })
 
   return (
     <ReceiptContext.Provider value={receipt}>

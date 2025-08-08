@@ -1,47 +1,18 @@
-import { Rx } from "@effect-rx/rx-react"
-import {
-  EventJournal,
-  EventLog,
-  EventLogEncryption,
-  EventLogRemote,
-} from "@effect/experimental"
+import { Atom } from "@effect-atom/atom-react"
+import { EventJournal, EventLog, EventLogRemote } from "@effect/experimental"
 import { Identity } from "@effect/experimental/EventLog"
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Option, Schema } from "effect"
 import { ReceiptAppEvents } from "./Events"
-import { ReceiptGroupsLive, ReceiptGroupsReactivityLive } from "./ReceiptGroups"
-import {
-  ReceiptsCompactionLive,
-  ReceiptsLive,
-  ReceiptsReactivityLive,
-} from "./Receipts"
-import {
-  SettingsCompactionLive,
-  SettingsLive,
-  SettingsReactivityLive,
-} from "./Settings"
+import { ReceiptGroupsLayer } from "./ReceiptGroups"
+import { ReceiptsLayer } from "./Receipts"
+import { SettingsLayer } from "./Settings"
 import { ImagesLive } from "./Images"
-import { identityRx } from "./Auth"
-import { Socket } from "@effect/platform"
-import { localStorageRx } from "./lib/utils"
+import { identityAtom } from "./Auth"
+import { kvsRuntime } from "./lib/utils"
 
 const EventLogLayer = EventLog.layer(ReceiptAppEvents).pipe(
-  Layer.provide([ReceiptGroupsLive, ReceiptsLive, SettingsLive, ImagesLive]),
+  Layer.provide([ReceiptGroupsLayer, ReceiptsLayer, SettingsLayer, ImagesLive]),
   Layer.provide(EventJournal.layerIndexedDb()),
-)
-
-const CompactionLive = Layer.mergeAll(
-  ReceiptGroupsReactivityLive,
-  ReceiptsCompactionLive,
-  ReceiptsReactivityLive,
-  SettingsCompactionLive,
-  SettingsReactivityLive,
-).pipe(Layer.provide(EventLogLayer))
-
-export const EventLogLive = Layer.mergeAll(EventLogLayer, CompactionLive).pipe(
-  Layer.provide([
-    EventLogEncryption.layerSubtle,
-    Socket.layerWebSocketConstructorGlobal,
-  ]),
 )
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
@@ -53,30 +24,38 @@ export class EventLogClient extends Context.Tag("EventLog/EventLogClient")<
   static Default = Layer.effect(EventLogClient, makeClient)
 }
 
-// rx
+// atom
 
-export const eventLogRx = Rx.runtime((get) =>
-  Effect.gen(function* () {
-    const identity = yield* get.some(identityRx)
-    return EventLogLive.pipe(
-      Layer.provideMerge(Layer.succeed(Identity, identity)),
-    )
-  }).pipe(Layer.unwrapEffect),
+export const eventLogAtom = Atom.runtime((get) =>
+  EventLogClient.Default.pipe(
+    Layer.provideMerge(
+      Effect.gen(function* () {
+        const identity = yield* get.some(identityAtom)
+        return EventLogLayer.pipe(
+          Layer.provideMerge(Layer.succeed(Identity, identity)),
+        )
+      }).pipe(Layer.unwrapEffect),
+    ),
+  ),
 )
 
-export const clientRx = eventLogRx.rx(makeClient)
-export type EventClient = Rx.Rx.InferSuccess<typeof clientRx>
+export const clientAtom = eventLogAtom.atom(() => EventLogClient)
 
-export const remoteAddressRx = localStorageRx("receipts_remote_address")
+export const remoteAddressAtom = Atom.kvs({
+  runtime: kvsRuntime,
+  key: "receipts_remote_address",
+  schema: Schema.OptionFromNullishOr(Schema.String, undefined),
+  defaultValue: Option.none,
+})
 
-export const remoteRx = Rx.runtime((get) =>
+export const remoteAtom = Atom.runtime((get) =>
   Effect.gen(function* () {
-    const identity = yield* get.some(identityRx)
-    const remoteAddress = yield* get.some(remoteAddressRx)
+    const identity = yield* get.some(identityAtom)
+    const remoteAddress = yield* get.some(remoteAddressAtom)
     const url = new URL(remoteAddress)
     url.searchParams.set("publicKey", identity.publicKey)
-    return EventLogRemote.layerWebSocketBrowser(url.toString(), {
-      disablePing: true,
-    }).pipe(Layer.provide(get(eventLogRx.layer)))
+    return EventLogRemote.layerWebSocketBrowser(url.toString()).pipe(
+      Layer.provide(get(eventLogAtom.layer)),
+    )
   }).pipe(Layer.unwrapEffect),
 )

@@ -3,13 +3,13 @@ import { routeTree } from "./routeTree.gen"
 import { useLayoutEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"
-import { useRxMount, useRxSet, useRxValue } from "@effect-rx/rx-react"
-import { createAccountRx, identityRx, loginRx } from "./Auth.ts"
+import { useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { createAccountAtom, identityAtom, loginAtom } from "./Auth.ts"
 import { Option } from "effect"
 import { Input } from "./components/ui/input.tsx"
 import { Button } from "./components/ui/Button.tsx"
-import { aiWorkerRx } from "./AiWorker/rx.ts"
-import { remoteRx } from "./EventLog.ts"
+import { aiWorkerAtom } from "./AiWorker/atoms.ts"
+import { remoteAtom } from "./EventLog.ts"
 
 const router = createRouter({ routeTree, scrollRestoration: true })
 
@@ -34,7 +34,7 @@ function App() {
 }
 
 function Auth() {
-  const state = useRxValue(identityRx)
+  const state = useAtomValue(identityAtom)
 
   return Option.match(state, {
     onNone: () => <Login />,
@@ -43,8 +43,8 @@ function Auth() {
 }
 
 function Authenticated() {
-  useRxMount(aiWorkerRx)
-  useRxMount(remoteRx)
+  useAtomMount(aiWorkerAtom)
+  useAtomMount(remoteAtom)
   return <RouterProvider router={router} />
 }
 
@@ -80,8 +80,8 @@ function SystemTheme() {
 
 export const Login = () => {
   const [username, setUsername] = useState("")
-  const login = useRxSet(loginRx)
-  const create = useRxSet(createAccountRx)
+  const login = useAtomSet(loginAtom)
+  const create = useAtomSet(createAccountAtom)
 
   return (
     <div className="h-screen w-full flex justify-center items-center">

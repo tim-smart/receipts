@@ -18,7 +18,7 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
         HttpClient.retryTransient({
           schedule: Schedule.spaced(1000),
         }),
-        HttpClient.transformResponse(HttpClient.withTracerPropagation(false)),
+        HttpClient.withTracerPropagation(false),
       )
 
       const latest = yield* Cache.make({
