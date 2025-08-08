@@ -15,9 +15,6 @@ importers:
       '@effect-atom/atom-react':
         specifier: ^0.1.0
         version: 0.1.0(@effect/experimental@0.54.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6))(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)(react@18.3.1)(scheduler@0.26.0)
-      '@effect-rx/rx-react':
-        specifier: ^0.42.4
-        version: 0.42.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)(react@18.3.1)(scheduler@0.26.0)
       '@effect/ai':
         specifier: ^0.25.0
         version: 0.25.0(@effect/experimental@0.54.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6))(@effect/platform@0.90.0(effect@3.17.6))(@effect/rpc@0.68.3(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6))(effect@3.17.6)
@@ -812,19 +809,6 @@ packages:
     resolution: {integrity: sha512-fBDpOJerov5I8BmUJfV6o6coM6/j9cfXkP368Ofs1wK1mx/4bg58GmihnQ7RY02m2Ty7vTCBOisoVad1l+m6ZQ==}
     peerDependencies:
       '@effect/experimental': ^0.54.3
-      '@effect/platform': ^0.90.0
-      effect: ^3.17.0
-
-  '@effect-rx/rx-react@0.42.4':
-    resolution: {integrity: sha512-Y248Rn0kHoTdRifA+QX5KKJIP7LdWz/CbKmfkhnrEou2f/0nCthGwQrheAgpu7wd+f+Svy8eLjjfY69iidEUDQ==}
-    peerDependencies:
-      effect: ^3.17
-      react: '>=18 <20'
-      scheduler: '*'
-
-  '@effect-rx/rx@0.48.7':
-    resolution: {integrity: sha512-SdxC/4L+S14kU+6QoKzF0VTbflNYmhX1eJHIP4ZfnDqLVWd4PHJFdLjGCS9ZAODLyukkuBw4OVB4P7ScGaVV1g==}
-    peerDependencies:
       '@effect/platform': ^0.90.0
       effect: ^3.17.0
 
@@ -5320,20 +5304,6 @@ snapshots:
   '@effect-atom/atom@0.1.1(@effect/experimental@0.54.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6))(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)':
     dependencies:
       '@effect/experimental': 0.54.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)
-      '@effect/platform': 0.90.0(effect@3.17.6)
-      effect: 3.17.6
-
-  '@effect-rx/rx-react@0.42.4(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)(react@18.3.1)(scheduler@0.26.0)':
-    dependencies:
-      '@effect-rx/rx': 0.48.7(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)
-      effect: 3.17.6
-      react: 18.3.1
-      scheduler: 0.26.0
-    transitivePeerDependencies:
-      - '@effect/platform'
-
-  '@effect-rx/rx@0.48.7(@effect/platform@0.90.0(effect@3.17.6))(effect@3.17.6)':
-    dependencies:
       '@effect/platform': 0.90.0(effect@3.17.6)
       effect: 3.17.6
 

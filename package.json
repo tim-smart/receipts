@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@effect-atom/atom-react": "^0.1.0",
-    "@effect-rx/rx-react": "^0.42.4",
     "@effect/ai": "^0.25.0",
     "@effect/ai-openai": "^0.28.1",
     "@effect/experimental": "^0.54.4",
