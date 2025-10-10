@@ -12,16 +12,16 @@
     "w-start": "pnpm dlx wrangler dev --config ./cloudflare/wrangler.toml"
   },
   "dependencies": {
-    "@effect-atom/atom-react": "^0.1.0",
-    "@effect/ai": "^0.25.0",
-    "@effect/ai-openai": "^0.28.1",
-    "@effect/experimental": "^0.54.4",
-    "@effect/platform": "^0.90.0",
-    "@effect/platform-browser": "^0.70.0",
-    "@effect/sql": "^0.44.0",
-    "@effect/sql-sqlite-do": "^0.22.0",
-    "@effect/sql-sqlite-wasm": "^0.45.0",
-    "@effect/wa-sqlite": "^0.1.2",
+    "@effect-atom/atom-react": "^0.3.2",
+    "@effect/ai": "^0.31.0",
+    "@effect/ai-openai": "^0.34.0",
+    "@effect/experimental": "^0.56.0",
+    "@effect/platform": "^0.92.1",
+    "@effect/platform-browser": "^0.72.0",
+    "@effect/sql": "^0.46.0",
+    "@effect/sql-sqlite-do": "^0.24.0",
+    "@effect/sql-sqlite-wasm": "^0.47.0",
+    "@effect/wa-sqlite": "^0.2.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-popover": "^1.1.14",
@@ -35,7 +35,7 @@
     "csv-stringify": "^6.6.0",
     "effect": "^3.17.6",
     "file-saver": "^2.0.5",
-    "lucide-react": "^0.537.0",
+    "lucide-react": "^0.545.0",
     "next-themes": "^0.4.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -43,7 +43,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0",
+    "uuid": "^13.0.0",
     "vaul": "^1.1.2",
     "workbox-precaching": "^7.3.0",
     "workbox-routing": "^7.3.0"
@@ -62,7 +62,7 @@
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
-    "shadcn": "^2.10.0",
+    "shadcn": "^3.4.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
@@ -76,5 +76,5 @@
     "sharp": "0.32.6",
     "sharp-ico": "0.1.5"
   },
-  "packageManager": "pnpm@9.12.2"
+  "packageManager": "pnpm@10.18.2+sha512.9fb969fa749b3ade6035e0f109f0b8a60b5d08a1a87fdf72e337da90dcc93336e2280ca4e44f2358a649b83c17959e9993e777c2080879f3801e6f0d999ad3dd"
 }
