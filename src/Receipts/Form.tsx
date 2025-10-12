@@ -9,11 +9,7 @@ import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { FormEvent, useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import { globalValue } from "effect/GlobalValue"
 import { Image } from "@/Domain/Image"
-import {
-  useAtomSet,
-  useAtomSuspense,
-  useAtomValue,
-} from "@effect-atom/atom-react"
+import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
 import { createReceiptAtom, updateReceiptAtom } from "./atoms"
 import { currentGroupAtom } from "@/ReceiptGroups/atoms"
 import * as Uuid from "uuid"
@@ -35,7 +31,7 @@ export function ReceiptForm({
   onSubmit: () => void
 }) {
   const group = useAtomSuspense(currentGroupAtom).value
-  const openaiKey = useAtomValue(settingAtom(openaiApiKey))
+  const openaiKey = useAtomSuspense(settingAtom(openaiApiKey)).value
   const createReceipt = useAtomSet(createReceiptAtom, { mode: "promise" })
   const updateReceipt = useAtomSet(updateReceiptAtom, { mode: "promise" })
   const createImage = useAtomSet(createImageAtom, { mode: "promise" })

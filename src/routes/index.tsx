@@ -34,12 +34,7 @@ import {
   Redacted,
   String,
 } from "effect"
-import {
-  useAtom,
-  useAtomSet,
-  useAtomSuspense,
-  useAtomValue,
-} from "@effect-atom/atom-react"
+import { useAtom, useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
 import {
   baseCurrencyAtom,
   latestRates,
@@ -101,7 +96,7 @@ function ReceiptsScreen() {
 
 function GroupSelect() {
   const groups = useAtomSuspense(receiptGroupsAtom).value
-  const groupId = useAtomValue(settingAtom(currentGroupId))
+  const groupId = useAtomSuspense(settingAtom(currentGroupId)).value
   const setGroupId = useAtomSet(setSettingAtom(currentGroupId))
   const groupIdString = useMemo(
     () =>
@@ -361,16 +356,18 @@ function ReceiptCard({ children: receipt }: { children: Receipt }) {
 function SettingsDrawer() {
   const [open, setOpen] = useState(false)
   const client = useAtomSuspense(clientAtom).value
-  const currentOpenaiApiKey = useAtomValue(settingAtom(openaiApiKey)).pipe(
+  const currentOpenaiApiKey = useAtomSuspense(
+    settingAtom(openaiApiKey),
+  ).value.pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const currentOpenaiModel = useAtomValue(settingAtom(openaiModel)).pipe(
-    Option.getOrElse(() => ""),
-  )
-  const currentOpenExchangeKey = useAtomValue(
+  const currentOpenaiModel = useAtomSuspense(
+    settingAtom(openaiModel),
+  ).value.pipe(Option.getOrElse(() => ""))
+  const currentOpenExchangeKey = useAtomSuspense(
     settingAtom(openExchangeApiKey),
-  ).pipe(
+  ).value.pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
@@ -524,7 +521,7 @@ function TotalsToggle() {
 
 function Totals() {
   const receipts = useAtomSuspense(currentReceiptsAtom).value
-  const apiKey = useAtomValue(settingAtom(openExchangeApiKey)).pipe(
+  const apiKey = useAtomSuspense(settingAtom(openExchangeApiKey)).value.pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
@@ -620,9 +617,9 @@ function ExportDrawer() {
   const [convert, setConvert] = useState(false)
   const [currency, setCurrency] = useState("USD")
 
-  const groupId = useAtomValue(settingAtom(currentGroupId))
+  const groupId = useAtomSuspense(settingAtom(currentGroupId)).value
   const exportReceipts = useAtomSet(exportReceiptsAtom, { mode: "promise" })
-  const apiKey = useAtomValue(settingAtom(openExchangeApiKey)).pipe(
+  const apiKey = useAtomSuspense(settingAtom(openExchangeApiKey)).value.pipe(
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )

@@ -1,5 +1,5 @@
 import { Setting } from "@/Domain/Setting"
-import { Result, Atom } from "@effect-atom/atom-react"
+import { Atom, Result } from "@effect-atom/atom-react"
 import { Effect, Layer, Option, Schema, Stream } from "effect"
 import { SettingRepo } from "./Repo"
 import { eventLogAtom } from "@/EventLog"
@@ -12,14 +12,18 @@ export const settingAtom = Atom.family(
   <Name extends string, S extends Schema.Schema.AnyNoContext>(
     setting: Setting<Name, S>,
   ) =>
-    runtime
-      .atom(
-        Effect.gen(function* () {
-          const settings = yield* SettingRepo
-          return settings.stream(setting)
-        }).pipe(Stream.unwrap),
-      )
-      .pipe(Atom.map(Result.getOrElse(() => Option.none<S["Type"]>()))),
+    runtime.atom(
+      Effect.gen(function* () {
+        const settings = yield* SettingRepo
+        return settings.stream(setting)
+      }).pipe(Stream.unwrap),
+    ),
+)
+
+export const settingOptionAtom = Atom.family(
+  <Name extends string, S extends Schema.Schema.AnyNoContext>(
+    setting: Setting<Name, S>,
+  ) => Atom.map(settingAtom(setting), Result.getOrElse(Option.none)),
 )
 
 export const setSettingAtom = Atom.family(
