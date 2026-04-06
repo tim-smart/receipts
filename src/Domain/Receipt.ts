@@ -11,7 +11,7 @@ export class Receipt extends Model.Class<Receipt>("Receipt")({
   date: Schema.DateTimeUtcFromMillis,
   description: Schema.String,
   merchant: Schema.String,
-  amount: Schema.BigDecimal,
+  amount: Schema.BigDecimalFromString,
   currency: Currency,
   processed: Schema.BooleanFromBit,
   groupId: ReceiptGroupId,

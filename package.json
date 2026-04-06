@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@base-ui/react": "^1.3.0",
     "@effect/ai-openai": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/ai-openai@34bd7d3",
     "@effect/atom-react": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/atom-react@34bd7d3",
     "@effect/platform-browser": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/platform-browser@34bd7d3",

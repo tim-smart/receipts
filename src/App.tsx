@@ -7,7 +7,7 @@ import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react"
 import { createAccountAtom, identityAtom, loginAtom } from "./Auth.ts"
 import { Option } from "effect"
 import { Input } from "./components/ui/input.tsx"
-import { Button } from "./components/ui/Button.tsx"
+import { Button } from "./components/ui/button.tsx"
 import { aiWorkerAtom } from "./AiWorker/atoms.ts"
 import { remoteAtom } from "./EventLog.ts"
 

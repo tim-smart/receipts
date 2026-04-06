@@ -3,7 +3,7 @@ import { Scaffold } from "@/components/ui/Scaffold"
 import { Receipt } from "@/Domain/Receipt"
 import { ChevronLeft } from "lucide-react"
 import { formatCurrency } from "@/Domain/Currency"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import {
   Drawer,
   DrawerClose,
@@ -16,11 +16,12 @@ import {
 import { BigDecimal, DateTime } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
 import { createContext, useContext, useState } from "react"
-import { useAtomSet, useAtomSuspense } from "@effect/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { receiptAtom } from "@/Receipts/atoms"
 import { Image } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
 import { writeEventAtom } from "@/EventLog"
+import { AsyncResult } from "effect/unstable/reactivity"
 
 export const Route = createFileRoute("/receipt/$id")({
   component: ReceiptScreen,
@@ -28,7 +29,22 @@ export const Route = createFileRoute("/receipt/$id")({
 
 function ReceiptScreen() {
   const { id } = Route.useParams()
-  const { receipt, images } = useAtomSuspense(receiptAtom(id)).value
+  const result = useAtomValue(receiptAtom(id))
+
+  return AsyncResult.builder(result)
+    .onSuccess(({ receipt, images }) => (
+      <ReceiptScreenContent receipt={receipt} images={images} />
+    ))
+    .render()
+}
+
+function ReceiptScreenContent({
+  receipt,
+  images,
+}: {
+  readonly receipt: Receipt
+  readonly images: ReadonlyArray<Image>
+}) {
   const router = useRouter()
 
   const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
@@ -39,7 +55,7 @@ function ReceiptScreen() {
         heading={receipt.description}
         subHeading={receipt.merchant}
         leading={
-          <Link to="/" className="flex ml-[-6px]">
+          <Link to="/" className="flex -ml-1.5">
             <ChevronLeft />
             Back
           </Link>

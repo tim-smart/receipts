@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
   Drawer,
@@ -11,9 +11,25 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { Receipt } from "@/Domain/Receipt"
-import { Combobox } from "@/components/ui/ComboBox"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox"
 import { ArrowUpRight, Plus, Settings, Settings2 } from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
@@ -25,16 +41,8 @@ import {
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
 import { ReceiptForm } from "@/Receipts/Form"
-import {
-  BigDecimal,
-  DateTime,
-  Effect,
-  Option,
-  pipe,
-  Redacted,
-  String,
-} from "effect"
-import { useAtom, useAtomSet, useAtomSuspense } from "@effect/atom-react"
+import { BigDecimal, DateTime, Option, pipe, Redacted, String } from "effect"
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react"
 import {
   baseCurrencyAtom,
   latestRates,
@@ -42,7 +50,7 @@ import {
 } from "@/ExchangeRates/atoms"
 import { Switch } from "@/components/ui/switch"
 import { currentGroupAtom, receiptGroupsAtom } from "@/ReceiptGroups/atoms"
-import { uuidBytes, uuidString } from "@/lib/utils"
+import { uuidString } from "@/lib/utils"
 import { setSettingAtom, settingAtom } from "@/Settings/atoms"
 import {
   currentGroupId,
@@ -52,10 +60,11 @@ import {
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
-import { clientAtom, remoteAddressAtom, writeEventAtom } from "@/EventLog"
+import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import * as Uuid from "uuid"
 import { sessionDestroyAtom } from "@/Session"
 import { Model } from "effect/unstable/schema"
+import { AsyncResult } from "effect/unstable/reactivity"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -89,8 +98,14 @@ function ReceiptsScreen() {
 }
 
 function GroupSelect() {
-  const groups = useAtomSuspense(receiptGroupsAtom).value
-  const groupId = useAtomSuspense(settingAtom(currentGroupId)).value
+  const groups = useAtomValue(
+    receiptGroupsAtom,
+    AsyncResult.getOrElse(() => []),
+  )
+  const groupId = useAtomValue(
+    settingAtom(currentGroupId),
+    AsyncResult.value,
+  ).pipe(Option.flatten)
   const setGroupId = useAtomSet(setSettingAtom(currentGroupId))
   const groupIdString = useMemo(
     () =>
@@ -100,26 +115,46 @@ function GroupSelect() {
       }),
     [groupId],
   )
-  const options = useMemo(
+  const currentGroup = useMemo(
     () =>
-      groups.map((folder) => ({
-        value: uuidString(folder.id),
-        label: folder.name,
-      })) ?? [],
-    [groups],
+      groups.find((group) => uuidString(group.id) === groupIdString) ?? null,
+    [groups, groupIdString],
   )
 
   return (
-    <Combobox
-      options={options}
-      value={groupIdString}
-      onChange={(groupId) => {
-        const uuid = ReceiptGroupId.make(uuidBytes(groupId))
-        setGroupId(uuid)
+    <Combobox<ReceiptGroup>
+      items={groups}
+      value={currentGroup}
+      itemToStringValue={(item) => item.name}
+      onValueChange={(group) => {
+        if (!group) return
+        setGroupId(group.id)
       }}
-      placeholder="Select a folder"
-      className="w-full"
-    />
+    >
+      <ComboboxTrigger
+        render={
+          <Button
+            variant="outline"
+            className="w-64 justify-between font-normal"
+          >
+            <ComboboxValue>
+              {(group: ReceiptGroup) => group?.name}
+            </ComboboxValue>
+          </Button>
+        }
+      />
+      <ComboboxContent>
+        <ComboboxInput showTrigger={false} placeholder="Select a folder" />
+        <ComboboxEmpty>No folders</ComboboxEmpty>
+        <ComboboxList>
+          {(group: ReceiptGroup) => (
+            <ComboboxItem key={uuidString(group.id)} value={group}>
+              {group?.name}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 }
 
@@ -167,6 +202,7 @@ function GroupDrawer() {
   const [open, setOpen] = useState(false)
   const writeEvent = useAtomSet(writeEventAtom)
   const setCurrentGroup = useAtomSet(setSettingAtom(currentGroupId))
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -192,7 +228,7 @@ function GroupDrawer() {
         </Button>
       </DrawerTrigger>
 
-      <DrawerContent>
+      <DrawerContent ref={contentRef}>
         <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
           <DrawerHeader>
             <TypoH3>Add group</TypoH3>
@@ -205,10 +241,12 @@ function GroupDrawer() {
               <Input id="name" name="name" className="col-span-3" required />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="defaultCurrency" className="text-right">
-                Default currency
-              </Label>
-              <CurrencySelect initialValue="USD" name="defaultCurrency" />
+              <Label htmlFor="defaultCurrency">Default currency</Label>
+              <CurrencySelect
+                initialValue="USD"
+                name="defaultCurrency"
+                portalContainer={contentRef}
+              />
             </div>
           </div>
           <DrawerFooter>
@@ -222,9 +260,13 @@ function GroupDrawer() {
 }
 
 function GroupSettings() {
-  const currentGroup = useAtomSuspense(currentGroupAtom).value
+  const currentGroup = useAtomValue(
+    currentGroupAtom,
+    AsyncResult.getOrElse(() => null),
+  )
   const writeEvent = useAtomSet(writeEventAtom)
   const [open, setOpen] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const onSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -233,7 +275,7 @@ function GroupSettings() {
       writeEvent({
         event: "GroupUpdate",
         payload: ReceiptGroup.update.make({
-          ...currentGroup,
+          ...currentGroup!,
           name: data.get("name") as string,
           defaultCurrency: data.get("defaultCurrency") as string,
           updatedAt: undefined,
@@ -249,7 +291,7 @@ function GroupSettings() {
       event.preventDefault()
       writeEvent({
         event: "GroupDelete",
-        payload: currentGroup.id,
+        payload: currentGroup!.id,
       })
       setOpen(false)
     },
@@ -264,31 +306,28 @@ function GroupSettings() {
         </Button>
       </DrawerTrigger>
 
-      <DrawerContent>
+      <DrawerContent ref={contentRef}>
         <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
           <DrawerHeader>
             <TypoH3>Group settings</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 name="name"
                 className="col-span-3"
-                defaultValue={currentGroup.name}
+                defaultValue={currentGroup?.name}
                 required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="defaultCurrency" className="text-right">
-                Default currency
-              </Label>
+              <Label htmlFor="defaultCurrency">Default currency</Label>
               <CurrencySelect
-                initialValue={currentGroup.defaultCurrency}
+                initialValue={currentGroup?.defaultCurrency}
                 name="defaultCurrency"
+                portalContainer={contentRef}
               />
             </div>
           </div>
@@ -306,7 +345,10 @@ function GroupSettings() {
 }
 
 function ReceiptGrid() {
-  const receipts = useAtomSuspense(currentReceiptsAtom).value
+  const receipts = useAtomValue(
+    currentReceiptsAtom,
+    AsyncResult.getOrElse(() => []),
+  )
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -353,19 +395,27 @@ function ReceiptCard({ children: receipt }: { children: Receipt }) {
 
 function SettingsDrawer() {
   const [open, setOpen] = useState(false)
-  const client = useAtomSuspense(clientAtom).value
-  const currentOpenaiApiKey = useAtomSuspense(
+  const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
+  const currentOpenaiApiKey = useAtomValue(
     settingAtom(openaiApiKey),
-  ).value.pipe(
+    AsyncResult.value,
+  ).pipe(
+    Option.flatten,
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
-  const currentOpenaiModel = useAtomSuspense(
+  const currentOpenaiModel = useAtomValue(
     settingAtom(openaiModel),
-  ).value.pipe(Option.getOrElse(() => ""))
-  const currentOpenExchangeKey = useAtomSuspense(
+    AsyncResult.value,
+  ).pipe(
+    Option.flatten,
+    Option.getOrElse(() => ""),
+  )
+  const currentOpenExchangeKey = useAtomValue(
     settingAtom(openExchangeApiKey),
-  ).value.pipe(
+    AsyncResult.value,
+  ).pipe(
+    Option.flatten,
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
@@ -376,28 +426,31 @@ function SettingsDrawer() {
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      Effect.runPromise(
-        client("SettingChange", {
+      writeEvent({
+        event: "SettingChange",
+        payload: {
           name: openaiApiKey.name,
           json: openaiApiKey.encodeSync(
             Redacted.make(data.get("openaiApiKey") as string),
           ),
-        }),
-      )
-      Effect.runPromise(
-        client("SettingChange", {
+        },
+      })
+      writeEvent({
+        event: "SettingChange",
+        payload: {
           name: openaiModel.name,
           json: openaiModel.encodeSync(data.get("openaiModel") as string),
-        }),
-      )
-      await Effect.runPromise(
-        client("SettingChange", {
+        },
+      })
+      await writeEvent({
+        event: "SettingChange",
+        payload: {
           name: openExchangeApiKey.name,
           json: openExchangeApiKey.encodeSync(
             Redacted.make(data.get("openExchangeApiKey") as string),
           ),
-        }),
-      )
+        },
+      })
       setRemoteAddress(
         pipe(
           data.get("remoteAddress") as string,
@@ -407,7 +460,7 @@ function SettingsDrawer() {
       )
       setOpen(false)
     },
-    [client],
+    [writeEvent],
   )
 
   return (
@@ -496,7 +549,7 @@ function SettingsDrawer() {
 function TotalsToggle() {
   const [open, setOpen] = useState(false)
   return (
-    <Card className="flex-1">
+    <Card className="flex-1 p-0">
       <CardHeader className="pr-2 pl-5 py-2 cursor-pointer">
         <div className="flex items-center">
           <CardDescription
@@ -518,8 +571,15 @@ function TotalsToggle() {
 }
 
 function Totals() {
-  const receipts = useAtomSuspense(currentReceiptsAtom).value
-  const apiKey = useAtomSuspense(settingAtom(openExchangeApiKey)).value.pipe(
+  const receipts = useAtomValue(
+    currentReceiptsAtom,
+    AsyncResult.getOrElse(() => []),
+  )
+  const apiKey = useAtomValue(
+    settingAtom(openExchangeApiKey),
+    AsyncResult.value,
+  ).pipe(
+    Option.flatten,
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
@@ -614,10 +674,18 @@ function ExportDrawer() {
   const [open, setOpen] = useState(false)
   const [convert, setConvert] = useState(false)
   const [currency, setCurrency] = useState("USD")
+  const contentRef = useRef<HTMLDivElement>(null)
 
-  const groupId = useAtomSuspense(settingAtom(currentGroupId)).value
+  const groupId = useAtomValue(
+    settingAtom(currentGroupId),
+    AsyncResult.value,
+  ).pipe(Option.flatten)
   const exportReceipts = useAtomSet(exportReceiptsAtom, { mode: "promise" })
-  const apiKey = useAtomSuspense(settingAtom(openExchangeApiKey)).value.pipe(
+  const apiKey = useAtomValue(
+    settingAtom(openExchangeApiKey),
+    AsyncResult.value,
+  ).pipe(
+    Option.flatten,
     Option.map(Redacted.value),
     Option.getOrElse(() => ""),
   )
@@ -645,7 +713,7 @@ function ExportDrawer() {
           <ArrowUpRight />
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent ref={contentRef}>
         <div className="w-full max-w-sm mx-auto">
           <DrawerHeader>
             <TypoH3>Export</TypoH3>
@@ -668,6 +736,7 @@ function ExportDrawer() {
                   name="currency"
                   onChange={setCurrency}
                   initialValue={currency}
+                  portalContainer={contentRef}
                 />
               </div>
             )}

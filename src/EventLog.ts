@@ -66,13 +66,15 @@ export type EventPayload =
       : never
     : never
 
-export const writeEventAtom = eventLogAtom.fn<EventPayload>()((payload) =>
-  EventLog.EventLog.use((_) =>
-    _.write({
-      schema: ReceiptAppEvents,
-      ...payload,
-    } as any),
-  ).pipe(Effect.tapCause(Effect.logWarning)),
+export const writeEventAtom = eventLogAtom.fn<EventPayload>()(
+  (payload) =>
+    EventLog.EventLog.use((_) =>
+      _.write({
+        schema: ReceiptAppEvents,
+        ...payload,
+      } as any),
+    ).pipe(Effect.tapCause(Effect.logWarning)),
+  { concurrent: true },
 )
 
 export const remoteAddressAtom = Atom.kvs({
