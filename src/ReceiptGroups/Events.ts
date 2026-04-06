@@ -1,8 +1,8 @@
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { uuidString } from "@/lib/utils"
-import { EventGroup } from "@effect/experimental"
+import { EventGroup } from "effect/unstable/eventlog"
 
-export class ReceiptGroupEvents extends EventGroup.empty
+export const ReceiptGroupEvents = EventGroup.empty
   .add({
     tag: "GroupCreate",
     primaryKey: (g) => uuidString(g.id!),
@@ -18,4 +18,4 @@ export class ReceiptGroupEvents extends EventGroup.empty
     tag: "GroupDelete",
     primaryKey: (id) => uuidString(id),
     payload: ReceiptGroupId,
-  }) {}
+  })

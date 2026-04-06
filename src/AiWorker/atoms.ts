@@ -3,10 +3,9 @@ import { identityAtom } from "@/Auth"
 import { openaiApiKey, openaiModel } from "@/Domain/Setting"
 import { eventLogAtom } from "@/EventLog"
 import { settingOptionAtom } from "@/Settings/atoms"
-import { Atom } from "@effect-atom/atom-react"
 import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai"
-import { FetchHttpClient, HttpClient } from "@effect/platform"
 import { Effect, Layer, Schedule } from "effect"
+import { Atom } from "effect/unstable/reactivity"
 
 export const aiWorkerAtom = Atom.runtime((get) =>
   Effect.gen(function* () {

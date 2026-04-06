@@ -1,16 +1,24 @@
 import {
+  Cache,
+  Cause,
+  Effect,
+  Layer,
+  Schedule,
+  Schema,
+  ServiceMap,
+} from "effect"
+import {
   FetchHttpClient,
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
-} from "@effect/platform"
-import { Cache, Cause, Effect, Schedule, Schema } from "effect"
+} from "effect/unstable/http"
+import { TracerPropagationEnabled } from "effect/unstable/http/HttpClient"
 
-export class ExchangeRates extends Effect.Service<ExchangeRates>()(
+export class ExchangeRates extends ServiceMap.Service<ExchangeRates>()(
   "ExchangeRates",
   {
-    accessors: true,
-    effect: Effect.gen(function* () {
+    make: Effect.gen(function* () {
       const client = (yield* HttpClient.HttpClient).pipe(
         HttpClient.mapRequest(
           HttpClientRequest.prependUrl("https://openexchangerates.org/api"),
@@ -18,7 +26,9 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
         HttpClient.retryTransient({
           schedule: Schedule.spaced(1000),
         }),
-        HttpClient.withTracerPropagation(false),
+        HttpClient.transformResponse(
+          Effect.provideService(TracerPropagationEnabled, false),
+        ),
       )
 
       const latest = yield* Cache.make({
@@ -40,13 +50,13 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
       const rates = (appId: string, base: string) =>
         Effect.gen(function* () {
           if (base === "") {
-            return yield* new Cause.NoSuchElementException()
+            return yield* new Cause.NoSuchElementError()
           }
-          const { rates } = yield* latest.get(appId)
+          const { rates } = yield* Cache.get(latest, appId)
           if (base === "USD") {
             return rates
           }
-          const baseRate = yield* Effect.fromNullable(rates[base])
+          const baseRate = yield* Effect.fromNullishOr(rates[base])
           const adjustment = 1 / baseRate
           return Object.fromEntries(
             Object.entries(rates).map(([key, value]) => [
@@ -58,14 +68,14 @@ export class ExchangeRates extends Effect.Service<ExchangeRates>()(
 
       return { rates } as const
     }),
-    dependencies: [FetchHttpClient.layer],
   },
-) {}
+) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(FetchHttpClient.layer),
+  )
+}
 
 const Rates = Schema.Struct({
   base: Schema.String,
-  rates: Schema.Record({
-    key: Schema.String,
-    value: Schema.Number,
-  }),
+  rates: Schema.Record(Schema.String, Schema.Number),
 })

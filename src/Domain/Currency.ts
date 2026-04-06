@@ -3552,12 +3552,12 @@ export const options = codes.map(
     }) as const,
 )
 
-export const Currency = Schema.Literal(...codes)
+export const Currency = Schema.Literals(codes)
 
 export const formatCurrency = (options: {
   readonly amount: BigDecimal.BigDecimal
   readonly currency?: string
 }): string => {
-  const amount = options.amount.pipe(BigDecimal.unsafeToNumber)
+  const amount = options.amount.pipe(BigDecimal.toNumberUnsafe)
   return `$${amount}${options.currency ? ` ${options.currency}` : ""}`
 }

@@ -1,41 +1,52 @@
-import { EventLog } from "@effect/experimental"
-import { Model, SqlClient } from "@effect/sql"
 import { Receipt } from "./Domain/Receipt"
 import { Effect, Layer } from "effect"
-import { SqlLive } from "./Sql"
 import { ReceiptEvents } from "./Receipts/Events"
+import { EventLog } from "effect/unstable/eventlog"
+import { QueryBuilder } from "./IndexedDb"
 
 export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
   Effect.gen(function* () {
-    const repo = yield* Model.makeRepository(Receipt, {
-      tableName: "receipts",
-      idColumn: "id",
-      spanPrefix: "Receipts",
-    })
-    const sql = yield* SqlClient.SqlClient
+    const db = yield* QueryBuilder
+    const receipts = db.from("receipts")
 
     return handlers
-      .handle("ReceiptCreate", ({ payload }) => repo.insert(payload))
-      .handle("ReceiptUpdate", ({ payload, conflicts }) =>
-        Effect.gen(function* () {
-          let merged = Object.assign({}, payload)
+      .handle(
+        "ReceiptCreate",
+        Effect.fn(function* ({ payload }) {
+          const receipt = new Receipt(payload)
+          yield* receipts.insert(receipt)
+          return receipt
+        }, Effect.orDie),
+      )
+      .handle(
+        "ReceiptUpdate",
+        Effect.fn(function* ({ payload, conflicts }) {
+          const current = yield* receipts.select().equals(payload.id).first()
+          let merged = Object.assign({}, current)
           for (const conflict in conflicts) {
             Object.assign(merged, conflict)
           }
-          yield* repo.update(merged)
-        }),
+          yield* receipts.upsert(new Receipt(merged))
+        }, Effect.orDie),
       )
-      .handle("ReceiptDelete", ({ payload }) => repo.delete(payload))
-      .handle("ReceiptSetProcessed", ({ payload, conflicts }) =>
-        Effect.gen(function* () {
+      .handle("ReceiptDelete", ({ payload }) =>
+        receipts.delete().equals(payload).asEffect().pipe(Effect.orDie),
+      )
+      .handle(
+        "ReceiptSetProcessed",
+        Effect.fn(function* ({ payload, conflicts }) {
           if (conflicts.length) return
-          yield* sql`update receipts set processed = ${payload.processed} where id = ${payload.id}`.pipe(
-            Effect.orDie,
+          const current = yield* receipts.select().equals(payload.id).first()
+          yield* receipts.upsert(
+            new Receipt({
+              ...current,
+              processed: payload.processed,
+            }),
           )
-        }),
+        }, Effect.orDie),
       )
   }),
-).pipe(Layer.provide(SqlLive))
+).pipe(Layer.provide(QueryBuilder.layer))
 
 export const ReceiptsCompactionLive = EventLog.groupCompaction(
   ReceiptEvents,

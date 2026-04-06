@@ -1,16 +1,15 @@
 import { Image, ImageId } from "@/Domain/Image"
 import { uuidString } from "@/lib/utils"
-import { EventGroup } from "@effect/experimental"
+import { EventGroup } from "effect/unstable/eventlog"
 
-export class ImageEvents extends EventGroup.empty
+export const ImageEvents = EventGroup.empty
   .add({
     tag: "ImageCreate",
     primaryKey: (image) => uuidString(image.id!),
     payload: Image.insert,
-    success: Image,
   })
   .add({
     tag: "ImageDelete",
     primaryKey: (id) => uuidString(id),
     payload: ImageId,
-  }) {}
+  })

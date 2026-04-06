@@ -1,20 +1,19 @@
-import { EventLog } from "@effect/experimental"
-import { Model } from "@effect/sql"
 import { Effect, Layer } from "effect"
-import { SqlLive } from "./Sql"
-import { Image } from "./Domain/Image"
 import { ImageEvents } from "./Images/Events"
+import { EventLog } from "effect/unstable/eventlog"
+import { QueryBuilder } from "./IndexedDb"
 
 export const ImagesLive = EventLog.group(ImageEvents, (handlers) =>
   Effect.gen(function* () {
-    const repo = yield* Model.makeRepository(Image, {
-      tableName: "images",
-      idColumn: "id",
-      spanPrefix: "Images",
-    })
+    const db = yield* QueryBuilder
+    const images = db.from("images")
 
     return handlers
-      .handle("ImageCreate", ({ payload }) => repo.insert(payload))
-      .handle("ImageDelete", ({ payload }) => repo.delete(payload))
+      .handle("ImageCreate", ({ payload }) =>
+        images.insert(payload).asEffect().pipe(Effect.orDie),
+      )
+      .handle("ImageDelete", ({ payload }) =>
+        images.delete().equals(payload).asEffect().pipe(Effect.orDie),
+      )
   }),
-).pipe(Layer.provide([SqlLive]))
+).pipe(Layer.provide([QueryBuilder.layer]))

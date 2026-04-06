@@ -1,31 +1,22 @@
-import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
-import { EventLogClient } from "@/EventLog"
+import { QueryBuilder } from "@/IndexedDb"
 import { SettingRepo } from "@/Settings/Repo"
-import { SqlLive } from "@/Sql"
-import { Reactivity } from "@effect/experimental"
-import { Model, SqlClient } from "@effect/sql"
-import { Array, Effect, Option, Schema } from "effect"
+import { Array, Effect, Layer, Option, ServiceMap } from "effect"
+import { Reactivity } from "effect/unstable/reactivity"
 
-export class ReceiptGroupRepo extends Effect.Service<ReceiptGroupRepo>()(
+export class ReceiptGroupRepo extends ServiceMap.Service<ReceiptGroupRepo>()(
   "ReceiptGroups/ReceiptGroupRepo",
   {
-    effect: Effect.gen(function* () {
-      const sql = yield* SqlClient.SqlClient
-      const reactivity = yield* Reactivity.Reactivity
-      const client = yield* EventLogClient
+    make: Effect.gen(function* () {
       const settings = yield* SettingRepo
-      const repo = yield* Model.makeRepository(ReceiptGroup, {
-        tableName: "receipt_groups",
-        idColumn: "id",
-        spanPrefix: "ReceiptGroupRepo",
-      })
+      const reactivity = yield* Reactivity.Reactivity
+      const db = yield* QueryBuilder
+      const receiptGroups = db.from("receiptGroups")
+      const byName = receiptGroups.select("name")
 
-      const all = sql`select * from receipt_groups order by name asc`.pipe(
-        Effect.flatMap(Schema.decodeUnknown(ReceiptGroup.Array)),
-      )
+      const all = byName.asEffect()
 
-      const stream = reactivity.stream(["receipt_groups"], all)
+      const stream = byName.reactive(["receipt_groups"])
 
       const current = reactivity.stream(
         ["receipt_groups", "settings"],
@@ -33,27 +24,22 @@ export class ReceiptGroupRepo extends Effect.Service<ReceiptGroupRepo>()(
           const groupId = yield* settings.get(currentGroupId)
           return yield* Option.match(groupId, {
             onNone: () => all.pipe(Effect.map(Array.head)),
-            onSome: (id) => repo.findById(id),
+            onSome: (id) =>
+              receiptGroups
+                .select()
+                .equals(id)
+                .first()
+                .asEffect()
+                .pipe(Effect.option),
           })
         }),
       )
 
-      const create = (payload: typeof ReceiptGroup.insert.Type) =>
-        client("GroupCreate", payload)
-
-      const update = (payload: typeof ReceiptGroup.update.Type) =>
-        client("GroupUpdate", payload)
-
-      const remove = (id: typeof ReceiptGroupId.Type) =>
-        client("GroupDelete", id)
-
-      return { stream, create, update, remove, current } as const
+      return { stream, current } as const
     }),
-    dependencies: [
-      SqlLive,
-      Reactivity.layer,
-      EventLogClient.Default,
-      SettingRepo.Default,
-    ],
   },
-) {}
+) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide([Reactivity.layer, QueryBuilder.layer, SettingRepo.layer]),
+  )
+}

@@ -1,6 +1,4 @@
-import { EventLog } from "@effect/experimental"
 import { Effect, Layer, Option } from "effect"
-import { SqlClient } from "@effect/sql"
 import { SqlLive } from "./Sql"
 import { SettingEvents } from "./Settings/Events"
 import * as Arr from "effect/Array"

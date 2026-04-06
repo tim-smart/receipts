@@ -1,11 +1,11 @@
-import { Atom } from "@effect-atom/atom-react"
 import { ReceiptGroupRepo } from "./Repo"
 import { Effect, identity, Layer, Stream } from "effect"
 import { eventLogAtom } from "@/EventLog"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
+import { Atom } from "effect/unstable/reactivity"
 
 const runtime = Atom.runtime((get) =>
-  ReceiptGroupRepo.Default.pipe(Layer.provide(get(eventLogAtom.layer))),
+  ReceiptGroupRepo.layer.pipe(Layer.provide(get(eventLogAtom.layer))),
 )
 
 export const receiptGroupsAtom = runtime.atom(

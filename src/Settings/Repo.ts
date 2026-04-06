@@ -1,46 +1,48 @@
 import { Setting } from "@/Domain/Setting"
-import { ReceiptAppEvents } from "@/Events"
-import { SqlLive } from "@/Sql"
-import { EventLog, Reactivity } from "@effect/experimental"
-import { SqlClient } from "@effect/sql"
-import { Array, Effect, Option, Schema, Stream } from "effect"
+import { QueryBuilder } from "@/IndexedDb"
+import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect"
+import { Reactivity } from "effect/unstable/reactivity"
 
-export class SettingRepo extends Effect.Service<SettingRepo>()("SettingRepo", {
-  effect: Effect.gen(function* () {
-    const client = yield* EventLog.makeClient(ReceiptAppEvents)
-    const reactivity = yield* Reactivity.Reactivity
-    const sql = yield* SqlClient.SqlClient
+export class SettingRepo extends ServiceMap.Service<SettingRepo>()(
+  "SettingRepo",
+  {
+    make: Effect.gen(function* () {
+      const idb = yield* QueryBuilder
+      const reactivity = yield* Reactivity.Reactivity
+      const settings = idb.from("settings")
 
-    const set = <Name extends string, S extends Schema.Schema.AnyNoContext>(
-      setting: Setting<Name, S>,
-      value: S["Type"],
-    ) =>
-      client("SettingChange", {
-        name: setting.name,
-        json: setting.encodeSync(value),
-      })
+      // const set = <Name extends string, S extends Schema.Top>(
+      //   setting: Setting<Name, S>,
+      //   value: S["Type"],
+      // ) =>
+      //   client("SettingChange", {
+      //     name: setting.name,
+      //     json: setting.encodeSync(value),
+      //   })
 
-    const get = <Name extends string, S extends Schema.Schema.AnyNoContext>(
-      setting: Setting<Name, S>,
-    ) =>
-      sql<{
-        json: string
-      }>`SELECT json FROM settings WHERE name = ${setting.name}`.pipe(
-        Effect.flatMap((rows) =>
-          Array.head(rows).pipe(
-            Option.filter((_) => _.json !== null && _.json !== '""'),
-          ),
-        ),
-        Effect.flatMap((_) => setting.decode(_.json)),
-        Effect.option,
-      )
+      const get = <Name extends string, S extends Schema.Top>(
+        setting: Setting<Name, S>,
+      ) =>
+        settings
+          .select()
+          .equals(setting.name)
+          .first()
+          .asEffect()
+          .pipe(
+            Effect.flatMap((_) => setting.decode(_.json)),
+            Effect.option,
+          )
 
-    const stream = <Name extends string, S extends Schema.Schema.AnyNoContext>(
-      setting: Setting<Name, S>,
-    ): Stream.Stream<Option.Option<S["Type"]>> =>
-      reactivity.stream(["settings"], get(setting))
+      const stream = <Name extends string, S extends Schema.Top>(
+        setting: Setting<Name, S>,
+      ): Stream.Stream<Option.Option<S["Type"]>> =>
+        reactivity.stream(["settings"], get(setting))
 
-    return { set, get, stream } as const
-  }),
-  dependencies: [Reactivity.layer, SqlLive],
-}) {}
+      return { get, stream } as const
+    }),
+  },
+) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide([Reactivity.layer, QueryBuilder.layer]),
+  )
+}

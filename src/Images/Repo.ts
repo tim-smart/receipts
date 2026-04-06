@@ -1,27 +1,23 @@
-import { Image } from "@/Domain/Image"
 import { ReceiptId } from "@/Domain/Receipt"
 import { EventLogClient } from "@/EventLog"
-import { SqlLive } from "@/Sql"
-import { SqlClient } from "@effect/sql"
-import { Effect, Schema } from "effect"
+import { QueryBuilder } from "@/IndexedDb"
+import { Effect, Layer, ServiceMap } from "effect"
 
-export class ImagesRepo extends Effect.Service<ImagesRepo>()(
+export class ImagesRepo extends ServiceMap.Service<ImagesRepo>()(
   "Images/ImagesRepo",
   {
-    effect: Effect.gen(function* () {
-      const sql = yield* SqlClient.SqlClient
-      const client = yield* EventLogClient
+    make: Effect.gen(function* () {
+      const idb = yield* QueryBuilder
+      const images = idb.from("images")
 
       const forReceipt = (receiptId: typeof ReceiptId.Type) =>
-        sql`select * from images where receipt_id = ${receiptId}`.pipe(
-          Effect.flatMap(Schema.decodeUnknown(Image.Array)),
-        )
+        images.select("receiptId").equals(receiptId).asEffect()
 
-      const create = (image: typeof Image.insert.Type) =>
-        client("ImageCreate", image)
-
-      return { forReceipt, create } as const
+      return { forReceipt } as const
     }),
-    dependencies: [SqlLive, EventLogClient.Default],
   },
-) {}
+) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide([QueryBuilder.layer, EventLogClient.layer]),
+  )
+}

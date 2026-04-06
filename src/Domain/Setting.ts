@@ -1,20 +1,17 @@
 import { Schema } from "effect"
 import { ReceiptGroupIdJson } from "./ReceiptGroup"
 
-export class Setting<
-  const Name extends string,
-  S extends Schema.Schema.AnyNoContext,
-> {
+export class Setting<const Name extends string, S extends Schema.Top> {
   constructor(
     readonly name: Name,
     readonly schema: S,
   ) {
-    this.json = Schema.parseJson(schema) as any
-    this.encode = Schema.encode(this.json)
+    this.json = Schema.toCodecJson(schema) as any
+    this.encode = Schema.encodeEffect(this.json)
     this.encodeSync = Schema.encodeSync(this.json)
-    this.decode = Schema.decode(this.json)
+    this.decode = Schema.decodeEffect(this.json)
   }
-  readonly json: Schema.Schema<S["Type"], string>
+  readonly json: Schema.Codec<S["Type"], Schema.Json>
   readonly encode
   readonly encodeSync
   readonly decode
@@ -28,7 +25,7 @@ export const openaiApiKey = new Setting(
 )
 export const openaiModel = new Setting(
   "openaiModel",
-  Schema.NonEmptyTrimmedString,
+  Schema.Trim.pipe(Schema.decodeTo(Schema.NonEmptyString)),
 )
 
 export const openExchangeApiKey = new Setting(

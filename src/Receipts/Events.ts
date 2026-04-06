@@ -1,10 +1,9 @@
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { uuidString } from "@/lib/utils"
-import { EventGroup } from "@effect/experimental"
-import { Model } from "@effect/sql"
 import { Schema } from "effect"
+import { EventGroup } from "effect/unstable/eventlog"
 
-export class ReceiptEvents extends EventGroup.empty
+export const ReceiptEvents = EventGroup.empty
   .add({
     tag: "ReceiptCreate",
     primaryKey: (g) => uuidString(g.id!),
@@ -26,6 +25,6 @@ export class ReceiptEvents extends EventGroup.empty
     primaryKey: ({ id }) => uuidString(id),
     payload: Schema.Struct({
       id: ReceiptId,
-      processed: Model.BooleanFromNumber,
+      processed: Schema.BooleanFromBit,
     }),
-  }) {}
+  })

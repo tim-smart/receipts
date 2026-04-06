@@ -1,8 +1,8 @@
-import { Effect, Schema } from "effect"
-import { Prompt, LanguageModel } from "@effect/ai"
+import { Effect, Schema, ServiceMap } from "effect"
+import { LanguageModel, Prompt } from "effect/unstable/ai"
 
-export class AiHelpers extends Effect.Service<AiHelpers>()("AiHelpers", {
-  effect: Effect.gen(function* () {
+export class AiHelpers extends ServiceMap.Service<AiHelpers>()("AiHelpers", {
+  make: Effect.gen(function* () {
     const completions = yield* LanguageModel.LanguageModel
 
     const extractReceipt = (blob: Blob) =>
@@ -40,24 +40,24 @@ const inputFromBlob = (blob: Blob) =>
 
 class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
   {
-    date: Schema.NullOr(Schema.DateTimeUtc).annotations({
+    date: Schema.NullOr(Schema.DateTimeUtc).annotate({
       description:
         "The date of the purchase in the format YYYY-MM-DD, or null if not found",
     }),
-    merchant: Schema.String.annotations({
+    merchant: Schema.String.annotate({
       description: "The store / merchant that sold the goods or service",
     }),
-    description: Schema.String.annotations({
+    description: Schema.String.annotate({
       description: "A 1-5 word title describing the purchase",
     }),
-    amount: Schema.BigDecimal.annotations({
+    amount: Schema.BigDecimal.annotate({
       jsonSchema: {
         type: "string",
         description:
           "The total cost from the receipt, excluding the currency. Include the numeric amount only.",
       },
     }),
-    currency: Schema.NullOr(Schema.String).annotations({
+    currency: Schema.NullOr(Schema.String).annotate({
       description: "The 3 letter currency code, e.g. USD, or null if not found",
     }),
   },
