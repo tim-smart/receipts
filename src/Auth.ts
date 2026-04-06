@@ -3,34 +3,22 @@ import {
   Layer,
   Option,
   Redacted,
-  Schema,
   ServiceMap,
   Stream,
   SubscriptionRef,
 } from "effect"
+import { EventLog } from "effect/unstable/eventlog"
 import { Identity } from "effect/unstable/eventlog/EventLog"
 import { AsyncResult, Atom } from "effect/unstable/reactivity"
-import { Model } from "effect/unstable/schema"
 
 const storageKey = "receipts_auth"
 const appName = "Receipts"
 
-const IdentitySchema = Schema.fromJsonString(
-  Schema.toCodecJson(
-    Schema.Struct({
-      publicKey: Schema.String,
-      privateKey: Schema.Redacted(Model.Uint8Array),
-    }),
-  ),
-)
-
 export class Auth extends ServiceMap.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const get = Effect.sync(() =>
-      Schema.decodeUnknownOption(IdentitySchema)(
-        localStorage.getItem(storageKey),
-      ),
-    )
+      EventLog.decodeIdentityString(localStorage.getItem(storageKey) ?? ""),
+    ).pipe(Effect.sandbox, Effect.option)
     const state = yield* SubscriptionRef.make(yield* get)
 
     const create = Effect.fnUntraced(function* (options: {
@@ -66,7 +54,8 @@ export class Auth extends ServiceMap.Service<Auth>()("Auth", {
         publicKey: credential.id,
         privateKey: Redacted.make(secret),
       })
-      localStorage[storageKey] = Schema.encodeSync(IdentitySchema)(identity)
+
+      localStorage[storageKey] = EventLog.encodeIdentityString(identity)
       yield* SubscriptionRef.set(state, Option.some(identity))
     })
 
@@ -90,7 +79,7 @@ export class Auth extends ServiceMap.Service<Auth>()("Auth", {
         publicKey: credential.id,
         privateKey: Redacted.make(secret),
       })
-      localStorage[storageKey] = Schema.encodeSync(IdentitySchema)(identity)
+      localStorage[storageKey] = EventLog.encodeIdentityString(identity)
       yield* SubscriptionRef.set(state, Option.some(identity))
     })
 
