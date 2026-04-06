@@ -41,13 +41,7 @@ import {
   ratesWithAtom,
 } from "@/ExchangeRates/atoms"
 import { Switch } from "@/components/ui/switch"
-import {
-  createGroupAtom,
-  currentGroupAtom,
-  receiptGroupsAtom,
-  removeGroupAtom,
-  updateGroupAtom,
-} from "@/ReceiptGroups/atoms"
+import { currentGroupAtom, receiptGroupsAtom } from "@/ReceiptGroups/atoms"
 import { uuidBytes, uuidString } from "@/lib/utils"
 import { setSettingAtom, settingAtom } from "@/Settings/atoms"
 import {
@@ -58,7 +52,7 @@ import {
 } from "@/Domain/Setting"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
-import { clientAtom, remoteAddressAtom } from "@/EventLog"
+import { clientAtom, remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import * as Uuid from "uuid"
 import { sessionDestroyAtom } from "@/Session"
 import { Model } from "effect/unstable/schema"
@@ -171,20 +165,21 @@ function ReceiptDrawer() {
 
 function GroupDrawer() {
   const [open, setOpen] = useState(false)
-  const createGroup = useAtomSet(createGroupAtom)
+  const writeEvent = useAtomSet(writeEventAtom)
   const setCurrentGroup = useAtomSet(setSettingAtom(currentGroupId))
 
   const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.target as HTMLFormElement)
     const groupId = ReceiptGroupId.make(Uuid.v4({}, new Uint8Array(16)))
-    createGroup(
-      ReceiptGroup.insert.make({
+    writeEvent({
+      event: "GroupCreate",
+      payload: ReceiptGroup.insert.make({
         id: Model.Override(groupId),
         name: data.get("name") as string,
         defaultCurrency: data.get("defaultCurrency") as string,
       }),
-    )
+    })
     setCurrentGroup(groupId)
     setOpen(false)
   }, [])
@@ -228,22 +223,22 @@ function GroupDrawer() {
 
 function GroupSettings() {
   const currentGroup = useAtomSuspense(currentGroupAtom).value
-  const updateGroup = useAtomSet(updateGroupAtom)
-  const removeGroup = useAtomSet(removeGroupAtom)
+  const writeEvent = useAtomSet(writeEventAtom)
   const [open, setOpen] = useState(false)
 
   const onSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      updateGroup(
-        ReceiptGroup.update.make({
+      writeEvent({
+        event: "GroupUpdate",
+        payload: ReceiptGroup.update.make({
           ...currentGroup,
           name: data.get("name") as string,
           defaultCurrency: data.get("defaultCurrency") as string,
           updatedAt: undefined,
         }),
-      )
+      })
       setOpen(false)
     },
     [currentGroup],
@@ -252,7 +247,10 @@ function GroupSettings() {
   const onRemove = useCallback(
     (event: any) => {
       event.preventDefault()
-      removeGroup(currentGroup.id)
+      writeEvent({
+        event: "GroupDelete",
+        payload: currentGroup.id,
+      })
       setOpen(false)
     },
     [currentGroup],
