@@ -1,20 +1,27 @@
 import { Effect, Layer, Option } from "effect"
-import { SqlLive } from "./Sql"
 import { SettingEvents } from "./Settings/Events"
 import * as Arr from "effect/Array"
+import { EventLog } from "effect/unstable/eventlog"
+import { QueryBuilder } from "./IndexedDb"
 
-export const SettingsLive = EventLog.group(SettingEvents, (handlers) =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+export const SettingsLive = EventLog.group(
+  SettingEvents,
+  Effect.fn(function* (handlers) {
+    const db = yield* QueryBuilder
+    const settings = db.from("settings")
 
-    return handlers.handle("SettingChange", ({ payload, conflicts }) =>
-      Effect.gen(function* () {
+    return handlers.handle(
+      "SettingChange",
+      Effect.fn(function* ({ payload, conflicts }) {
         if (conflicts.length > 0) return
-        yield* sql`INSERT INTO settings ${sql.insert(payload)} ON CONFLICT (name) DO UPDATE SET json = ${payload.json}`
-      }).pipe(Effect.orDie),
+        yield* settings.upsert({
+          name: payload.name,
+          json: payload.json,
+        })
+      }, Effect.orDie),
     )
   }),
-).pipe(Layer.provide(SqlLive))
+).pipe(Layer.provide(QueryBuilder.layer))
 
 export const SettingsCompactionLive = EventLog.groupCompaction(
   SettingEvents,

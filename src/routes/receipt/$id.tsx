@@ -16,10 +16,11 @@ import {
 import { BigDecimal, DateTime } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
 import { createContext, useContext, useState } from "react"
-import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
-import { receiptAtom, removeReceiptAtom } from "@/Receipts/atoms"
+import { useAtomSet, useAtomSuspense } from "@effect/atom-react"
+import { receiptAtom } from "@/Receipts/atoms"
 import { Image } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
+import { writeEventAtom } from "@/EventLog"
 
 export const Route = createFileRoute("/receipt/$id")({
   component: ReceiptScreen,
@@ -30,7 +31,7 @@ function ReceiptScreen() {
   const { receipt, images } = useAtomSuspense(receiptAtom(id)).value
   const router = useRouter()
 
-  const remove = useAtomSet(removeReceiptAtom, { mode: "promise" })
+  const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
 
   return (
     <ReceiptContext.Provider value={receipt}>
@@ -64,7 +65,10 @@ function ReceiptScreen() {
 
         <Mutations
           onDelete={async () => {
-            remove(receipt.id)
+            writeEvent({
+              event: "ReceiptDelete",
+              payload: receipt.id,
+            })
             router.navigate({ to: "/" })
           }}
         />

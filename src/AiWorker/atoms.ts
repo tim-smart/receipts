@@ -5,6 +5,7 @@ import { eventLogAtom } from "@/EventLog"
 import { settingOptionAtom } from "@/Settings/atoms"
 import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai"
 import { Effect, Layer, Schedule } from "effect"
+import { FetchHttpClient, HttpClient } from "effect/unstable/http"
 import { Atom } from "effect/unstable/reactivity"
 
 export const aiWorkerAtom = Atom.runtime((get) =>
@@ -26,5 +27,5 @@ export const aiWorkerAtom = Atom.runtime((get) =>
     return AiWorkerLive.pipe(
       Layer.provide([CompletionsLive, get(eventLogAtom.layer)]),
     )
-  }).pipe(Layer.unwrapEffect),
+  }).pipe(Layer.unwrap),
 ).pipe(Atom.setIdleTTL("10 seconds"))

@@ -1,6 +1,12 @@
 import { Effect, Layer, Option, Schema, ServiceMap } from "effect"
 import { Atom } from "effect/unstable/reactivity"
-import { EventLog, EventLogRemote } from "effect/unstable/eventlog"
+import {
+  Event,
+  EventGroup,
+  EventJournal,
+  EventLog,
+  EventLogRemote,
+} from "effect/unstable/eventlog"
 import { ReceiptAppEvents } from "./Events"
 import { ReceiptGroupsLayer } from "./ReceiptGroups"
 import { ReceiptsLayer } from "./Receipts"
@@ -15,7 +21,7 @@ import { BrowserSocket } from "@effect/platform-browser"
 const EventLogLayer = EventLog.layer(
   ReceiptAppEvents,
   Layer.mergeAll(ReceiptGroupsLayer, ReceiptsLayer, SettingsLayer, ImagesLive),
-).pipe()
+).pipe(Layer.provide(EventJournal.layerIndexedDb()))
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
 
@@ -43,6 +49,32 @@ export const eventLogAtom = Atom.runtime((get) =>
 
 export const clientAtom = eventLogAtom.atom(EventLogClient.asEffect())
 
+export type EventPayload =
+  (typeof ReceiptAppEvents.groups)[number] extends EventGroup.EventGroup<
+    infer _Event
+  >
+    ? _Event extends Event.Event<
+        infer _Tag,
+        infer _Payload,
+        infer _Success,
+        infer _Error
+      >
+      ? {
+          readonly event: _Tag
+          readonly payload: _Payload["Type"]
+        }
+      : never
+    : never
+
+export const writeEventAtom = eventLogAtom.fn<EventPayload>()((payload) =>
+  EventLog.EventLog.use((_) =>
+    _.write({
+      schema: ReceiptAppEvents,
+      ...payload,
+    } as any),
+  ).pipe(Effect.tapCause(Effect.logWarning)),
+)
+
 export const remoteAddressAtom = Atom.kvs({
   runtime: kvsRuntime,
   key: "receipts_remote_address",
@@ -57,6 +89,7 @@ export const remoteAtom = Atom.runtime((get) =>
     const url = new URL(remoteAddress)
     url.searchParams.set("publicKey", identity.publicKey)
     return EventLogRemote.layerEncrypted.pipe(
+      Layer.provide(EventLog.layerRegistry),
       Layer.provide(
         RpcClient.layerProtocolSocket({ retryTransientErrors: true }),
       ),

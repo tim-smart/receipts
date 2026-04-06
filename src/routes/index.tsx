@@ -34,7 +34,7 @@ import {
   Redacted,
   String,
 } from "effect"
-import { useAtom, useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
+import { useAtom, useAtomSet, useAtomSuspense } from "@effect/atom-react"
 import {
   baseCurrencyAtom,
   latestRates,
@@ -48,7 +48,7 @@ import {
   removeGroupAtom,
   updateGroupAtom,
 } from "@/ReceiptGroups/atoms"
-import { uuidString } from "@/lib/utils"
+import { uuidBytes, uuidString } from "@/lib/utils"
 import { setSettingAtom, settingAtom } from "@/Settings/atoms"
 import {
   currentGroupId,
@@ -60,8 +60,8 @@ import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { clientAtom, remoteAddressAtom } from "@/EventLog"
 import * as Uuid from "uuid"
-import { Model } from "@effect/sql"
 import { sessionDestroyAtom } from "@/Session"
+import { Model } from "effect/unstable/schema"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -120,7 +120,7 @@ function GroupSelect() {
       options={options}
       value={groupIdString}
       onChange={(groupId) => {
-        const uuid = ReceiptGroupId.make(Uuid.parse(groupId))
+        const uuid = ReceiptGroupId.make(uuidBytes(groupId))
         setGroupId(uuid)
       }}
       placeholder="Select a folder"
@@ -533,7 +533,7 @@ function Totals() {
     const currencies: Record<string, BigDecimal.BigDecimal> = {}
     for (const receipt of receipts) {
       const prev =
-        currencies[receipt.currency] ?? BigDecimal.unsafeFromNumber(0)
+        currencies[receipt.currency] ?? BigDecimal.fromNumberUnsafe(0)
       currencies[receipt.currency] = BigDecimal.sum(prev, receipt.amount)
     }
     return currencies
@@ -541,12 +541,12 @@ function Totals() {
 
   const converted = useMemo(() => {
     if (rates._tag !== "Success") return Option.none()
-    let converted: BigDecimal.BigDecimal = BigDecimal.unsafeFromNumber(0)
+    let converted: BigDecimal.BigDecimal = BigDecimal.fromNumberUnsafe(0)
     for (const [currency, total] of Object.entries(totals)) {
       const rate = 1 / rates.value[currency]
       converted = BigDecimal.multiply(
         total,
-        BigDecimal.unsafeFromNumber(rate),
+        BigDecimal.fromNumberUnsafe(rate),
       ).pipe(BigDecimal.sum(converted))
     }
     return Option.some(converted)
@@ -607,7 +607,7 @@ const convert = (
 }
 
 const convertString = (amount: BigDecimal.BigDecimal, rate: number) =>
-  BigDecimal.multiply(amount, BigDecimal.unsafeFromNumber(rate)).pipe(
+  BigDecimal.multiply(amount, BigDecimal.fromNumberUnsafe(rate)).pipe(
     BigDecimal.scale(2),
     BigDecimal.format,
   )

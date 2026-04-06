@@ -1,25 +1,22 @@
 import { ReceiptGroupRepo } from "./Repo"
-import { Effect, identity, Layer, Stream } from "effect"
+import { Effect, identity, Layer, Result, Stream } from "effect"
 import { eventLogAtom } from "@/EventLog"
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { Atom } from "effect/unstable/reactivity"
+import { constVoid } from "effect/Function"
 
 const runtime = Atom.runtime((get) =>
   ReceiptGroupRepo.layer.pipe(Layer.provide(get(eventLogAtom.layer))),
 )
 
 export const receiptGroupsAtom = runtime.atom(
-  ReceiptGroupRepo.pipe(
-    Effect.map((_) => _.stream),
-    Stream.unwrap,
-  ),
+  ReceiptGroupRepo.useSync((_) => _.stream).pipe(Stream.unwrap),
 )
 
 export const currentGroupAtom = runtime.atom(
-  ReceiptGroupRepo.pipe(
-    Effect.map((_) => _.current),
+  ReceiptGroupRepo.useSync((_) => _.current).pipe(
     Stream.unwrap,
-    Stream.filterMap(identity),
+    Stream.filterMap(Result.fromOption(constVoid)),
   ),
 )
 

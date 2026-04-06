@@ -7,5 +7,6 @@ export class ReceiptsTable extends IndexedDbTable.make({
   keyPath: "id",
   indexes: {
     groupIdSort: ["groupId", "date", "merchant"],
+    processed: "processed",
   },
 }) {}

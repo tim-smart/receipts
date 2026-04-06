@@ -1,4 +1,4 @@
-import { Effect, Schema, ServiceMap } from "effect"
+import { Effect, Layer, Schema, ServiceMap } from "effect"
 import { LanguageModel, Prompt } from "effect/unstable/ai"
 
 export class AiHelpers extends ServiceMap.Service<AiHelpers>()("AiHelpers", {
@@ -21,7 +21,9 @@ The current date is ${new Date().toDateString()}.`),
 
     return { extractReceipt } as const
   }),
-}) {}
+}) {
+  static readonly layer = Layer.effect(this, this.make)
+}
 
 const inputFromBlob = (blob: Blob) =>
   Effect.gen(function* () {

@@ -1,11 +1,14 @@
 import { Setting } from "@/Domain/Setting"
 import { Effect, Layer, Option, Schema, Stream } from "effect"
 import { SettingRepo } from "./Repo"
-import { eventLogAtom } from "@/EventLog"
+import { eventLogAtom, EventLogClient } from "@/EventLog"
 import { AsyncResult, Atom } from "effect/unstable/reactivity"
 
 const runtime = Atom.runtime((get) =>
-  SettingRepo.layer.pipe(Layer.provide(get(eventLogAtom.layer))),
+  SettingRepo.layer.pipe(
+    Layer.merge(EventLogClient.layer),
+    Layer.provide(get(eventLogAtom.layer)),
+  ),
 )
 
 export const settingAtom = Atom.family(
@@ -24,8 +27,11 @@ export const setSettingAtom = Atom.family(
   <Name extends string, S extends Schema.Top>(setting: Setting<Name, S>) =>
     runtime.fn(
       Effect.fnUntraced(function* (value: S["Type"]) {
-        const settings = yield* SettingRepo
-        return yield* settings.set(setting, value)
+        const client = yield* EventLogClient
+        yield* client("SettingChange", {
+          name: setting.name,
+          json: setting.encodeSync(value),
+        })
       }),
     ),
 )

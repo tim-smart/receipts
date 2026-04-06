@@ -35,6 +35,7 @@ export class Database extends IndexedDbDatabase.make(
 
     yield* api.createObjectStore("receipts")
     yield* api.createIndex("receipts", "groupIdSort")
+    yield* api.createIndex("receipts", "processed")
 
     yield* api.createObjectStore("settings")
 

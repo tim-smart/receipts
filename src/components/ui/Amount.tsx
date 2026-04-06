@@ -7,8 +7,8 @@ export function Amount({
   children: string
   currency: string
 }) {
-  const amount = BigDecimal.unsafeFromString(children).pipe(
-    BigDecimal.unsafeToNumber,
+  const amount = BigDecimal.fromStringUnsafe(children).pipe(
+    BigDecimal.toNumberUnsafe,
   )
 
   return (

@@ -7,21 +7,16 @@ import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { BigDecimal, DateTime, Option } from "effect"
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { FormEvent, useCallback, useLayoutEffect, useMemo, useRef } from "react"
-import { globalValue } from "effect/GlobalValue"
 import { Image } from "@/Domain/Image"
-import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react"
-import { createReceiptAtom, updateReceiptAtom } from "./atoms"
+import { useAtomSet, useAtomSuspense } from "@effect/atom-react"
 import { currentGroupAtom } from "@/ReceiptGroups/atoms"
 import * as Uuid from "uuid"
-import { createImageAtom } from "@/Images/atoms"
-import { Model } from "@effect/sql"
 import { openaiApiKey } from "@/Domain/Setting"
 import { settingAtom } from "@/Settings/atoms"
+import { writeEventAtom } from "@/EventLog"
+import { Model } from "effect/unstable/schema"
 
-const clicked = globalValue(
-  "ReceiptForm/clicked",
-  () => new WeakMap<any, boolean>(),
-)
+const clicked = new WeakMap<any, boolean>()
 
 export function ReceiptForm({
   initialValue,
@@ -32,9 +27,7 @@ export function ReceiptForm({
 }) {
   const group = useAtomSuspense(currentGroupAtom).value
   const openaiKey = useAtomSuspense(settingAtom(openaiApiKey)).value
-  const createReceipt = useAtomSet(createReceiptAtom, { mode: "promise" })
-  const updateReceipt = useAtomSet(updateReceiptAtom, { mode: "promise" })
-  const createImage = useAtomSet(createImageAtom, { mode: "promise" })
+  const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
 
   const onSubmit_ = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -55,18 +48,22 @@ export function ReceiptForm({
               contentType: item.type,
             })
             images.push(image)
-            await createImage(image)
+            await writeEvent({
+              event: "ImageCreate",
+              payload: image,
+            })
           })(),
         )
       }
       await Promise.all(promises)
 
       if (initialValue) {
-        await updateReceipt(
-          Receipt.update.make({
+        await writeEvent({
+          event: "ReceiptUpdate",
+          payload: Receipt.update.make({
             ...initialValue,
             date: (data.get("date") as string)
-              ? DateTime.unsafeMake(data.get("date") as string)
+              ? DateTime.makeUnsafe(data.get("date") as string)
               : initialValue.date,
             amount: BigDecimal.fromString(data.get("amount") as string).pipe(
               Option.getOrElse(() => initialValue.amount),
@@ -76,18 +73,19 @@ export function ReceiptForm({
             currency: data.get("currency") as string,
             updatedAt: undefined,
           }),
-        )
+        })
       } else {
         const amount = BigDecimal.fromString(data.get("amount") as string).pipe(
-          Option.getOrElse(() => BigDecimal.unsafeFromNumber(0)),
+          Option.getOrElse(() => BigDecimal.fromNumberUnsafe(0)),
         )
-        await createReceipt(
-          Receipt.insert.make({
+        await writeEvent({
+          event: "ReceiptCreate",
+          payload: Receipt.insert.make({
             id: Model.Override(receiptId),
             groupId: group.id,
             date: (data.get("date") as string)
-              ? DateTime.unsafeMake(data.get("date") as string)
-              : DateTime.unsafeNow(),
+              ? DateTime.makeUnsafe(data.get("date") as string)
+              : DateTime.nowUnsafe(),
             merchant: data.get("merchant") as string,
             description: data.get("description") as string,
             amount,
@@ -97,7 +95,7 @@ export function ReceiptForm({
               !BigDecimal.isZero(amount) ||
               Option.isNone(openaiKey),
           }),
-        )
+        })
       }
       onSubmit()
     },
@@ -105,7 +103,7 @@ export function ReceiptForm({
   )
 
   const defaultDate = useMemo(
-    () => (initialValue?.date ? initialValue.date : DateTime.unsafeNow()),
+    () => (initialValue?.date ? initialValue.date : DateTime.nowUnsafe()),
     [initialValue],
   )
 

@@ -1,4 +1,4 @@
-import { BigDecimal, Effect, FiberMap, Layer, Schedule } from "effect"
+import { BigDecimal, Effect, FiberMap, Layer, Queue, Schedule } from "effect"
 import { AiHelpers } from "./Ai"
 import { ReceiptRepo } from "./Receipts/Repo"
 import { ImagesRepo } from "./Images/Repo"
@@ -16,12 +16,12 @@ export const AiWorkerLive = Effect.gen(function* () {
   yield* Effect.log("starting worker")
 
   const mailbox = yield* receiptRepo.unprocessed
-  yield* mailbox.take.pipe(
+  yield* Queue.take(mailbox).pipe(
     Effect.tap((receipts) =>
       Effect.gen(function* () {
         for (const receipt of receipts) {
           const idString = uuidString(receipt.id)
-          if (FiberMap.unsafeHas(fibers, idString)) continue
+          if (FiberMap.hasUnsafe(fibers, idString)) continue
           yield* FiberMap.run(fibers, idString, process(receipt))
         }
       }),
@@ -31,8 +31,8 @@ export const AiWorkerLive = Effect.gen(function* () {
     Effect.uninterruptible,
   )
 
-  const process = (receipt: Receipt) =>
-    Effect.gen(function* () {
+  const process = Effect.fn(
+    function* (receipt: Receipt) {
       const images = yield* imageRepo.forReceipt(receipt.id)
       if (images.length === 0) return
       const image = images[0]
@@ -59,22 +59,26 @@ export const AiWorkerLive = Effect.gen(function* () {
       if (metadata.date) {
         update.date = metadata.date
       }
-      yield* client("ReceiptUpdate", {
-        ...update,
-        updatedAt: undefined,
-      })
-    }).pipe(
-      Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),
-      Effect.tap(Effect.log("processed")),
-      Effect.catchAllCause(Effect.log),
-      Effect.annotateLogs("receiptId", uuidString(receipt.id)),
-    )
+      yield* client(
+        "ReceiptUpdate",
+        Receipt.update.make({
+          ...update,
+          updatedAt: undefined,
+        }),
+      )
+    },
+    Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),
+    Effect.tap(Effect.log("processed")),
+    Effect.catchCause(Effect.log),
+    (effect, receipt) =>
+      Effect.annotateLogs(effect, "receiptId", uuidString(receipt.id)),
+  )
 }).pipe(
-  Layer.scopedDiscard,
+  Layer.effectDiscard,
   Layer.provide([
-    AiHelpers.Default,
-    ReceiptRepo.Default,
-    EventLogClient.Default,
-    ImagesRepo.Default,
+    AiHelpers.layer,
+    ReceiptRepo.layer,
+    EventLogClient.layer,
+    ImagesRepo.layer,
   ]),
 )

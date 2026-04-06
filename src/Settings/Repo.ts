@@ -11,15 +11,6 @@ export class SettingRepo extends ServiceMap.Service<SettingRepo>()(
       const reactivity = yield* Reactivity.Reactivity
       const settings = idb.from("settings")
 
-      // const set = <Name extends string, S extends Schema.Top>(
-      //   setting: Setting<Name, S>,
-      //   value: S["Type"],
-      // ) =>
-      //   client("SettingChange", {
-      //     name: setting.name,
-      //     json: setting.encodeSync(value),
-      //   })
-
       const get = <Name extends string, S extends Schema.Top>(
         setting: Setting<Name, S>,
       ) =>
