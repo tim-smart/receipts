@@ -16,6 +16,19 @@ self.addEventListener("message", (event) => {
   }
 })
 
+registerRoute(
+  ({ url }) => url.pathname === "/share",
+  async (event) => {
+    const e = event.event as FetchEvent
+    const data = await event.request.formData()
+    const client = await self.clients.get(e.resultingClientId)
+    if (client) {
+      client.postMessage({ type: "SHARE", images: data.get("images") })
+    }
+    return Response.redirect("/")
+  },
+)
+
 // self.__WB_MANIFEST is default injection point
 precacheAndRoute(self.__WB_MANIFEST)
 

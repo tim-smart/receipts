@@ -1,6 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"
 import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react"
@@ -23,6 +23,15 @@ function App() {
   useRegisterSW({
     immediate: true,
   })
+
+  useEffect(() => {
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      console.log(event)
+    })
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", () => {})
+    }
+  }, [])
 
   return (
     <>

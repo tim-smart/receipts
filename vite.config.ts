@@ -2,18 +2,19 @@ import { VitePWA } from "vite-plugin-pwa"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import * as path from "node:path"
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import tailwindcss from "@tailwindcss/vite"
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    TanStackRouterVite(),
+    tanstackRouter(),
     react(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: "auto",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
 
       pwaAssets: {
         disabled: false,
@@ -54,12 +55,30 @@ export default defineConfig({
             ],
           },
         ],
+        share_target: {
+          action: "/share",
+          method: "POST",
+          enctype: "multipart/form-data",
+          params: {
+            files: [
+              {
+                name: "images",
+                accept: ["image/png", "image/jpeg", "image/webp"],
+              },
+            ],
+          },
+        },
       },
 
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,wasm}"],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
+      // workbox: {
+      //   globPatterns: ["**/*.{js,css,html,svg,png,ico,wasm}"],
+      //   cleanupOutdatedCaches: true,
+      //   clientsClaim: true,
+      //   maximumFileSizeToCacheInBytes: 6_000_000,
+      // },
+
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,wasm,mp3}"],
         maximumFileSizeToCacheInBytes: 6_000_000,
       },
 
