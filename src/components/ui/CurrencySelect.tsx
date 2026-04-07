@@ -31,7 +31,7 @@ export function CurrencySelect({
         onChange?.(value)
       }}
     >
-      <ComboboxInput placeholder="Select a currency" />
+      <ComboboxInput placeholder="Currency" className="w-32" />
       <ComboboxContent portalContainer={portalContainer}>
         <ComboboxList>
           {(item: string) => (

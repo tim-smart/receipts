@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import {
   ChangeEvent,
-  FormEvent,
+  SubmitEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -65,12 +65,10 @@ import {
   openaiModel,
   openExchangeApiKey,
 } from "@/Domain/Setting"
-import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
+import { ReceiptGroup } from "@/Domain/ReceiptGroup"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
-import * as Uuid from "uuid"
 import { sessionDestroyAtom } from "@/Session"
-import { Model } from "effect/unstable/schema"
 import { AsyncResult } from "effect/unstable/reactivity"
 
 export const Route = createFileRoute("/")({
@@ -214,19 +212,18 @@ function GroupDrawer() {
   const setCurrentGroup = useAtomSet(setSettingAtom(currentGroupId))
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const onSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = useCallback((event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.target as HTMLFormElement)
-    const groupId = ReceiptGroupId.make(Uuid.v4({}, new Uint8Array(16)))
+    const group = ReceiptGroup.insert.make({
+      name: data.get("name") as string,
+      defaultCurrency: data.get("defaultCurrency") as string,
+    })
     writeEvent({
       event: "GroupCreate",
-      payload: ReceiptGroup.insert.make({
-        id: Model.Override(groupId),
-        name: data.get("name") as string,
-        defaultCurrency: data.get("defaultCurrency") as string,
-      }),
+      payload: group,
     })
-    setCurrentGroup(groupId)
+    setCurrentGroup(group.id)
     setOpen(false)
   }, [])
 
@@ -279,7 +276,7 @@ function GroupSettings() {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const onSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
       writeEvent({
@@ -438,7 +435,7 @@ function SettingsDrawer() {
   }
 
   const onSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
+    async (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
       if (changed.has("openaiApiKey")) {
