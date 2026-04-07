@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Data, Schema } from "effect"
 import { ReceiptId } from "./Receipt"
 import { uuidString } from "@/lib/utils"
 import { Model } from "effect/unstable/schema"
@@ -17,3 +17,9 @@ export class Image extends Model.Class<Image>("Image")({
   static readonly Array = Schema.Array(Image)
   readonly idString = uuidString(this.id)
 }
+
+export class ImageWithObjectUrl extends Data.Class<
+  Image & {
+    readonly objectUrl: string
+  }
+> {}

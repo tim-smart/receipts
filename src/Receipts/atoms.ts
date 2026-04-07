@@ -16,9 +16,9 @@ export const currentReceiptsAtom = runtime.atom(
 
 export const receiptAtom = Atom.family((id: string) => {
   const receiptId = ReceiptId.make(uuidBytes(id))
-  return runtime.atom(
-    ReceiptRepo.useSync((_) => _.byId(receiptId)).pipe(Stream.unwrap),
-  )
+  return runtime
+    .atom(ReceiptRepo.useSync((_) => _.byId(receiptId)).pipe(Stream.unwrap))
+    .pipe(Atom.setIdleTTL(5000))
 })
 
 export const exportReceiptsAtom = runtime.fn(

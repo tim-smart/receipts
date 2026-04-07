@@ -17,7 +17,7 @@ import { ReceiptForm } from "@/Receipts/Form"
 import { useState } from "react"
 import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { receiptAtom } from "@/Receipts/atoms"
-import { Image } from "@/Domain/Image"
+import { ImageWithObjectUrl } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
 import { writeEventAtom } from "@/EventLog"
 import { AsyncResult } from "effect/unstable/reactivity"
@@ -96,7 +96,7 @@ export function Amount({
   )
 }
 
-function Images({ children }: { children: ReadonlyArray<Image> }) {
+function Images({ children }: { children: ReadonlyArray<ImageWithObjectUrl> }) {
   return (
     <div className="grid grid-cols-3 gap-2 justify-center">
       {children.map((image) => (
