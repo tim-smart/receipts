@@ -19,11 +19,17 @@ export const AiWorkerLive = Effect.gen(function* () {
   yield* Queue.take(mailbox).pipe(
     Effect.tap(
       Effect.fnUntraced(function* (receipts) {
+        const ids = new Set<string>()
         for (const receipt of receipts) {
           const idString = uuidString(receipt.id)
+          ids.add(idString)
           yield* FiberMap.run(fibers, idString, process(receipt), {
             onlyIfMissing: true,
           })
+        }
+        for (const [id] of fibers) {
+          if (ids.has(id)) continue
+          yield* FiberMap.remove(fibers, id)
         }
       }),
     ),
