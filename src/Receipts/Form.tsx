@@ -6,15 +6,22 @@ import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import { BigDecimal, DateTime, Option } from "effect"
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
-import { FormEvent, useCallback, useLayoutEffect, useMemo, useRef } from "react"
+import {
+  SubmitEvent,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react"
 import { Image } from "@/Domain/Image"
-import { useAtomSet, useAtomSuspense } from "@effect/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { currentGroupAtom } from "@/ReceiptGroups/atoms"
 import * as Uuid from "uuid"
 import { openaiApiKey } from "@/Domain/Setting"
 import { settingAtom } from "@/Settings/atoms"
 import { writeEventAtom } from "@/EventLog"
 import { Model } from "effect/unstable/schema"
+import { AsyncResult } from "effect/unstable/reactivity"
 
 const clicked = new WeakMap<any, boolean>()
 
@@ -27,12 +34,18 @@ export function ReceiptForm({
   onSubmit: () => void
   portalContainer?: React.RefObject<HTMLElement | null> | undefined
 }) {
-  const group = useAtomSuspense(currentGroupAtom).value
-  const openaiKey = useAtomSuspense(settingAtom(openaiApiKey)).value
+  const group = useAtomValue(currentGroupAtom).pipe(
+    AsyncResult.value,
+    Option.getOrNull,
+  )!
+  const openaiKey = useAtomValue(settingAtom(openaiApiKey)).pipe(
+    AsyncResult.value,
+    Option.flatten,
+  )
   const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
 
   const onSubmit_ = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
+    async (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
       const images: Array<typeof Image.insert.Type> = []
@@ -177,7 +190,7 @@ export function ReceiptForm({
             />
             <CurrencySelect
               name="currency"
-              initialValue={initialValue?.currency ?? group.defaultCurrency}
+              initialValue={initialValue?.currency ?? group!.defaultCurrency}
               portalContainer={portalContainer}
             />
           </div>

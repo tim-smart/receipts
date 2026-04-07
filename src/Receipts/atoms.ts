@@ -14,13 +14,12 @@ export const currentReceiptsAtom = runtime.atom(
   ReceiptRepo.useSync((_) => _.current).pipe(Stream.unwrap),
 )
 
-export const receiptAtom = Atom.family((id: string) =>
-  runtime.atom(
-    ReceiptRepo.useSync((_) => _.byId(ReceiptId.make(uuidBytes(id)))).pipe(
-      Stream.unwrap,
-    ),
-  ),
-)
+export const receiptAtom = Atom.family((id: string) => {
+  const receiptId = ReceiptId.make(uuidBytes(id))
+  return runtime.atom(
+    ReceiptRepo.useSync((_) => _.byId(receiptId)).pipe(Stream.unwrap),
+  )
+})
 
 export const exportReceiptsAtom = runtime.fn(
   (options: {

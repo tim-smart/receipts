@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { Scaffold } from "@/components/ui/Scaffold"
-import { Receipt } from "@/Domain/Receipt"
 import { ChevronLeft } from "lucide-react"
 import { formatCurrency } from "@/Domain/Currency"
 import { Button } from "@/components/ui/button"
@@ -13,15 +12,16 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { BigDecimal, DateTime } from "effect"
+import { BigDecimal, DateTime, Option } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
-import { createContext, useContext, useState } from "react"
+import { useState } from "react"
 import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { receiptAtom } from "@/Receipts/atoms"
 import { Image } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
 import { writeEventAtom } from "@/EventLog"
 import { AsyncResult } from "effect/unstable/reactivity"
+import { Receipt } from "@/Domain/Receipt"
 
 export const Route = createFileRoute("/receipt/$id")({
   component: ReceiptScreen,
@@ -29,72 +29,58 @@ export const Route = createFileRoute("/receipt/$id")({
 
 function ReceiptScreen() {
   const { id } = Route.useParams()
-  const result = useAtomValue(receiptAtom(id))
-
-  return AsyncResult.builder(result)
-    .onSuccess(({ receipt, images }) => (
-      <ReceiptScreenContent receipt={receipt} images={images} />
-    ))
-    .render()
-}
-
-function ReceiptScreenContent({
-  receipt,
-  images,
-}: {
-  readonly receipt: Receipt
-  readonly images: ReadonlyArray<Image>
-}) {
+  const result = useAtomValue(receiptAtom(id)).pipe(
+    AsyncResult.value,
+    Option.getOrNull,
+  )
+  const writeEvent = useAtomSet(writeEventAtom)
   const router = useRouter()
 
-  const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
+  if (!result) return null
+  const { receipt, images } = result
 
   return (
-    <ReceiptContext.Provider value={receipt}>
-      <Scaffold
-        heading={receipt.description}
-        subHeading={receipt.merchant}
-        leading={
-          <Link to="/" className="flex -ml-1.5">
-            <ChevronLeft />
-            Back
-          </Link>
-        }
-      >
-        <div className="flex flex-col gap-7">
-          <div>
-            {receipt.amount && (
-              <Amount currency={receipt.currency}>{receipt.amount}</Amount>
-            )}
-            {receipt.date && (
-              <h3 className="tracking-tight text-zinc-700 dark:text-zinc-300 font-extrabold text-center">
-                {receipt.date.pipe(DateTime.format({ dateStyle: "short" }))}
-              </h3>
-            )}
-          </div>
-          {images.length > 0 && (
-            <section>
-              <Images>{images}</Images>
-            </section>
+    <Scaffold
+      heading={receipt.description}
+      subHeading={receipt.merchant}
+      leading={
+        <Link to="/" className="flex -ml-1.5">
+          <ChevronLeft />
+          Back
+        </Link>
+      }
+    >
+      <div className="flex flex-col gap-7">
+        <div>
+          {receipt.amount && (
+            <Amount currency={receipt.currency}>{receipt.amount}</Amount>
+          )}
+          {receipt.date && (
+            <h3 className="tracking-tight text-zinc-700 dark:text-zinc-300 font-extrabold text-center">
+              {receipt.date.pipe(DateTime.format({ dateStyle: "short" }))}
+            </h3>
           )}
         </div>
+        {images.length > 0 && (
+          <section>
+            <Images>{images}</Images>
+          </section>
+        )}
+      </div>
 
-        <Mutations
-          onDelete={async () => {
-            writeEvent({
-              event: "ReceiptDelete",
-              payload: receipt.id,
-            })
-            router.navigate({ to: "/" })
-          }}
-        />
-      </Scaffold>
-    </ReceiptContext.Provider>
+      <Mutations
+        receipt={receipt}
+        onDelete={() => {
+          writeEvent({
+            event: "ReceiptDelete",
+            payload: receipt.id,
+          })
+          router.navigate({ to: "/" })
+        }}
+      />
+    </Scaffold>
   )
 }
-
-const ReceiptContext = createContext<Receipt>(null as any)
-const useReceipt = () => useContext(ReceiptContext)
 
 export function Amount({
   children,
@@ -122,10 +108,16 @@ function Images({ children }: { children: ReadonlyArray<Image> }) {
   )
 }
 
-function Mutations({ onDelete }: { onDelete: () => void }) {
+function Mutations({
+  receipt,
+  onDelete,
+}: {
+  receipt: Receipt
+  onDelete: () => void
+}) {
   return (
     <div className="fixed bottom-0 left-0 w-full px-5 pb-safe flex flex-col items-center gap-2">
-      <EditDrawer />
+      <EditDrawer receipt={receipt} />
       <RemoveDrawer onDelete={onDelete} />
       <div className="h-3" />
     </div>
@@ -159,8 +151,7 @@ function RemoveDrawer({ onDelete }: { onDelete: () => void }) {
   )
 }
 
-function EditDrawer() {
-  const receipt = useReceipt()
+function EditDrawer({ receipt }: { receipt: Receipt }) {
   const [open, setOpen] = useState(false)
 
   return (

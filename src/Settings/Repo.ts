@@ -27,7 +27,7 @@ export class SettingRepo extends ServiceMap.Service<SettingRepo>()(
       const stream = <Name extends string, S extends Schema.Top>(
         setting: Setting<Name, S>,
       ): Stream.Stream<Option.Option<S["Type"]>> =>
-        reactivity.stream(["settings"], get(setting))
+        reactivity.stream([`settings:${setting.name}`], get(setting))
 
       return { get, stream } as const
     }),

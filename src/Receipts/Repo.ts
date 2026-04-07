@@ -108,7 +108,7 @@ export class ReceiptRepo extends ServiceMap.Service<ReceiptRepo>()(
 
       const byId = (id: typeof ReceiptId.Type) =>
         reactivity.stream(
-          { receipts: [uuidString(id)] },
+          [`receipts:${uuidString(id)}`],
           Effect.gen(function* () {
             const receipt = yield* receipts.select().equals(id).first()
             const images = yield* imageRepo.forReceipt(id)

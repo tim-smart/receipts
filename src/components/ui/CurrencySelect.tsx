@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   Combobox,
   ComboboxContent,
@@ -18,13 +19,15 @@ export function CurrencySelect({
   readonly name?: string
   readonly portalContainer?: React.RefObject<HTMLElement | null> | undefined
 }) {
+  const [value, setValue] = useState(initialValue)
   return (
     <Combobox
       name={name}
       items={Currency.codes}
-      defaultValue={initialValue}
+      value={value}
       onValueChange={(value) => {
         if (!value) return
+        setValue(value)
         onChange?.(value)
       }}
     >
