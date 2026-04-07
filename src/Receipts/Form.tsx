@@ -116,12 +116,15 @@ export function ReceiptForm({
 
   const fileRef = useRef<HTMLInputElement>(null)
   useLayoutEffect(() => {
+    if (!fileRef.current) return
     if (!initialValue && !clicked.get(fileRef.current)) {
       clicked.set(fileRef.current, true)
       fileRef.current?.click()
     }
     fileRef.current?.removeAttribute("capture")
   }, [fileRef])
+
+  if (!group) return null
 
   return (
     <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit_}>
@@ -182,7 +185,7 @@ export function ReceiptForm({
             />
             <CurrencySelect
               name="currency"
-              initialValue={initialValue?.currency ?? group!.defaultCurrency}
+              initialValue={initialValue?.currency ?? group.defaultCurrency}
               portalContainer={portalContainer}
             />
           </div>

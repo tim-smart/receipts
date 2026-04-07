@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
@@ -179,12 +179,11 @@ function AddReceiptButton() {
 function ReceiptDrawer() {
   const { action } = Route.useSearch()
   const [open, setOpen] = useState(action === "add")
-  const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (action === "add") {
-      router.navigate({ to: "/" })
+      history.replaceState(null, "", "/")
     }
   }, [action])
 
