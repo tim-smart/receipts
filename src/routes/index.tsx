@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import {
+  ChangeEvent,
   FormEvent,
   useCallback,
   useEffect,
@@ -431,49 +432,69 @@ function SettingsDrawer() {
   const [currentRemoteAddress, setRemoteAddress] = useAtom(remoteAddressAtom)
   const logout = useAtomSet(sessionDestroyAtom)
 
+  const changed = useMemo(() => new Set<string>(), [])
+  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+    changed.add(e.target.name)
+  }
+
   const onSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      writeEvent({
-        event: "SettingChange",
-        payload: {
-          name: openaiApiKey.name,
-          json: openaiApiKey.encodeSync(
-            Redacted.make(data.get("openaiApiKey") as string),
+      if (changed.has("openaiApiKey")) {
+        writeEvent({
+          event: "SettingChange",
+          payload: {
+            name: openaiApiKey.name,
+            json: openaiApiKey.encodeSync(
+              Redacted.make(data.get("openaiApiKey") as string),
+            ),
+          },
+        })
+      }
+      if (changed.has("openaiModel")) {
+        writeEvent({
+          event: "SettingChange",
+          payload: {
+            name: openaiModel.name,
+            json: openaiModel.encodeSync(data.get("openaiModel") as string),
+          },
+        })
+      }
+      if (changed.has("openExchangeApiKey")) {
+        await writeEvent({
+          event: "SettingChange",
+          payload: {
+            name: openExchangeApiKey.name,
+            json: openExchangeApiKey.encodeSync(
+              Redacted.make(data.get("openExchangeApiKey") as string),
+            ),
+          },
+        })
+      }
+      if (changed.has("remoteAddress")) {
+        setRemoteAddress(
+          pipe(
+            data.get("remoteAddress") as string,
+            String.trim,
+            Option.liftPredicate(String.isNonEmpty),
           ),
-        },
-      })
-      writeEvent({
-        event: "SettingChange",
-        payload: {
-          name: openaiModel.name,
-          json: openaiModel.encodeSync(data.get("openaiModel") as string),
-        },
-      })
-      await writeEvent({
-        event: "SettingChange",
-        payload: {
-          name: openExchangeApiKey.name,
-          json: openExchangeApiKey.encodeSync(
-            Redacted.make(data.get("openExchangeApiKey") as string),
-          ),
-        },
-      })
-      setRemoteAddress(
-        pipe(
-          data.get("remoteAddress") as string,
-          String.trim,
-          Option.liftPredicate(String.isNonEmpty),
-        ),
-      )
+        )
+      }
+      changed.clear()
       setOpen(false)
     },
     [writeEvent],
   )
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open)
+        if (!open) changed.clear()
+      }}
+    >
       <DrawerTrigger asChild>
         <Button variant="outline" className="px-3">
           <Settings2 />
@@ -497,6 +518,7 @@ function SettingsDrawer() {
                 defaultValue={Option.getOrElse(currentRemoteAddress, () => "")}
                 placeholder="wss://example.com"
                 type="text"
+                onChange={onChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -509,6 +531,7 @@ function SettingsDrawer() {
                 className="col-span-3"
                 defaultValue={currentOpenaiApiKey}
                 type="password"
+                onChange={onChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -520,6 +543,7 @@ function SettingsDrawer() {
                 name="openaiModel"
                 className="col-span-3"
                 defaultValue={currentOpenaiModel}
+                onChange={onChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -532,6 +556,7 @@ function SettingsDrawer() {
                 className="col-span-3"
                 defaultValue={currentOpenExchangeKey}
                 type="password"
+                onChange={onChange}
               />
             </div>
           </div>
