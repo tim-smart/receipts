@@ -25,6 +25,6 @@ export const ReceiptEvents = EventGroup.empty
     primaryKey: ({ id }) => uuidString(id),
     payload: Schema.Struct({
       id: ReceiptId,
-      processed: Schema.Boolean,
+      processed: Schema.BooleanFromBit,
     }),
   })
