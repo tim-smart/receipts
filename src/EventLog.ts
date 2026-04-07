@@ -94,10 +94,8 @@ export const remoteAddressAtom = Atom.kvs({
 
 export const remoteAtom = Atom.runtime((get) =>
   Effect.gen(function* () {
-    const identity = yield* get.some(identityAtom)
     const remoteAddress = yield* get.some(remoteAddressAtom)
     const url = new URL(remoteAddress)
-    url.searchParams.set("publicKey", identity.publicKey)
     return EventLogRemote.layerEncrypted.pipe(
       Layer.provide(EventLog.layerRegistry),
       Layer.provide(
