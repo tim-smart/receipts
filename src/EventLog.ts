@@ -21,7 +21,13 @@ import { BrowserSocket } from "@effect/platform-browser"
 const EventLogLayer = EventLog.layer(
   ReceiptAppEvents,
   Layer.mergeAll(ReceiptGroupsLayer, ReceiptsLayer, SettingsLayer, ImagesLive),
-).pipe(Layer.provide(EventJournal.layerIndexedDb()))
+).pipe(
+  Layer.provide(
+    EventJournal.layerIndexedDb({
+      database: "receipts_events",
+    }),
+  ),
+)
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
 

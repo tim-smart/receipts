@@ -60,8 +60,7 @@
     "vite": "^8.0.4",
     "vite-plugin-pwa": "^1.2.0",
     "workbox-core": "^7.4.0",
-    "workbox-window": "^7.4.0",
-    "wrangler": "^4.80.0"
+    "workbox-window": "^7.4.0"
   },
   "resolutions": {
     "sharp": "0.32.6",
