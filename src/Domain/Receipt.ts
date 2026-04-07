@@ -6,6 +6,7 @@ import { Model } from "effect/unstable/schema"
 import { DateTimeInsert } from "./Fields"
 
 export const ReceiptId = Model.Uint8Array.pipe(Schema.brand("ReceiptId"))
+export type ReceiptId = typeof ReceiptId.Type
 
 export class Receipt extends Model.Class<Receipt>("Receipt")({
   id: Model.UuidV4Insert(ReceiptId),

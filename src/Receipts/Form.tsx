@@ -22,6 +22,7 @@ import { settingAtom } from "@/Settings/atoms"
 import { writeEventAtom } from "@/EventLog"
 import { Model } from "effect/unstable/schema"
 import { AsyncResult } from "effect/unstable/reactivity"
+import { createImageAtom } from "@/Images/atoms"
 
 const clicked = new WeakMap<any, boolean>()
 
@@ -42,13 +43,14 @@ export function ReceiptForm({
     AsyncResult.value,
     Option.flatten,
   )
+  const createImage = useAtomSet(createImageAtom, { mode: "promise" })
   const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
 
   const onSubmit_ = useCallback(
     async (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      const images: Array<typeof Image.insert.Type> = []
+      const images: Array<Image> = []
       const receiptId =
         initialValue?.id ?? ReceiptId.make(Uuid.v4({}, new Uint8Array(16)))
       const promises: Array<Promise<void>> = []
@@ -56,17 +58,7 @@ export function ReceiptForm({
         if (!(item instanceof File) || item.name === "") continue
         promises.push(
           (async () => {
-            const buffer = await item.arrayBuffer()
-            const image = Image.insert.make({
-              receiptId,
-              data: new Uint8Array(buffer),
-              contentType: item.type,
-            })
-            images.push(image)
-            await writeEvent({
-              event: "ImageCreate",
-              payload: image,
-            })
+            images.push(await createImage({ file: item, receiptId }))
           })(),
         )
       }
