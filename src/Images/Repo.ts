@@ -2,9 +2,9 @@ import { Image, ImageWithObjectUrl } from "@/Domain/Image"
 import { ReceiptId } from "@/Domain/Receipt"
 import { EventLogClient } from "@/EventLog"
 import { QueryBuilder } from "@/IndexedDb"
-import { Cache, Data, Effect, Equal, Hash, Layer, ServiceMap } from "effect"
+import { Cache, Data, Effect, Equal, Hash, Layer, Context } from "effect"
 
-export class ImagesRepo extends ServiceMap.Service<ImagesRepo>()(
+export class ImagesRepo extends Context.Service<ImagesRepo>()(
   "Images/ImagesRepo",
   {
     make: Effect.gen(function* () {

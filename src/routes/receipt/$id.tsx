@@ -75,6 +75,12 @@ function ReceiptScreen() {
             event: "ReceiptDelete",
             payload: receipt.id,
           })
+          for (const image of images) {
+            writeEvent({
+              event: "ImageDelete",
+              payload: image.id,
+            })
+          }
           router.navigate({ to: "/" })
         }}
       />

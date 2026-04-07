@@ -1,4 +1,4 @@
-import { Effect, Layer, Option, Schema, ServiceMap } from "effect"
+import { Effect, Layer, Option, Schema, Context } from "effect"
 import { Atom } from "effect/unstable/reactivity"
 import {
   Event,
@@ -31,7 +31,7 @@ const EventLogLayer = EventLog.layer(
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
 
-export class EventLogClient extends ServiceMap.Service<
+export class EventLogClient extends Context.Service<
   EventLogClient,
   Effect.Success<typeof makeClient>
 >()("EventLog/EventLogClient") {

@@ -1,10 +1,10 @@
 import { currentGroupId } from "@/Domain/Setting"
 import { QueryBuilder } from "@/IndexedDb"
 import { SettingRepo } from "@/Settings/Repo"
-import { Array, Effect, Layer, Option, ServiceMap } from "effect"
+import { Array, Effect, Layer, Option, Context } from "effect"
 import { Reactivity } from "effect/unstable/reactivity"
 
-export class ReceiptGroupRepo extends ServiceMap.Service<ReceiptGroupRepo>()(
+export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
   "ReceiptGroups/ReceiptGroupRepo",
   {
     make: Effect.gen(function* () {

@@ -4,7 +4,7 @@ import { ReceiptEvents } from "./Receipts/Events"
 import { EventLog } from "effect/unstable/eventlog"
 import { QueryBuilder } from "./IndexedDb"
 
-export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
+const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
   Effect.gen(function* () {
     const db = yield* QueryBuilder
     const receipts = db.from("receipts")
@@ -29,8 +29,11 @@ export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
           yield* receipts.upsert(new Receipt(merged))
         }, Effect.orDie),
       )
-      .handle("ReceiptDelete", ({ payload }) =>
-        receipts.delete().equals(payload).asEffect().pipe(Effect.orDie),
+      .handle(
+        "ReceiptDelete",
+        Effect.fn(function* ({ payload }) {
+          yield* receipts.delete().equals(payload)
+        }, Effect.orDie),
       )
       .handle(
         "ReceiptSetProcessed",
@@ -48,33 +51,36 @@ export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
   }),
 ).pipe(Layer.provide(QueryBuilder.layer))
 
-export const ReceiptsCompactionLive = EventLog.groupCompaction(
+const ReceiptsCompactionLive = EventLog.groupCompaction(
   ReceiptEvents,
-  ({ events, write }) =>
-    Effect.gen(function* () {
-      let create = false
-      const payload = {} as any
-      for (const event of events) {
-        switch (event._tag) {
-          case "ReceiptDelete": {
-            return yield* write("ReceiptDelete", event.payload)
-          }
-          case "ReceiptCreate": {
-            create = true
-            Object.assign(payload, event.payload)
-            break
-          }
-          default: {
-            Object.assign(payload, event.payload)
-            break
-          }
+  Effect.fn(function* ({ events, write }) {
+    let create = false
+    const payload = {} as any
+    for (const event of events) {
+      switch (event._tag) {
+        case "ReceiptDelete": {
+          return yield* write("ReceiptDelete", event.payload)
+        }
+        case "ReceiptCreate": {
+          create = true
+          Object.assign(payload, event.payload)
+          break
+        }
+        default: {
+          Object.assign(payload, event.payload)
+          break
         }
       }
-      yield* write(create ? "ReceiptCreate" : "ReceiptUpdate", payload)
-    }),
+    }
+    if (create) {
+      yield* write("ReceiptCreate", Receipt.insert.make(payload))
+    } else {
+      yield* write("ReceiptUpdate", Receipt.update.make(payload))
+    }
+  }),
 )
 
-export const ReceiptsReactivityLive = EventLog.groupReactivity(ReceiptEvents, [
+const ReceiptsReactivityLive = EventLog.groupReactivity(ReceiptEvents, [
   "receipts",
 ])
 

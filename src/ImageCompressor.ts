@@ -1,7 +1,7 @@
 import Compressor from "compressorjs"
-import { Effect, Layer, Schema, ServiceMap } from "effect"
+import { Effect, Layer, Schema, Context } from "effect"
 
-export class ImageCompressor extends ServiceMap.Service<ImageCompressor>()(
+export class ImageCompressor extends Context.Service<ImageCompressor>()(
   "receipts/ImageCompressor",
   {
     make: Effect.gen(function* () {

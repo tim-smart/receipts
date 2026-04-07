@@ -3,7 +3,7 @@ import {
   Layer,
   Option,
   Redacted,
-  ServiceMap,
+  Context,
   Stream,
   SubscriptionRef,
 } from "effect"
@@ -14,7 +14,7 @@ import { AsyncResult, Atom } from "effect/unstable/reactivity"
 const storageKey = "receipts_auth"
 const appName = "Receipts"
 
-export class Auth extends ServiceMap.Service<Auth>()("Auth", {
+export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const get = Effect.sync(() =>
       EventLog.decodeIdentityString(localStorage.getItem(storageKey) ?? ""),

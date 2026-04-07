@@ -7,7 +7,7 @@ import { ImagesTable } from "./Images/Table"
 import { ReceiptGroupsTable } from "./ReceiptGroups/Table"
 import { ReceiptsTable } from "./Receipts/Table"
 import { SettingsTable } from "./Settings/Table"
-import { Effect, Layer, ServiceMap } from "effect"
+import { Effect, Layer, Context } from "effect"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
 import { currentGroupId, openaiModel } from "./Domain/Setting"
 
@@ -62,7 +62,7 @@ export const layerIndexeddb = Database.layer("receipts").pipe(
   Layer.provide(IndexedDb.layerWindow),
 )
 
-export class QueryBuilder extends ServiceMap.Service<QueryBuilder>()(
+export class QueryBuilder extends Context.Service<QueryBuilder>()(
   "receipts/IndexedDb/QueryBuilder",
   {
     make: Database.getQueryBuilder,

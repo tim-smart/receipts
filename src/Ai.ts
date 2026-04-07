@@ -1,7 +1,7 @@
-import { Effect, Layer, Schema, ServiceMap } from "effect"
+import { Effect, Layer, Schema, Context } from "effect"
 import { LanguageModel, Prompt } from "effect/unstable/ai"
 
-export class AiHelpers extends ServiceMap.Service<AiHelpers>()("AiHelpers", {
+export class AiHelpers extends Context.Service<AiHelpers>()("AiHelpers", {
   make: Effect.gen(function* () {
     const completions = yield* LanguageModel.LanguageModel
 

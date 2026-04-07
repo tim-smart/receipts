@@ -1,12 +1,4 @@
-import {
-  Cache,
-  Cause,
-  Effect,
-  Layer,
-  Schedule,
-  Schema,
-  ServiceMap,
-} from "effect"
+import { Cache, Cause, Effect, Layer, Schedule, Schema, Context } from "effect"
 import {
   FetchHttpClient,
   HttpClient,
@@ -15,7 +7,7 @@ import {
 } from "effect/unstable/http"
 import { TracerPropagationEnabled } from "effect/unstable/http/HttpClient"
 
-export class ExchangeRates extends ServiceMap.Service<ExchangeRates>()(
+export class ExchangeRates extends Context.Service<ExchangeRates>()(
   "ExchangeRates",
   {
     make: Effect.gen(function* () {
