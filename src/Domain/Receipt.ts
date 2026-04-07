@@ -3,6 +3,7 @@ import { DateTime, Order, Schema } from "effect"
 import { ReceiptGroupId } from "./ReceiptGroup"
 import { uuidString } from "@/lib/utils"
 import { Model } from "effect/unstable/schema"
+import { DateTimeInsert } from "./Fields"
 
 export const ReceiptId = Model.Uint8Array.pipe(Schema.brand("ReceiptId"))
 
@@ -15,7 +16,7 @@ export class Receipt extends Model.Class<Receipt>("Receipt")({
   currency: Currency,
   processed: Schema.BooleanFromBit,
   groupId: ReceiptGroupId,
-  createdAt: Model.DateTimeInsert,
+  createdAt: DateTimeInsert,
   updatedAt: Model.DateTimeUpdate,
 }) {
   static readonly Array = Schema.Array(Receipt)

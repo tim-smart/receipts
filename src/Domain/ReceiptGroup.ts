@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect"
 import { Currency } from "./Currency"
 import { Model } from "effect/unstable/schema"
+import { DateTimeInsert } from "./Fields"
 
 export const ReceiptGroupId = Model.Uint8Array.pipe(
   Schema.brand("ReceiptGroupId"),
@@ -16,7 +17,7 @@ export class ReceiptGroup extends Model.Class<ReceiptGroup>("ReceiptGroup")({
   defaultCurrency: Currency.pipe(
     Schema.withConstructorDefault(Effect.succeed("USD")),
   ),
-  createdAt: Model.DateTimeInsert,
+  createdAt: DateTimeInsert,
   updatedAt: Model.DateTimeUpdate,
 }) {
   static readonly Array = Schema.Array(ReceiptGroup)

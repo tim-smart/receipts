@@ -21,9 +21,11 @@ const clicked = new WeakMap<any, boolean>()
 export function ReceiptForm({
   initialValue,
   onSubmit,
+  portalContainer,
 }: {
   initialValue?: Receipt
   onSubmit: () => void
+  portalContainer?: React.RefObject<HTMLElement | null> | undefined
 }) {
   const group = useAtomSuspense(currentGroupAtom).value
   const openaiKey = useAtomSuspense(settingAtom(openaiApiKey)).value
@@ -176,6 +178,7 @@ export function ReceiptForm({
             <CurrencySelect
               name="currency"
               initialValue={initialValue?.currency ?? group.defaultCurrency}
+              portalContainer={portalContainer}
             />
           </div>
         </div>

@@ -24,12 +24,11 @@ export function CurrencySelect({
       items={Currency.codes}
       defaultValue={initialValue}
       onValueChange={(value) => {
-        console.log(value)
         if (!value) return
         onChange?.(value)
       }}
     >
-      <ComboboxInput placeholder="Select a currency" className="w-full" />
+      <ComboboxInput placeholder="Select a currency" />
       <ComboboxContent portalContainer={portalContainer}>
         <ComboboxList>
           {(item: string) => (

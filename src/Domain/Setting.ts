@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Redacted, Schema, SchemaGetter } from "effect"
 import { ReceiptGroupIdJson } from "./ReceiptGroup"
 
 export class Setting<const Name extends string, S extends Schema.Top> {
@@ -17,11 +17,19 @@ export class Setting<const Name extends string, S extends Schema.Top> {
   readonly decode
 }
 
+const RedactedSchema = <S extends Schema.Top>(schema: S) =>
+  schema.pipe(
+    Schema.decodeTo(Schema.Redacted(schema), {
+      decode: SchemaGetter.transform(Redacted.make),
+      encode: SchemaGetter.transform(Redacted.value),
+    }),
+  )
+
 export const currentGroupId = new Setting("currentGroupId", ReceiptGroupIdJson)
 
 export const openaiApiKey = new Setting(
   "openaiApiKey",
-  Schema.Redacted(Schema.String),
+  RedactedSchema(Schema.String),
 )
 export const openaiModel = new Setting(
   "openaiModel",
@@ -30,5 +38,5 @@ export const openaiModel = new Setting(
 
 export const openExchangeApiKey = new Setting(
   "openExchangeApiKey",
-  Schema.Redacted(Schema.String),
+  RedactedSchema(Schema.String),
 )

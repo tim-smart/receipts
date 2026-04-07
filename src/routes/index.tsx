@@ -30,7 +30,13 @@ import {
   ComboboxTrigger,
   ComboboxValue,
 } from "@/components/ui/combobox"
-import { ArrowUpRight, Plus, Settings, Settings2 } from "lucide-react"
+import {
+  ArrowUpRight,
+  ChevronsUpDown,
+  Plus,
+  Settings,
+  Settings2,
+} from "lucide-react"
 import { Scaffold } from "@/components/ui/Scaffold"
 import {
   Card,
@@ -140,6 +146,7 @@ function GroupSelect() {
             <ComboboxValue>
               {(group: ReceiptGroup) => group?.name}
             </ComboboxValue>
+            <ChevronsUpDown />
           </Button>
         }
       />
@@ -174,6 +181,7 @@ function ReceiptDrawer() {
   const { action } = Route.useSearch()
   const [open, setOpen] = useState(action === "add")
   const router = useRouter()
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (action === "add") {
@@ -187,11 +195,12 @@ function ReceiptDrawer() {
         <Button className="flex-1">Add receipt</Button>
       </DrawerTrigger>
 
-      <DrawerContent>
+      <DrawerContent ref={contentRef}>
         <ReceiptForm
           onSubmit={() => {
             setOpen(false)
           }}
+          portalContainer={contentRef}
         />
       </DrawerContent>
     </Drawer>
@@ -367,7 +376,7 @@ function ReceiptGrid() {
 
 function ReceiptCard({ children: receipt }: { children: Receipt }) {
   return (
-    <Card>
+    <Card className="p-0">
       <CardHeader className="p-4">
         <CardTitle className="whitespace-nowrap overflow-ellipsis overflow-hidden">
           {receipt.description}
@@ -549,8 +558,8 @@ function SettingsDrawer() {
 function TotalsToggle() {
   const [open, setOpen] = useState(false)
   return (
-    <Card className="flex-1 p-0">
-      <CardHeader className="pr-2 pl-5 py-2 cursor-pointer">
+    <Card className="flex-1 p-0 gap-0">
+      <CardHeader className="pr-2 pl-5 py-2 cursor-pointer gap-0">
         <div className="flex items-center">
           <CardDescription
             className="flex-1"
@@ -628,8 +637,8 @@ function Totals() {
           ))}
       </div>
       {apiKey && (
-        <div>
-          Convert to:{" "}
+        <div className="flex items-center gap-2">
+          <div>Convert to:</div>
           <CurrencySelect
             initialValue={convertTo}
             onChange={(base) => {

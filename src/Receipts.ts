@@ -22,7 +22,7 @@ export const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>
         "ReceiptUpdate",
         Effect.fn(function* ({ payload, conflicts }) {
           const current = yield* receipts.select().equals(payload.id).first()
-          let merged = Object.assign({}, current)
+          let merged = Object.assign({}, current, payload)
           for (const conflict in conflicts) {
             Object.assign(merged, conflict)
           }

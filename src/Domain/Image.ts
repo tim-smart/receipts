@@ -2,6 +2,7 @@ import { Schema } from "effect"
 import { ReceiptId } from "./Receipt"
 import { uuidString } from "@/lib/utils"
 import { Model } from "effect/unstable/schema"
+import { DateTimeInsert } from "./Fields"
 
 export const ImageId = Model.Uint8Array.pipe(Schema.brand("ImageId"))
 
@@ -10,7 +11,7 @@ export class Image extends Model.Class<Image>("Image")({
   receiptId: ReceiptId,
   data: Schema.Uint8Array,
   contentType: Schema.String,
-  createdAt: Model.DateTimeInsert,
+  createdAt: DateTimeInsert,
   updatedAt: Model.DateTimeUpdate,
 }) {
   static readonly Array = Schema.Array(Image)

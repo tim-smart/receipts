@@ -120,9 +120,9 @@ export class ReceiptRepo extends ServiceMap.Service<ReceiptRepo>()(
         ["receipts", "images"],
         receipts
           .select("processed")
-          .equals(false)
+          .equals(0)
           .asEffect()
-          .pipe(Effect.delay("1 second")),
+          .pipe(Effect.tap(Effect.log), Effect.delay("1 second")),
       )
 
       return {

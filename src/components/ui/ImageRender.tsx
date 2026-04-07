@@ -1,4 +1,5 @@
 import { Image } from "@/Domain/Image"
+import { cn } from "@/lib/utils"
 import { useMemo } from "react"
 
 export function ImageRender({
@@ -21,7 +22,10 @@ export function ImageRender({
   )
   return asLink ? (
     <a href={url} target="_blank">
-      <img src={url} className={className} />
+      <img
+        src={url}
+        className={cn(className, "[dynamic-range-limit:standard]")}
+      />
     </a>
   ) : (
     <img src={url} className={className} />

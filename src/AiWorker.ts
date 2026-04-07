@@ -17,12 +17,13 @@ export const AiWorkerLive = Effect.gen(function* () {
 
   const mailbox = yield* receiptRepo.unprocessed
   yield* Queue.take(mailbox).pipe(
-    Effect.tap((receipts) =>
-      Effect.gen(function* () {
+    Effect.tap(
+      Effect.fnUntraced(function* (receipts) {
         for (const receipt of receipts) {
           const idString = uuidString(receipt.id)
-          if (FiberMap.hasUnsafe(fibers, idString)) continue
-          yield* FiberMap.run(fibers, idString, process(receipt))
+          yield* FiberMap.run(fibers, idString, process(receipt), {
+            onlyIfMissing: true,
+          })
         }
       }),
     ),
@@ -67,9 +68,9 @@ export const AiWorkerLive = Effect.gen(function* () {
         }),
       )
     },
+    Effect.tapCause(Effect.log),
     Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),
     Effect.tap(Effect.log("processed")),
-    Effect.catchCause(Effect.log),
     (effect, receipt) =>
       Effect.annotateLogs(effect, "receiptId", uuidString(receipt.id)),
   )

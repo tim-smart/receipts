@@ -42,7 +42,7 @@ const inputFromBlob = (blob: Blob) =>
 
 class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
   {
-    date: Schema.NullOr(Schema.DateTimeUtc).annotate({
+    date: Schema.NullOr(Schema.DateTimeUtcFromString).annotate({
       description:
         "The date of the purchase in the format YYYY-MM-DD, or null if not found",
     }),
@@ -52,7 +52,7 @@ class ReceiptMeta extends Schema.Class<ReceiptMeta>("ReceiptMeta")(
     description: Schema.String.annotate({
       description: "A 1-5 word title describing the purchase",
     }),
-    amount: Schema.BigDecimal.annotate({
+    amount: Schema.BigDecimalFromString.annotate({
       jsonSchema: {
         type: "string",
         description:
