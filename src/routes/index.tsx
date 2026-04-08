@@ -145,6 +145,7 @@ function GroupSelect() {
             <ComboboxValue>
               {(group: ReceiptGroup) => group?.name}
             </ComboboxValue>
+            <div className="flex-1" />
             <ChevronsUpDown />
           </Button>
         }
@@ -358,11 +359,13 @@ function ReceiptGrid() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-      {receipts.map((receipt) => (
+      {receipts.map((receipt, index) => (
         <Link
           key={receipt.idString}
           to="/receipt/$id"
           params={{ id: receipt.idString }}
+          style={{ "--delay": `${index * 0.05}s` } as any}
+          className={`animate-fade-in opacity-0 delay-(--delay)`}
         >
           <ReceiptCard>{receipt}</ReceiptCard>
         </Link>

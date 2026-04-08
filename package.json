@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "effect-tsgo patch"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -42,6 +43,7 @@
     "workbox-routing": "^7.4.0"
   },
   "devDependencies": {
+    "@effect/tsgo": "0.2.1",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/router-devtools": "^1.166.11",
     "@tanstack/router-plugin": "^1.167.12",
@@ -49,6 +51,7 @@
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native-preview": "7.0.0-dev.20260407.1",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
@@ -57,7 +60,6 @@
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
     "tw-animate-css": "^1.4.0",
-    "typescript": "^6.0.2",
     "vite": "^8.0.4",
     "vite-plugin-pwa": "^1.2.0",
     "workbox-core": "^7.4.0",
