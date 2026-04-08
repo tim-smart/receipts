@@ -31,6 +31,7 @@ registerRoute(
     }
     return Response.redirect("/")
   },
+  "POST",
 )
 
 // self.__WB_MANIFEST is default injection point
