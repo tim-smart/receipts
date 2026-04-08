@@ -1,10 +1,10 @@
 import { BigDecimal, DateTime, Effect } from "effect"
 import { Atom } from "effect/unstable/reactivity"
 import { clientAtom } from "./EventLog"
-import { Image } from "./Domain/Image"
 import { Receipt } from "./Domain/Receipt"
 import { settingOptionAtom } from "./Settings/atoms"
 import { currentGroupId } from "./Domain/Setting"
+import { createImageAtom } from "./Images/atoms"
 
 export const shareAtom = Atom.make(
   Effect.fnUntraced(function* (get) {
@@ -16,7 +16,7 @@ export const shareAtom = Atom.make(
       await cache.delete("/share")
       const contentType = response.headers.get("content-type") ?? "image/jpeg"
       return {
-        data: new Uint8Array(await response.arrayBuffer()),
+        data: await response.blob(),
         contentType,
       }
     })
@@ -35,11 +35,11 @@ export const shareAtom = Atom.make(
         processed: false,
       }),
     )
-    const image = Image.insert.make({
+    yield* get.setResult(createImageAtom, {
       receiptId: receipt.id,
-      data: data.data,
-      contentType: data.contentType,
+      file: new File([data.data], "receipt", {
+        type: data.contentType,
+      }),
     })
-    yield* client("ImageCreate", image)
   }),
 )

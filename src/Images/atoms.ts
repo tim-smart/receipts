@@ -24,4 +24,5 @@ export const createImageAtom = runtime.fn<{
     yield* client("ImageCreate", image)
     return new Image(image)
   }),
+  { concurrent: true },
 )
