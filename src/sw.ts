@@ -8,12 +8,16 @@ import { NavigationRoute, registerRoute } from "workbox-routing"
 
 declare let self: ServiceWorkerGlobalScope
 
-self.addEventListener("install", () => {
-  self.skipWaiting()
+self.addEventListener("install", (e) => {
+  e.waitUntil(self.skipWaiting())
 })
 
-self.addEventListener("activate", () => {
-  self.clients.claim()
+self.addEventListener("activate", (e) => {
+  e.waitUntil(self.clients.claim())
+})
+
+self.addEventListener("fetch", (e) => {
+  console.log("SW fetch", e.request)
 })
 
 registerRoute(
