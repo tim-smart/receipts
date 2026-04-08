@@ -27,7 +27,15 @@ registerRoute(
     const image = data.get("images")
     if (image instanceof File) {
       const cache = await caches.open("receipts")
-      await cache.put(new Request("/share"), new Response(image))
+      const data = await image.arrayBuffer()
+      await cache.put(
+        new Request("/share"),
+        new Response(data, {
+          headers: {
+            "Content-Type": image.type,
+          },
+        }),
+      )
     }
     return Response.redirect("/")
   },
