@@ -23,12 +23,9 @@ self.addEventListener("fetch", (e) => {
 registerRoute(
   ({ url }) => url.pathname === "/share",
   async (event) => {
-    const e = event.event as FetchEvent
     const data = await event.request.formData()
-    const client = await self.clients.get(e.resultingClientId)
-    if (client) {
-      client.postMessage({ type: "SHARE", images: data.get("images") })
-    }
+    const cache = await caches.open("receipts")
+    await cache.put(event.request, new Response(data))
     return Response.redirect("/")
   },
   "POST",
