@@ -11,8 +11,8 @@ export type ReceiptId = typeof ReceiptId.Type
 export class Receipt extends Model.Class<Receipt>("Receipt")({
   id: Model.UuidV4Insert(ReceiptId),
   date: Schema.DateTimeUtcFromMillis,
-  description: Schema.String,
-  merchant: Schema.String,
+  description: Schema.Trim,
+  merchant: Schema.Trim,
   amount: Schema.BigDecimalFromString,
   currency: Currency,
   processed: Schema.BooleanFromBit,
