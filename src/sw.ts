@@ -25,7 +25,7 @@ registerRoute(
   async (event) => {
     const data = await event.request.formData()
     const cache = await caches.open("receipts")
-    await cache.put(event.request, new Response(data))
+    await cache.put(new Request("/share"), new Response(data))
     return Response.redirect("/")
   },
   "POST",
