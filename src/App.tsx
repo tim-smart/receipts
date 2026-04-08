@@ -1,6 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { Toaster } from "./components/ui/sonner.tsx"
 import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react"
@@ -10,6 +10,7 @@ import { Input } from "./components/ui/input.tsx"
 import { Button } from "./components/ui/button.tsx"
 import { aiWorkerAtom } from "./AiWorker/atoms.ts"
 import { remoteAtom } from "./EventLog.ts"
+import { shareAtom } from "./Share.ts"
 
 const router = createRouter({ routeTree, scrollRestoration: true })
 
@@ -23,20 +24,6 @@ function App() {
   useRegisterSW({
     immediate: true,
   })
-
-  useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      console.log(event.data)
-      if (event.data.type === "SHARE") {
-        const images = event.data.images
-        console.log(images)
-      }
-    }
-    navigator.serviceWorker.addEventListener("message", onMessage)
-    return () => {
-      navigator.serviceWorker.removeEventListener("message", onMessage)
-    }
-  }, [])
 
   return (
     <>
@@ -59,6 +46,7 @@ function Auth() {
 function Authenticated() {
   useAtomMount(aiWorkerAtom)
   useAtomMount(remoteAtom)
+  useAtomMount(shareAtom)
   return <RouterProvider router={router} />
 }
 

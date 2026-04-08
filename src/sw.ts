@@ -16,10 +16,6 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(self.clients.claim())
 })
 
-self.addEventListener("fetch", (e) => {
-  console.log("SW fetch", e.request)
-})
-
 registerRoute(
   ({ url }) => url.pathname === "/share",
   async (event) => {
@@ -27,15 +23,7 @@ registerRoute(
     const image = data.get("images")
     if (image instanceof File) {
       const cache = await caches.open("receipts")
-      const data = await image.arrayBuffer()
-      await cache.put(
-        new Request("/share"),
-        new Response(data, {
-          headers: {
-            "Content-Type": image.type,
-          },
-        }),
-      )
+      await cache.put(new Request("/share"), new Response(image))
     }
     return Response.redirect("/")
   },
