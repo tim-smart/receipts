@@ -25,11 +25,16 @@ function App() {
   })
 
   useEffect(() => {
-    navigator.serviceWorker.addEventListener("message", (event) => {
-      console.log(event)
-    })
+    const onMessage = (event: MessageEvent) => {
+      console.log(event.data)
+      if (event.data.type === "SHARE") {
+        const images = event.data.images
+        console.log(images)
+      }
+    }
+    navigator.serviceWorker.addEventListener("message", onMessage)
     return () => {
-      navigator.serviceWorker.removeEventListener("message", () => {})
+      navigator.serviceWorker.removeEventListener("message", onMessage)
     }
   }, [])
 

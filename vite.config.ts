@@ -12,8 +12,9 @@ export default defineConfig({
     tanstackRouter(),
     react(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: "auto",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
 
       pwaAssets: {
         disabled: false,
@@ -54,12 +55,30 @@ export default defineConfig({
             ],
           },
         ],
+        share_target: {
+          action: "/share",
+          method: "POST",
+          enctype: "multipart/form-data",
+          params: {
+            files: [
+              {
+                name: "images",
+                accept: ["image/png", "image/jpeg", "image/webp"],
+              },
+            ],
+          },
+        },
       },
 
-      workbox: {
+      // workbox: {
+      //   globPatterns: ["**/*.{js,css,html,svg,png,ico,wasm}"],
+      //   cleanupOutdatedCaches: true,
+      //   clientsClaim: true,
+      //   maximumFileSizeToCacheInBytes: 6_000_000,
+      // },
+
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,wasm,woff,woff2}"],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 6_000_000,
       },
 
