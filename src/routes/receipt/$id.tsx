@@ -104,9 +104,9 @@ export function Amount({
 
 function Images({ children }: { children: ReadonlyArray<ImageWithObjectUrl> }) {
   return (
-    <div className="grid grid-cols-3 gap-2 justify-center">
+    <div className="flex flex-wrap gap-4 justify-center w-full">
       {children.map((image) => (
-        <div key={image.idString}>
+        <div key={image.idString} className="w-3/4 md:w-1/2">
           <ImageRender src={image} className="rounded-lg w-full" asLink />
         </div>
       ))}
@@ -134,7 +134,10 @@ function RemoveDrawer({ onDelete }: { onDelete: () => void }) {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <Button className="max-w-sm w-full" variant="destructive">
+        <Button
+          className="max-w-sm w-full backdrop-blur-sm"
+          variant="destructive"
+        >
           Delete
         </Button>
       </DrawerTrigger>
@@ -163,7 +166,7 @@ function EditDrawer({ receipt }: { receipt: Receipt }) {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className="max-w-sm w-full">
+        <Button variant="outline" className="max-w-sm w-full backdrop-blur-sm">
           Edit
         </Button>
       </DrawerTrigger>
