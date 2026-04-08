@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge"
 import * as Uuid from "uuid"
 import { BrowserKeyValueStore } from "@effect/platform-browser"
 import { Atom } from "effect/unstable/reactivity"
+import { Schema, SchemaGetter, String } from "effect"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -13,3 +14,10 @@ export const uuidBytes = (uuid: string): Uint8Array<ArrayBuffer> =>
   Uuid.parse(uuid) as any
 
 export const kvsRuntime = Atom.runtime(BrowserKeyValueStore.layerLocalStorage)
+
+export const TrimmedString = Schema.String.pipe(
+  Schema.decodeTo(Schema.String, {
+    decode: SchemaGetter.passthrough(),
+    encode: SchemaGetter.transform(String.trim),
+  }),
+)

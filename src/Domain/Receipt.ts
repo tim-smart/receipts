@@ -1,7 +1,7 @@
 import { Currency } from "./Currency"
 import { DateTime, Order, Schema } from "effect"
 import { ReceiptGroupId } from "./ReceiptGroup"
-import { uuidString } from "@/lib/utils"
+import { TrimmedString, uuidString } from "@/lib/utils"
 import { Model } from "effect/unstable/schema"
 import { DateTimeInsert } from "./Fields"
 
@@ -11,8 +11,8 @@ export type ReceiptId = typeof ReceiptId.Type
 export class Receipt extends Model.Class<Receipt>("Receipt")({
   id: Model.UuidV4Insert(ReceiptId),
   date: Schema.DateTimeUtcFromMillis,
-  description: Schema.Trim,
-  merchant: Schema.Trim,
+  description: TrimmedString,
+  merchant: TrimmedString,
   amount: Schema.BigDecimalFromString,
   currency: Currency,
   processed: Schema.BooleanFromBit,
