@@ -24,8 +24,11 @@ registerRoute(
   ({ url }) => url.pathname === "/share",
   async (event) => {
     const data = await event.request.formData()
-    const cache = await caches.open("receipts")
-    await cache.put(new Request("/share"), new Response(data))
+    const image = data.get("images")
+    if (image instanceof File) {
+      const cache = await caches.open("receipts")
+      await cache.put(new Request("/share"), new Response(image))
+    }
     return Response.redirect("/")
   },
   "POST",
