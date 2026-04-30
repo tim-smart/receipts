@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/drawer"
 import { BigDecimal, DateTime, Option } from "effect"
 import { ReceiptForm } from "@/Receipts/Form"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { receiptAtom } from "@/Receipts/atoms"
 import { ImageWithObjectUrl } from "@/Domain/Image"
@@ -161,6 +161,7 @@ function RemoveDrawer({ onDelete }: { onDelete: () => void }) {
 }
 
 function EditDrawer({ receipt }: { receipt: Receipt }) {
+  const container = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
 
   return (
@@ -170,12 +171,13 @@ function EditDrawer({ receipt }: { receipt: Receipt }) {
           Edit
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent ref={container}>
         <ReceiptForm
           initialValue={receipt}
           onSubmit={() => {
             setOpen(false)
           }}
+          portalContainer={container}
         />
       </DrawerContent>
     </Drawer>
