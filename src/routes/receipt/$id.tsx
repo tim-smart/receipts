@@ -134,10 +134,7 @@ function RemoveDrawer({ onDelete }: { onDelete: () => void }) {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <Button
-          className="max-w-sm w-full backdrop-blur-sm"
-          variant="destructive"
-        >
+        <Button className="max-w-sm w-full" variant="destructive">
           Delete
         </Button>
       </DrawerTrigger>
@@ -167,7 +164,7 @@ function EditDrawer({ receipt }: { receipt: Receipt }) {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className="max-w-sm w-full backdrop-blur-sm">
+        <Button variant="outline" className="max-w-sm w-full">
           Edit
         </Button>
       </DrawerTrigger>

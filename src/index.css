@@ -142,3 +142,11 @@
     @apply font-sans;
   }
 }
+
+@utility bg-shade-* {
+  background-color: color-mix(
+    in srgb,
+    --value(--color-*, [*]),
+    var(--background) calc(100% - (--modifier(integer) * 1%))
+  );
+}
