@@ -30,9 +30,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       const query = receipts
         .select("groupIdSort")
         .between([groupId], [groupId, [], []])
-      return options?.sort === "asc"
-        ? query.asEffect()
-        : query.reverse().asEffect()
+      return options?.sort === "asc" ? query : query.reverse()
     }
 
     const exportForGroup = Effect.fn(function* (options: {
@@ -92,6 +90,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
         ...images,
       ])
 
+      // @effect-diagnostics-next-line globalDateInEffect:off
       FileSaver.saveAs(blob, `receipts-${new Date().toISOString()}.zip`)
     })
 
@@ -104,7 +103,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       }),
     )
 
-    const byId = (id: typeof ReceiptId.Type) =>
+    const byId = (id: ReceiptId) =>
       reactivity.stream(
         [`receipts:${uuidString(id)}`],
         Effect.gen(function* () {
@@ -119,7 +118,6 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       receipts
         .select("processed")
         .equals(0)
-        .asEffect()
         .pipe(Effect.tap(Effect.log), Effect.delay("1 second")),
     )
 

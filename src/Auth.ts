@@ -1,3 +1,4 @@
+/** @effect-diagnostics globalDateInEffect:off */
 import {
   Effect,
   Layer,

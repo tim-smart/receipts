@@ -26,11 +26,10 @@ export class ImagesRepo extends Context.Service<ImagesRepo>()(
         capacity: 100,
       })
 
-      const forReceipt = (receiptId: typeof ReceiptId.Type) =>
+      const forReceipt = (receiptId: ReceiptId) =>
         images
           .select("receiptId")
           .equals(receiptId)
-          .asEffect()
           .pipe(
             Effect.flatMap(
               Effect.forEach((image) =>

@@ -53,7 +53,7 @@ export const eventLogAtom = Atom.runtime((get) =>
   ),
 )
 
-export const clientAtom = eventLogAtom.atom(EventLogClient.asEffect())
+export const clientAtom = eventLogAtom.atom(EventLogClient)
 
 export type EventPayload =
   (typeof ReceiptAppEvents.groups)[number] extends EventGroup.EventGroup<
@@ -101,7 +101,7 @@ export const remoteAtom = Atom.runtime((get) =>
       Layer.provide(
         RpcClient.layerProtocolSocket({ retryTransientErrors: true }),
       ),
-      Layer.provide(RpcSerialization.layerMsgPack),
+      Layer.provide(RpcSerialization.layerSchemaBinary()),
       Layer.provide(BrowserSocket.layerWebSocket(url.toString())),
     )
   }).pipe(Layer.unwrap),

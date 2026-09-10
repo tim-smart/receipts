@@ -9,7 +9,7 @@ export const ReceiptId = Model.Uint8Array.pipe(Schema.brand("ReceiptId"))
 export type ReceiptId = typeof ReceiptId.Type
 
 export class Receipt extends Model.Class<Receipt>("Receipt")({
-  id: Model.UuidV4Insert(ReceiptId),
+  id: Model.UuidV4BytesInsert(ReceiptId),
   date: Schema.DateTimeUtcFromMillis,
   description: TrimmedString,
   merchant: TrimmedString,

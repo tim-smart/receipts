@@ -1,3 +1,4 @@
+/** @effect-diagnostics asyncFunction:off */
 import { Button } from "@/components/ui/button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import { DrawerFooter, DrawerHeader } from "@/components/ui/drawer"

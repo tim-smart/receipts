@@ -16,7 +16,6 @@ export class SettingRepo extends Context.Service<SettingRepo>()("SettingRepo", {
         .select()
         .equals(setting.name)
         .first()
-        .asEffect()
         .pipe(
           Effect.flatMap((_) => setting.decode(_.json)),
           Effect.option,

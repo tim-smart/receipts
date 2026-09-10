@@ -437,6 +437,7 @@ function SettingsDrawer() {
   }
 
   const onSubmit = useCallback(
+    // @effect-diagnostics-next-line asyncFunction:off
     async (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
@@ -729,6 +730,7 @@ function ExportDrawer() {
   }, [getRates, convert, currency])
   const loadingRates = convert && rates._tag !== "Success"
 
+  // @effect-diagnostics-next-line asyncFunction:off
   const onExport = useCallback(async () => {
     if (groupId._tag === "None") return
     await exportReceipts({

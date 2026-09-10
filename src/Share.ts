@@ -9,6 +9,7 @@ import { createImageAtom } from "./Images/atoms"
 export const shareAtom = Atom.make(
   Effect.fnUntraced(function* (get) {
     const client = yield* get.result(clientAtom)
+    // @effect-diagnostics-next-line asyncFunction:off
     const data = yield* Effect.promise(async () => {
       const cache = await caches.open("receipts")
       const response = await cache.match("/share")

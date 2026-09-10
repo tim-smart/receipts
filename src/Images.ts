@@ -11,10 +11,10 @@ const ImagesHandlers = EventLog.group(ImageEvents, (handlers) =>
 
     return handlers
       .handle("ImageCreate", ({ payload }) =>
-        images.insert(payload).asEffect().pipe(Effect.orDie),
+        images.insert(payload).pipe(Effect.orDie),
       )
       .handle("ImageDelete", ({ payload }) =>
-        images.delete().equals(payload).asEffect().pipe(Effect.orDie),
+        images.delete().equals(payload).pipe(Effect.orDie),
       )
   }),
 ).pipe(Layer.provide([QueryBuilder.layer]))

@@ -18,7 +18,7 @@ export class ImageCompressor extends Context.Service<ImageCompressor>()(
               resume(Effect.succeed(result as File))
             },
             error(cause) {
-              resume(new ImageCompressorError({ cause }).asEffect())
+              resume(new ImageCompressorError({ cause }))
             },
           })
         })
@@ -30,9 +30,9 @@ export class ImageCompressor extends Context.Service<ImageCompressor>()(
   static readonly layer = Layer.effect(this, this.make)
 }
 
-export class ImageCompressorError extends Schema.TaggedErrorClass<ImageCompressorError>()(
+export class ImageCompressorError extends Schema.TaggedError<ImageCompressorError>()(
   "ImageCompressorError",
   {
-    cause: Schema.DefectWithStack,
+    cause: Schema.Defect({ includeStack: true }),
   },
 ) {}

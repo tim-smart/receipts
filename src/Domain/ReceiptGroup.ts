@@ -13,7 +13,7 @@ export const ReceiptGroupIdJson = Schema.Uint8ArrayFromHex.pipe(
 )
 
 export class ReceiptGroup extends Model.Class<ReceiptGroup>("ReceiptGroup")({
-  id: Model.UuidV4Insert(ReceiptGroupId),
+  id: Model.UuidV4BytesInsert(ReceiptGroupId),
   name: Schema.NonEmptyString.pipe(Schema.decodeTo(TrimmedString)),
   defaultCurrency: Currency.pipe(
     Schema.withConstructorDefault(Effect.succeed("USD")),

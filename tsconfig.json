@@ -26,11 +26,34 @@
     },
     "plugins": [
       {
-        "name": "@effect/language-service"
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "abortControllerInEffect": "warning",
+          "asyncFunction": "warning",
+          "cryptoRandomUUID": "warning",
+          "cryptoRandomUUIDInEffect": "warning",
+          "extendsNativeError": "warning",
+          "globalConsole": "warning",
+          "globalConsoleInEffect": "warning",
+          "globalDate": "warning",
+          "globalDateInEffect": "warning",
+          "globalFetch": "warning",
+          "globalFetchInEffect": "warning",
+          "globalRandom": "warning",
+          "globalRandomInEffect": "warning",
+          "globalTimers": "warning",
+          "globalTimersInEffect": "warning",
+          "instanceOfSchema": "warning",
+          "newPromise": "warning",
+          "nodeBuiltinImport": "warning",
+          "preferSchemaOverJson": "warning",
+          "processEnv": "warning",
+          "processEnvInEffect": "warning"
+        }
       }
     ]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }],
-  "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
+  "$schema": "./node_modules/@effect/tsgo/schema.json"
 }

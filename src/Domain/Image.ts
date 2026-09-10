@@ -7,7 +7,7 @@ import { DateTimeInsert } from "./Fields"
 export const ImageId = Model.Uint8Array.pipe(Schema.brand("ImageId"))
 
 export class Image extends Model.Class<Image>("Image")({
-  id: Model.UuidV4Insert(ImageId),
+  id: Model.UuidV4BytesInsert(ImageId),
   receiptId: ReceiptId,
   data: Schema.Uint8Array,
   contentType: Schema.String,

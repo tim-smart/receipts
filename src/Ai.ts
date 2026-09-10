@@ -1,3 +1,4 @@
+/** @effect-diagnostics globalDateInEffect:off */
 import { Effect, Layer, Schema, Context } from "effect"
 import { LanguageModel, Prompt } from "effect/unstable/ai"
 

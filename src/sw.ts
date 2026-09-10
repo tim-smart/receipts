@@ -18,6 +18,7 @@ self.addEventListener("activate", (e) => {
 
 registerRoute(
   ({ url }) => url.pathname === "/share",
+  // @effect-diagnostics-next-line asyncFunction:off
   async (event) => {
     const data = await event.request.formData()
     const image = data.get("images")

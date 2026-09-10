@@ -30,7 +30,7 @@ const ReceiptGroupsLive = EventLog.group(ReceiptGroupEvents, (handlers) =>
         }, Effect.orDie),
       )
       .handle("GroupDelete", ({ payload }) =>
-        groups.delete().equals(payload).asEffect().pipe(Effect.orDie),
+        groups.delete().equals(payload).pipe(Effect.orDie),
       )
   }),
 ).pipe(Layer.provide(QueryBuilder.layer))

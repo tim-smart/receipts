@@ -14,7 +14,7 @@ export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
       const receiptGroups = db.from("receiptGroups")
       const byName = receiptGroups.select("name")
 
-      const all = byName.asEffect()
+      const all = byName
 
       const stream = byName.reactive(["receipt_groups"])
 
@@ -25,12 +25,7 @@ export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
           return yield* Option.match(groupId, {
             onNone: () => all.pipe(Effect.map(Array.head)),
             onSome: (id) =>
-              receiptGroups
-                .select()
-                .equals(id)
-                .first()
-                .asEffect()
-                .pipe(Effect.option),
+              receiptGroups.select().equals(id).first().pipe(Effect.option),
           })
         }),
       )

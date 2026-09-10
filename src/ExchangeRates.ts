@@ -69,5 +69,5 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
 
 const Rates = Schema.Struct({
   base: Schema.String,
-  rates: Schema.Record(Schema.String, Schema.Number),
+  rates: Schema.Record(Schema.String, Schema.Finite),
 })
