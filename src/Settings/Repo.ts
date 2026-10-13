@@ -1,7 +1,7 @@
 import { Setting } from "@/Domain/Setting"
 import { QueryBuilder } from "@/IndexedDb"
 import { Effect, Layer, Option, Schema, Context, Stream } from "effect"
-import { Reactivity } from "effect/unstable/reactivity"
+import { Reactivity } from "effect/reactivity"
 
 export class SettingRepo extends Context.Service<SettingRepo>()("SettingRepo", {
   make: Effect.gen(function* () {

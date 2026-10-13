@@ -4,8 +4,8 @@ import {
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
-} from "effect/unstable/http"
-import { TracerPropagationEnabled } from "effect/unstable/http/HttpClient"
+} from "effect/http"
+import { TracerPropagationEnabled } from "effect/http/HttpClient"
 
 export class ExchangeRates extends Context.Service<ExchangeRates>()(
   "ExchangeRates",

@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import { EventGroup } from "effect/unstable/eventlog"
+import { EventGroup } from "effect/eventlog"
 
 export const SettingEvents = EventGroup.empty.add({
   tag: "SettingChange",

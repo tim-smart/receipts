@@ -1,5 +1,5 @@
 import { ExchangeRates } from "@/ExchangeRates"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 
 const runtime = Atom.runtime(ExchangeRates.layer)
 

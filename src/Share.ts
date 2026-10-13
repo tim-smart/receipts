@@ -1,5 +1,5 @@
 import { BigDecimal, DateTime, Effect } from "effect"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 import { clientAtom } from "./EventLog"
 import { Receipt } from "./Domain/Receipt"
 import { settingOptionAtom } from "./Settings/atoms"

@@ -1,12 +1,12 @@
 import { Effect, Layer, Option, Schema, Context } from "effect"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 import {
   Event,
   EventGroup,
   EventJournal,
   EventLog,
   EventLogRemote,
-} from "effect/unstable/eventlog"
+} from "effect/eventlog"
 import { ReceiptAppEvents } from "./Events"
 import { ReceiptGroupsLayer } from "./ReceiptGroups"
 import { ReceiptsLayer } from "./Receipts"
@@ -14,8 +14,8 @@ import { SettingsLayer } from "./Settings"
 import { ImagesLive } from "./Images"
 import { identityAtom } from "./Auth"
 import { kvsRuntime } from "./lib/utils"
-import { Identity } from "effect/unstable/eventlog/EventLog"
-import { RpcClient, RpcSerialization } from "effect/unstable/rpc"
+import { Identity } from "effect/eventlog/EventLog"
+import { RpcClient, RpcSerialization } from "effect/rpc"
 import { BrowserSocket } from "@effect/platform-browser"
 
 const EventLogLayer = EventLog.layer(

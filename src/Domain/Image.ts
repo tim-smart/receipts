@@ -1,7 +1,7 @@
 import { Data, Schema } from "effect"
 import { ReceiptId } from "./Receipt"
 import { uuidString } from "@/lib/utils"
-import { Model } from "effect/unstable/schema"
+import { Model } from "effect/schema"
 import { DateTimeInsert } from "./Fields"
 
 export const ImageId = Model.Uint8Array.pipe(Schema.brand("ImageId"))

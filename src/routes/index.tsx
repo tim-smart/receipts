@@ -69,7 +69,7 @@ import { ReceiptGroup } from "@/Domain/ReceiptGroup"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import { sessionDestroyAtom } from "@/Session"
-import { AsyncResult } from "effect/unstable/reactivity"
+import { AsyncResult } from "effect/reactivity"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,

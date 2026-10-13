@@ -1,6 +1,6 @@
 import { Image, ImageId } from "@/Domain/Image"
 import { uuidString } from "@/lib/utils"
-import { EventGroup } from "effect/unstable/eventlog"
+import { EventGroup } from "effect/eventlog"
 
 export const ImageEvents = EventGroup.empty
   .add({

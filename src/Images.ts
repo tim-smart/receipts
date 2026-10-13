@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect"
 import { ImageEvents } from "./Images/Events"
-import { EventLog } from "effect/unstable/eventlog"
+import { EventLog } from "effect/eventlog"
 import { QueryBuilder } from "./IndexedDb"
 import { Image } from "./Domain/Image"
 

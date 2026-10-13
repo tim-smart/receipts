@@ -9,7 +9,7 @@ import { BigDecimal, DateTime, Effect, Layer, Context } from "effect"
 import FileSaver from "file-saver"
 import * as Csv from "csv-stringify/browser/esm/sync"
 import { QueryBuilder } from "@/IndexedDb"
-import { Reactivity } from "effect/unstable/reactivity"
+import { Reactivity } from "effect/reactivity"
 
 export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
   make: Effect.gen(function* () {

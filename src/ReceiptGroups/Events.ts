@@ -1,6 +1,6 @@
 import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { uuidString } from "@/lib/utils"
-import { EventGroup } from "effect/unstable/eventlog"
+import { EventGroup } from "effect/eventlog"
 
 export const ReceiptGroupEvents = EventGroup.empty
   .add({
