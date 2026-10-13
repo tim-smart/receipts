@@ -16,14 +16,14 @@ importers:
         specifier: ^1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@effect/ai-openai':
-        specifier: 4.0.0-rc.113
-        version: 4.0.0-rc.113(effect@4.0.0-rc.113)
+        specifier: 4.0.4
+        version: 4.0.4(effect@4.0.4)
       '@effect/atom-react':
-        specifier: 4.0.0-rc.113
-        version: 4.0.0-rc.113(effect@4.0.0-rc.113)(react@19.3.0)(scheduler@0.28.0)
+        specifier: 4.0.4
+        version: 4.0.4(effect@4.0.4)(react@19.3.0)(scheduler@0.28.0)
       '@effect/platform-browser':
-        specifier: 4.0.0-rc.113
-        version: 4.0.0-rc.113(effect@4.0.0-rc.113)
+        specifier: 4.0.4
+        version: 4.0.4(effect@4.0.4)
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -64,8 +64,8 @@ importers:
         specifier: ^6.8.3
         version: 6.8.3
       effect:
-        specifier: 4.0.0-rc.113
-        version: 4.0.0-rc.113
+        specifier: 4.0.4
+        version: 4.0.4
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -740,22 +740,22 @@ packages:
   '@dotenvx/primitives@0.8.0':
     resolution: {integrity: sha512-VYJy0uhFm9zTJ1TxBaW/pA8bjbOM/OttaNMwZ1RHG4JKyRG7DhSdiqD1ipQoAyoD22olUtxbP78W9xY3Wd11bg==}
 
-  '@effect/ai-openai@4.0.0-rc.113':
-    resolution: {integrity: sha512-J7zuAc1QfdlJRUoMX38xj4xI1jQ1tUXdwAiyheNP1rLk5KUcy17En097ltvppXK/OI1h/GPFTd7wgiyMqgu4HA==}
+  '@effect/ai-openai@4.0.4':
+    resolution: {integrity: sha512-CoNvGv4bYhrTQayNBZZnG4mJOl7beD2NPz49+uBtg8wD/QN7c+2FdKOFKqL23BlNtQb4fK+kvxtwnnCzGcX0fA==}
     peerDependencies:
-      effect: ^4.0.0-rc.113
+      effect: ^4.0.4
 
-  '@effect/atom-react@4.0.0-rc.113':
-    resolution: {integrity: sha512-P5MA9czW1Lgl6IC0xkCKZop/h6Rh0yxTOu/9ZEX2dzJ01Ff6PklTkx2/70TqQcVRhj6yvJu9cqDz4Xde/FyijA==}
+  '@effect/atom-react@4.0.4':
+    resolution: {integrity: sha512-/cd4zHAS/j4QEAJahvIuvCjASI9iKPsKoYDJF1WdqBH6ol+7PIzV5jfIxyd5K0hTlLlavZnzEfi849pcS84apg==}
     peerDependencies:
-      effect: ^4.0.0-rc.113
+      effect: ^4.0.4
       react: '>=19.0.0 <20.0.0'
-      scheduler: '>=0.25.0 <0.28.0'
+      scheduler: '>=0.25.0 <0.29.0'
 
-  '@effect/platform-browser@4.0.0-rc.113':
-    resolution: {integrity: sha512-/w5pyOIVzJYcFA1d3Xxjvi9VQNiLDvt+vUaOy3HuHefIx3hxC3JG0vZDCfth6ytcYiQ1EzUqSVVTieXpyYGFTg==}
+  '@effect/platform-browser@4.0.4':
+    resolution: {integrity: sha512-2D+0/Vd+6gMpgR608OPYON4+QMvtbXyl2+HKIlayuXLmlVokI2KoIt37gm01CN+fyRFotBr3hSz4gzLd7xb3Hw==}
     peerDependencies:
-      effect: ^4.0.0-rc.113
+      effect: ^4.0.4
 
   '@effect/tsgo-darwin-arm64@0.44.0':
     resolution: {integrity: sha512-aocqN+Q6wu4TiHf7g13hwA0FvNLBrIYcUa3vb4h8tOCkz4Z+/HHm9g2t3RpexLykc/hCEcVIgD4gW5Uuu34YoA==}
@@ -2768,8 +2768,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.0-rc.113:
-    resolution: {integrity: sha512-uZ4Bh7KSlw2sdVdNDHPLSNjLGH+MWap7cheIHZoB/1T/ZJ3pvI4KiN3kUp50MpFKXhygOMmReJJOwWMQPwpPAg==}
+  effect@4.0.4:
+    resolution: {integrity: sha512-Sr50OeVSC3M5UkoUYUhFf3EULryhGaZZUf6OzDHTvaznOw7HRlxOKdF3/4nvQXHL22StOyMG3Cvo8Bt7xUp+Ng==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -5493,19 +5493,19 @@ snapshots:
 
   '@dotenvx/primitives@0.8.0': {}
 
-  '@effect/ai-openai@4.0.0-rc.113(effect@4.0.0-rc.113)':
+  '@effect/ai-openai@4.0.4(effect@4.0.4)':
     dependencies:
-      effect: 4.0.0-rc.113
+      effect: 4.0.4
 
-  '@effect/atom-react@4.0.0-rc.113(effect@4.0.0-rc.113)(react@19.3.0)(scheduler@0.28.0)':
+  '@effect/atom-react@4.0.4(effect@4.0.4)(react@19.3.0)(scheduler@0.28.0)':
     dependencies:
-      effect: 4.0.0-rc.113
+      effect: 4.0.4
       react: 19.3.0
       scheduler: 0.28.0
 
-  '@effect/platform-browser@4.0.0-rc.113(effect@4.0.0-rc.113)':
+  '@effect/platform-browser@4.0.4(effect@4.0.4)':
     dependencies:
-      effect: 4.0.0-rc.113
+      effect: 4.0.4
 
   '@effect/tsgo-darwin-arm64@0.44.0':
     optional: true
@@ -7333,7 +7333,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-rc.113: {}
+  effect@4.0.4: {}
 
   ejs@3.1.10:
     dependencies:

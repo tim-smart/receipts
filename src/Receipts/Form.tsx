@@ -21,8 +21,8 @@ import * as Uuid from "uuid"
 import { openaiApiKey } from "@/Domain/Setting"
 import { settingAtom } from "@/Settings/atoms"
 import { writeEventAtom } from "@/EventLog"
-import { Model } from "effect/unstable/schema"
-import { AsyncResult } from "effect/unstable/reactivity"
+import { Model } from "effect/schema"
+import { AsyncResult } from "effect/reactivity"
 import { createImageAtom } from "@/Images/atoms"
 
 const clicked = new WeakMap<any, boolean>()

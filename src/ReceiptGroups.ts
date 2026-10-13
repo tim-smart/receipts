@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect"
 import { ReceiptGroupEvents } from "./ReceiptGroups/Events"
-import { EventLog } from "effect/unstable/eventlog"
+import { EventLog } from "effect/eventlog"
 import { QueryBuilder } from "./IndexedDb"
 import { ReceiptGroup } from "./Domain/ReceiptGroup"
 

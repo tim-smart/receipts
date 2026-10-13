@@ -8,9 +8,9 @@ import {
   Stream,
   SubscriptionRef,
 } from "effect"
-import { EventLog } from "effect/unstable/eventlog"
-import { Identity } from "effect/unstable/eventlog/EventLog"
-import { AsyncResult, Atom } from "effect/unstable/reactivity"
+import { EventLog } from "effect/eventlog"
+import { Identity } from "effect/eventlog/EventLog"
+import { AsyncResult, Atom } from "effect/reactivity"
 
 const storageKey = "receipts_auth"
 const appName = "Receipts"

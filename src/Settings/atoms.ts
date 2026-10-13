@@ -2,7 +2,7 @@ import { Setting } from "@/Domain/Setting"
 import { Effect, Layer, Option, Schema, Stream } from "effect"
 import { SettingRepo } from "./Repo"
 import { eventLogAtom, EventLogClient } from "@/EventLog"
-import { AsyncResult, Atom } from "effect/unstable/reactivity"
+import { AsyncResult, Atom } from "effect/reactivity"
 
 const runtime = Atom.runtime((get) =>
   SettingRepo.layer.pipe(

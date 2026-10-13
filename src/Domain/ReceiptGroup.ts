@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect"
 import { Currency } from "./Currency"
-import { Model } from "effect/unstable/schema"
+import { Model } from "effect/schema"
 import { DateTimeInsert } from "./Fields"
 import { TrimmedString } from "@/lib/utils"
 

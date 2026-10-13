@@ -1,7 +1,7 @@
 import { ReceiptGroupRepo } from "./Repo"
 import { Layer, Result, Stream } from "effect"
 import { eventLogAtom } from "@/EventLog"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 import { constVoid } from "effect/Function"
 
 const runtime = Atom.runtime((get) =>

@@ -2,7 +2,7 @@ import { Currency } from "./Currency"
 import { DateTime, Order, Schema } from "effect"
 import { ReceiptGroupId } from "./ReceiptGroup"
 import { TrimmedString, uuidString } from "@/lib/utils"
-import { Model } from "effect/unstable/schema"
+import { Model } from "effect/schema"
 import { DateTimeInsert } from "./Fields"
 
 export const ReceiptId = Model.Uint8Array.pipe(Schema.brand("ReceiptId"))

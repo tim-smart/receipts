@@ -3,7 +3,7 @@ import { Layer, Stream } from "effect"
 import { eventLogAtom } from "@/EventLog"
 import { ReceiptId } from "@/Domain/Receipt"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 import { uuidBytes } from "@/lib/utils"
 
 const runtime = Atom.runtime((get) =>

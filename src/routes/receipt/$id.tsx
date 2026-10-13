@@ -20,7 +20,7 @@ import { receiptAtom } from "@/Receipts/atoms"
 import { ImageWithObjectUrl } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
 import { writeEventAtom } from "@/EventLog"
-import { AsyncResult } from "effect/unstable/reactivity"
+import { AsyncResult } from "effect/reactivity"
 import { Receipt } from "@/Domain/Receipt"
 
 export const Route = createFileRoute("/receipt/$id")({

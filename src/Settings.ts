@@ -1,7 +1,7 @@
 import { Effect, Layer, Option } from "effect"
 import { SettingEvents } from "./Settings/Events"
 import * as Arr from "effect/Array"
-import { EventLog } from "effect/unstable/eventlog"
+import { EventLog } from "effect/eventlog"
 import { QueryBuilder } from "./IndexedDb"
 
 export const SettingsLive = EventLog.group(

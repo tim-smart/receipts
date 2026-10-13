@@ -2,8 +2,8 @@ import { Effect, Layer, Context } from "effect"
 import { Auth } from "./Auth"
 import { eventLogAtom } from "./EventLog"
 import { layerIndexeddb } from "./IndexedDb"
-import { EventLog } from "effect/unstable/eventlog"
-import { Atom } from "effect/unstable/reactivity"
+import { EventLog } from "effect/eventlog"
+import { Atom } from "effect/reactivity"
 import { IndexedDbDatabase } from "@effect/platform-browser"
 
 export class Session extends Context.Service<Session>()("Session", {

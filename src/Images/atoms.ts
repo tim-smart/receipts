@@ -3,7 +3,7 @@ import { ReceiptId } from "@/Domain/Receipt"
 import { clientAtom } from "@/EventLog"
 import { ImageCompressor } from "@/ImageCompressor"
 import { Effect } from "effect"
-import { Atom } from "effect/unstable/reactivity"
+import { Atom } from "effect/reactivity"
 
 const runtime = Atom.runtime(ImageCompressor.layer)
 

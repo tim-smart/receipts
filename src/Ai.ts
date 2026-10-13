@@ -1,6 +1,6 @@
 /** @effect-diagnostics globalDateInEffect:off */
 import { Effect, Layer, Schema, Context } from "effect"
-import { LanguageModel, Prompt } from "effect/unstable/ai"
+import { LanguageModel, Prompt } from "effect/ai"
 
 export class AiHelpers extends Context.Service<AiHelpers>()("AiHelpers", {
   make: Effect.gen(function* () {

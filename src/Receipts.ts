@@ -1,7 +1,7 @@
 import { Receipt } from "./Domain/Receipt"
 import { Effect, Layer } from "effect"
 import { ReceiptEvents } from "./Receipts/Events"
-import { EventLog } from "effect/unstable/eventlog"
+import { EventLog } from "effect/eventlog"
 import { QueryBuilder } from "./IndexedDb"
 
 const ReceiptsLive = EventLog.group(ReceiptEvents, (handlers) =>

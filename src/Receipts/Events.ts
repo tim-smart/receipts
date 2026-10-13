@@ -1,7 +1,7 @@
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { uuidString } from "@/lib/utils"
 import { Schema } from "effect"
-import { EventGroup } from "effect/unstable/eventlog"
+import { EventGroup } from "effect/eventlog"
 
 export const ReceiptEvents = EventGroup.empty
   .add({

@@ -5,8 +5,8 @@ import { eventLogAtom } from "@/EventLog"
 import { settingOptionAtom } from "@/Settings/atoms"
 import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai"
 import { Effect, Layer, Schedule } from "effect"
-import { FetchHttpClient, HttpClient } from "effect/unstable/http"
-import { Atom } from "effect/unstable/reactivity"
+import { FetchHttpClient, HttpClient } from "effect/http"
+import { Atom } from "effect/reactivity"
 
 export const aiWorkerAtom = Atom.runtime((get) =>
   Effect.gen(function* () {

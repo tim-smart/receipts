@@ -2,7 +2,7 @@ import { currentGroupId } from "@/Domain/Setting"
 import { QueryBuilder } from "@/IndexedDb"
 import { SettingRepo } from "@/Settings/Repo"
 import { Array, Effect, Layer, Option, Context } from "effect"
-import { Reactivity } from "effect/unstable/reactivity"
+import { Reactivity } from "effect/reactivity"
 
 export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
   "ReceiptGroups/ReceiptGroupRepo",
