@@ -10,8 +10,8 @@
     devShells = forAllSystems (pkgs: {
       default = pkgs.mkShell {
         packages = with pkgs; [
-          corepack
-          nodejs
+          (corepack.override {nodejs = nodejs_24;})
+          nodejs_24
         ];
       };
     });
