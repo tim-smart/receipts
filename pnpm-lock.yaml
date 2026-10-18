@@ -66,6 +66,9 @@ importers:
       effect:
         specifier: https://pkg.pr.new/effect@7f32606
         version: https://pkg.pr.new/effect@7f32606
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -142,9 +145,6 @@ importers:
       autoprefixer:
         specifier: ^10.6.1
         version: 10.6.1(postcss@8.5.30)
-      fflate:
-        specifier: ^0.8.3
-        version: 0.8.3
       prettier:
         specifier: ^3.9.10
         version: 3.9.10
