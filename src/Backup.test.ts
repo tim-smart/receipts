@@ -106,6 +106,21 @@ const normalize = (data: BackupData) => ({
   images: sortById(data.images).map((_) => encodeImage(_)),
 })
 
+type Encoded = Record<keyof BackupData, Array<Record<string, unknown>>>
+
+// every receipt is in an existing group and every image on an existing
+// receipt, so nothing restored is hidden in the app
+const expectReachable = (data: Encoded) => {
+  const groupIds = new Set(data.groups.map((_) => _.id))
+  const receiptIds = new Set(data.receipts.map((_) => _.id))
+  for (const receipt of data.receipts) {
+    expect(groupIds).toContain(receipt.groupId)
+  }
+  for (const image of data.images) {
+    expect(receiptIds).toContain(image.receiptId)
+  }
+}
+
 // In-memory BackupStore. Writes round-trip the payload through the event's
 // payload schema, like the EventLog journal does, then apply it the way the
 // app's event handlers do.
@@ -257,6 +272,11 @@ describe("Backup", () => {
           id: ReceiptId.make(uuidBytes("94f5a6b7-c8d9-43ea-94fb-a5b2c3d7e88f")),
           groupId: deletedGroupId,
         })
+        const orphanReceipt2 = new Receipt({
+          ...groceries,
+          id: ReceiptId.make(uuidBytes("e94afb0c-1d2e-483f-a940-fa07b8c23dd4")),
+          groupId: deletedGroupId,
+        })
         const orphanReceiptImage = new Image({
           ...taxiPhoto,
           id: ImageId.make(uuidBytes("a506b7c8-d9ea-44fb-a50c-b6c3d4e8f990")),
@@ -269,16 +289,18 @@ describe("Backup", () => {
         })
         const source: BackupData = {
           groups: fullData.groups,
-          receipts: [...fullData.receipts, orphanReceipt],
+          receipts: [...fullData.receipts, orphanReceipt, orphanReceipt2],
           images: [...fullData.images, orphanReceiptImage, orphanImage],
         }
         const backup = yield* exportFrom(source)
         const target = makeStore(emptyData)
 
-        yield* importBackup(backup).pipe(Effect.provide(target.layer))
+        const summary = yield* importBackup(backup).pipe(
+          Effect.provide(target.layer),
+        )
+        expect(summary.recovered).toEqual({ receipts: 2, images: 1 })
 
         // nothing from the source is lost or changed
-        type Encoded = Record<keyof BackupData, Array<Record<string, unknown>>>
         const restored = target.snapshot() as unknown as Encoded
         const expected = normalize(source) as unknown as Encoded
         expect(restored.groups).toEqual(expect.arrayContaining(expected.groups))
@@ -287,19 +309,51 @@ describe("Backup", () => {
         )
         expect(restored.images).toEqual(expect.arrayContaining(expected.images))
 
-        // and everything restored is reachable in the app
-        const groupIds = new Set(restored.groups.map((_) => _.id))
-        const receiptIds = new Set(restored.receipts.map((_) => _.id))
-        for (const receipt of restored.receipts) {
-          expect(groupIds).toContain(receipt.groupId)
-        }
-        for (const image of restored.images) {
-          expect(receiptIds).toContain(image.receiptId)
-        }
+        expectReachable(restored)
 
         const writesBefore = target.writes.length
         yield* importBackup(backup).pipe(Effect.provide(target.layer))
         expect(target.writes.length).toBe(writesBefore)
+      }),
+  )
+
+  it.effect(
+    "recovers the group of the local receipt, not the group in the backup",
+    () =>
+      Effect.gen(function* () {
+        // locally the receipt was moved to another group, which was then
+        // deleted, so the local and backup copies point at different groups
+        const localGroupId = ReceiptGroupId.make(
+          uuidBytes("c728d9ea-fb0c-461d-a72e-d8e5f6a01bb2"),
+        )
+        const backupGroupId = ReceiptGroupId.make(
+          uuidBytes("d839eafb-0c1d-472e-b83f-e9f6a7b12cc3"),
+        )
+        const localTaxi = new Receipt({
+          ...taxi,
+          merchant: "Edited locally",
+          groupId: localGroupId,
+        })
+        const backup = yield* exportFrom({
+          groups: [home],
+          receipts: [new Receipt({ ...taxi, groupId: backupGroupId })],
+          images: [taxiPhoto],
+        })
+        const target = makeStore({
+          groups: [home],
+          receipts: [localTaxi],
+          images: [],
+        })
+
+        yield* importBackup(backup).pipe(Effect.provide(target.layer))
+
+        const restored = target.snapshot() as unknown as Encoded
+        expect(restored.receipts).toEqual([encodeReceipt(localTaxi)])
+        expect(restored.images).toEqual([encodeImage(taxiPhoto)])
+        expectReachable(restored)
+        // home plus the recovered local group, and nothing for the backup's
+        // group
+        expect(restored.groups).toHaveLength(2)
       }),
   )
 
@@ -337,6 +391,15 @@ describe("Backup", () => {
           backup,
           editJson((json) => {
             json.images[2].id = ""
+          }),
+        ),
+        "image with an over-long id": yield* tamper(
+          backup,
+          editJson((json) => {
+            const id = Buffer.from(json.images[1].id, "base64")
+            json.images[1].id = Buffer.concat([id, Buffer.from([0])]).toString(
+              "base64",
+            )
           }),
         ),
         "receipt with a malformed group id": yield* tamper(
