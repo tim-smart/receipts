@@ -48,7 +48,15 @@ import {
 } from "@/components/ui/card"
 import { formatCurrency } from "@/Domain/Currency"
 import { ReceiptForm } from "@/Receipts/Form"
-import { BigDecimal, DateTime, Option, pipe, Redacted, String } from "effect"
+import {
+  BigDecimal,
+  DateTime,
+  Exit,
+  Option,
+  pipe,
+  Redacted,
+  String,
+} from "effect"
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react"
 import {
   baseCurrencyAtom,
@@ -70,6 +78,8 @@ import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import { sessionDestroyAtom } from "@/Session"
 import { AsyncResult } from "effect/reactivity"
+import { exportBackupAtom, importBackupAtom } from "@/Backup/atoms"
+import { toast } from "sonner"
 
 export const Route = createFileRoute("/")({
   component: ReceiptsScreen,
@@ -560,6 +570,7 @@ function SettingsDrawer() {
               />
             </div>
           </div>
+          <BackupSection />
           <DrawerFooter>
             <Button
               variant="destructive"
@@ -577,6 +588,87 @@ function SettingsDrawer() {
         </form>
       </DrawerContent>
     </Drawer>
+  )
+}
+
+function BackupSection() {
+  const exportBackup = useAtomSet(exportBackupAtom, { mode: "promiseExit" })
+  const importBackup = useAtomSet(importBackupAtom, { mode: "promiseExit" })
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  // @effect-diagnostics-next-line asyncFunction:off
+  const onExport = useCallback(async () => {
+    setBusy(true)
+    const exit = await exportBackup()
+    setBusy(false)
+    if (Exit.isFailure(exit)) toast.error("Export failed")
+  }, [exportBackup])
+
+  // @effect-diagnostics-next-line asyncFunction:off
+  const onImport = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      event.target.value = ""
+      if (!file) return
+      setBusy(true)
+      const exit = await importBackup(file)
+      setBusy(false)
+      if (Exit.isSuccess(exit)) {
+        const { groups, receipts, images, skipped, recovered } = exit.value
+        toast.success(
+          `Imported ${groups} groups, ${receipts} receipts, ${images} images` +
+            (skipped > 0 ? ` (${skipped} already existed)` : ""),
+          recovered && {
+            description: `${recovered.receipts} receipts and ${recovered.images} images moved to "Recovered receipts"`,
+          },
+        )
+      } else {
+        const message = Exit.findErrorOption(exit).pipe(
+          Option.map((error) => error.message),
+          Option.getOrElse(() => "Unknown error"),
+        )
+        toast.error(`Import failed: ${message}`)
+      }
+    },
+    [importBackup],
+  )
+
+  return (
+    <div className="grid gap-3 px-3 pb-5">
+      <TypoH3>Backup</TypoH3>
+      <p className="text-sm text-muted-foreground">
+        Includes groups, receipts and images. Settings and API keys are{" "}
+        <strong>not</strong> included. Import only adds missing records.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          disabled={busy}
+          onClick={onExport}
+        >
+          Export backup
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+        >
+          Import backup
+        </Button>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".zip,application/zip"
+        className="hidden"
+        onChange={onImport}
+      />
+    </div>
   )
 }
 
