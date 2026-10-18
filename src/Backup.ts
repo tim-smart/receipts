@@ -238,7 +238,11 @@ type Decoded<A> = A & { readonly key: string }
 
 const idKey = (label: string, id: Uint8Array) =>
   Effect.try({
-    try: () => uuidString(id),
+    // uuid's stringify ignores bytes past the first 16
+    try: () => {
+      if (id.length !== 16) throw new Error("invalid length")
+      return uuidString(id)
+    },
     catch: () =>
       new BackupError({
         reason: "InvalidData",
@@ -255,14 +259,19 @@ const planImport = (
   const keys = (items: ReadonlyArray<{ readonly id: Uint8Array }>) =>
     new Set(items.map((item) => uuidString(item.id)))
   const groupKeys = keys(existing.groups)
-  const receiptKeys = keys(existing.receipts)
+  const localReceipts = new Map(
+    existing.receipts.map((receipt) => [uuidString(receipt.id), receipt]),
+  )
+  const receiptKeys = new Set(localReceipts.keys())
   const imageKeys = keys(existing.images)
 
   const groupWrites: Array<BackupWrite> = []
   const receiptWrites: Array<BackupWrite> = []
   const imageWrites: Array<BackupWrite> = []
   const summary = { groups: 0, receipts: 0, images: 0, skipped: 0 }
-  const recovered = { receipts: 0, images: 0 }
+  const recoveredGroupKeys = new Set<string>()
+  const recoveredReceiptKeys = new Set<string>()
+  let recoveredImages = 0
 
   for (const group of backup.groups) {
     if (groupKeys.has(group.key)) {
@@ -290,6 +299,7 @@ const planImport = (
     currency: string,
   ) => {
     groupKeys.add(key)
+    recoveredGroupKeys.add(key)
     groupWrites.push({
       event: "GroupCreate",
       payload: ReceiptGroup.insert.make({
@@ -308,7 +318,9 @@ const planImport = (
     receiptKeys.add(receipt.key)
     if (!groupKeys.has(receipt.groupKey)) {
       recoverGroup(receipt.groupId, receipt.groupKey, receipt.currency)
-      recovered.receipts++
+    }
+    if (recoveredGroupKeys.has(receipt.groupKey)) {
+      recoveredReceiptKeys.add(receipt.key)
     }
     const { key: _key, groupKey: _groupKey, ...fields } = receipt
     receiptWrites.push({
@@ -354,7 +366,19 @@ const planImport = (
       })
     }
     if (placeholderKeys.has(image.receiptKey)) {
-      recovered.images++
+      recoveredImages++
+    }
+    // the image's receipt is kept as it is locally, so follow the local
+    // receipt's group rather than the one in the backup
+    const local = localReceipts.get(image.receiptKey)
+    if (local) {
+      const groupKey = uuidString(local.groupId)
+      if (!groupKeys.has(groupKey)) {
+        recoverGroup(local.groupId, groupKey, local.currency)
+      }
+      if (recoveredGroupKeys.has(groupKey)) {
+        recoveredReceiptKeys.add(image.receiptKey)
+      }
     }
     const { key: _key, receiptKey: _receiptKey, ...fields } = image
     imageWrites.push({
@@ -372,8 +396,14 @@ const planImport = (
     // parents before children
     writes: [...groupWrites, ...receiptWrites, ...imageWrites],
     summary:
-      recovered.receipts + recovered.images > 0
-        ? { ...summary, recovered }
+      recoveredReceiptKeys.size + recoveredImages > 0
+        ? {
+            ...summary,
+            recovered: {
+              receipts: recoveredReceiptKeys.size,
+              images: recoveredImages,
+            },
+          }
         : summary,
   }
 }
