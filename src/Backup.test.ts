@@ -240,6 +240,69 @@ describe("Backup", () => {
       }),
   )
 
+  it.effect(
+    "restores receipts and images whose group or receipt was deleted",
+    () =>
+      Effect.gen(function* () {
+        // deleting a group leaves its receipts (and their images) behind, and
+        // an image can outlive its receipt
+        const deletedGroupId = ReceiptGroupId.make(
+          uuidBytes("72d38495-a6b7-41c8-b2d9-e3f0a1b5c66d"),
+        )
+        const deletedReceiptId = ReceiptId.make(
+          uuidBytes("83e495a6-b7c8-42d9-83ea-f4a1b2c6d77e"),
+        )
+        const orphanReceipt = new Receipt({
+          ...taxi,
+          id: ReceiptId.make(uuidBytes("94f5a6b7-c8d9-43ea-94fb-a5b2c3d7e88f")),
+          groupId: deletedGroupId,
+        })
+        const orphanReceiptImage = new Image({
+          ...taxiPhoto,
+          id: ImageId.make(uuidBytes("a506b7c8-d9ea-44fb-a50c-b6c3d4e8f990")),
+          receiptId: orphanReceipt.id,
+        })
+        const orphanImage = new Image({
+          ...groceriesFront,
+          id: ImageId.make(uuidBytes("b617c8d9-eafb-450c-b61d-c7d4e5f90aa1")),
+          receiptId: deletedReceiptId,
+        })
+        const source: BackupData = {
+          groups: fullData.groups,
+          receipts: [...fullData.receipts, orphanReceipt],
+          images: [...fullData.images, orphanReceiptImage, orphanImage],
+        }
+        const backup = yield* exportFrom(source)
+        const target = makeStore(emptyData)
+
+        yield* importBackup(backup).pipe(Effect.provide(target.layer))
+
+        // nothing from the source is lost or changed
+        type Encoded = Record<keyof BackupData, Array<Record<string, unknown>>>
+        const restored = target.snapshot() as unknown as Encoded
+        const expected = normalize(source) as unknown as Encoded
+        expect(restored.groups).toEqual(expect.arrayContaining(expected.groups))
+        expect(restored.receipts).toEqual(
+          expect.arrayContaining(expected.receipts),
+        )
+        expect(restored.images).toEqual(expect.arrayContaining(expected.images))
+
+        // and everything restored is reachable in the app
+        const groupIds = new Set(restored.groups.map((_) => _.id))
+        const receiptIds = new Set(restored.receipts.map((_) => _.id))
+        for (const receipt of restored.receipts) {
+          expect(groupIds).toContain(receipt.groupId)
+        }
+        for (const image of restored.images) {
+          expect(receiptIds).toContain(image.receiptId)
+        }
+
+        const writesBefore = target.writes.length
+        yield* importBackup(backup).pipe(Effect.provide(target.layer))
+        expect(target.writes.length).toBe(writesBefore)
+      }),
+  )
+
   it.effect("rejects invalid backups without writing anything", () =>
     Effect.gen(function* () {
       const backup = yield* exportFrom(fullData)
@@ -270,10 +333,16 @@ describe("Backup", () => {
           const json = JSON.parse(strFromU8(entries["backup.json"]))
           delete entries[json.images[2].path]
         }),
-        "receipt references a missing group": yield* tamper(
+        "image with an empty id": yield* tamper(
           backup,
           editJson((json) => {
-            json.groups = json.groups.slice(1)
+            json.images[2].id = ""
+          }),
+        ),
+        "receipt with a malformed group id": yield* tamper(
+          backup,
+          editJson((json) => {
+            json.receipts[0].groupId = "AAAA"
           }),
         ),
       }
