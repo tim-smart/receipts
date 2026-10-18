@@ -615,10 +615,16 @@ function BackupSection() {
       const exit = await importBackup(file)
       setBusy(false)
       if (Exit.isSuccess(exit)) {
-        const { groups, receipts, images, skipped } = exit.value
+        const { groups, receipts, images, skipped, recovered } = exit.value
         toast.success(
           `Imported ${groups} groups, ${receipts} receipts and ${images} images` +
             (skipped > 0 ? ` (${skipped} already existed)` : ""),
+          recovered && {
+            description:
+              `Recovered ${recovered.receipts} receipts and ${recovered.images} images ` +
+              `whose group or receipt had been deleted. ` +
+              `They are in the "Recovered receipts" groups.`,
+          },
         )
       } else {
         const message = Exit.findErrorOption(exit).pipe(

@@ -13,14 +13,16 @@
  *
  * Import is validated in full before anything is written, and is
  * non-destructive: records are merged by id, records that already exist
- * locally are left untouched, and nothing is ever deleted.
+ * locally are left untouched, and nothing is ever deleted. Receipts whose
+ * group, or images whose receipt, no longer exists are kept: the missing
+ * parent is recreated (a "Recovered receipts" group / a placeholder receipt).
  */
-import { Context, DateTime, Effect, Schema } from "effect"
+import { BigDecimal, Context, DateTime, Effect, Schema } from "effect"
 import { Model } from "effect/schema"
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from "fflate"
 import { Image } from "./Domain/Image"
 import { Receipt } from "./Domain/Receipt"
-import { ReceiptGroup } from "./Domain/ReceiptGroup"
+import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
 import { uuidString } from "./lib/utils"
 
 export interface BackupData {
@@ -64,7 +66,6 @@ export class BackupError extends Schema.TaggedError<BackupError>()(
       "UnsupportedVersion",
       "InvalidData",
       "MissingImage",
-      "DanglingReference",
     ]),
     message: Schema.String,
   },
@@ -75,6 +76,16 @@ export interface ImportSummary {
   readonly receipts: number
   readonly images: number
   readonly skipped: number
+  /**
+   * Present when the backup contained receipts whose group, or images whose
+   * receipt, no longer existed. Those records are imported into recreated
+   * "Recovered receipts" groups / placeholder receipts instead of being
+   * dropped.
+   */
+  readonly recovered?: {
+    readonly receipts: number
+    readonly images: number
+  }
 }
 
 const format = "receipts-backup"
@@ -193,105 +204,210 @@ const readBackup = Effect.fnUntraced(function* (file: Blob) {
     ),
   )
 
-  const groupIds = new Set(backup.groups.map((group) => uuidString(group.id)))
-  const receiptIds = new Set(
-    backup.receipts.map((receipt) => uuidString(receipt.id)),
-  )
-  for (const receipt of backup.receipts) {
-    if (!groupIds.has(uuidString(receipt.groupId))) {
-      return yield* fail(
-        "DanglingReference",
-        `Receipt ${uuidString(receipt.id)} belongs to a group that is not in the backup`,
-      )
-    }
+  const groups: Array<Decoded<(typeof backup.groups)[number]>> = []
+  for (const group of backup.groups) {
+    groups.push({ ...group, key: yield* idKey("Group", group.id) })
   }
-  const images: Array<typeof Image.json.Type> = []
+  const receipts: Array<
+    Decoded<(typeof backup.receipts)[number]> & { readonly groupKey: string }
+  > = []
+  for (const receipt of backup.receipts) {
+    receipts.push({
+      ...receipt,
+      key: yield* idKey("Receipt", receipt.id),
+      groupKey: yield* idKey("Receipt group", receipt.groupId),
+    })
+  }
+  const images: Array<
+    Decoded<typeof Image.json.Type> & { readonly receiptKey: string }
+  > = []
   for (const { path, ...image } of backup.images) {
-    if (!receiptIds.has(uuidString(image.receiptId))) {
-      return yield* fail(
-        "DanglingReference",
-        `Image ${uuidString(image.id)} belongs to a receipt that is not in the backup`,
-      )
-    }
+    const key = yield* idKey("Image", image.id)
+    const receiptKey = yield* idKey("Image receipt", image.receiptId)
     const data = entries[path]
     if (!data) {
       return yield* fail("MissingImage", `The archive has no ${path}`)
     }
-    images.push({ ...image, data })
+    images.push({ ...image, data, key, receiptKey })
   }
 
-  return { groups: backup.groups, receipts: backup.receipts, images }
+  return { groups, receipts, images }
 })
+
+type Decoded<A> = A & { readonly key: string }
+
+const idKey = (label: string, id: Uint8Array) =>
+  Effect.try({
+    try: () => uuidString(id),
+    catch: () =>
+      new BackupError({
+        reason: "InvalidData",
+        message: `${label} id is not a valid UUID`,
+      }),
+  })
+
+const recoveredGroupName = "Recovered receipts"
+
+const planImport = (
+  backup: Effect.Success<ReturnType<typeof readBackup>>,
+  existing: BackupData,
+) => {
+  const keys = (items: ReadonlyArray<{ readonly id: Uint8Array }>) =>
+    new Set(items.map((item) => uuidString(item.id)))
+  const groupKeys = keys(existing.groups)
+  const receiptKeys = keys(existing.receipts)
+  const imageKeys = keys(existing.images)
+
+  const groupWrites: Array<BackupWrite> = []
+  const receiptWrites: Array<BackupWrite> = []
+  const imageWrites: Array<BackupWrite> = []
+  const summary = { groups: 0, receipts: 0, images: 0, skipped: 0 }
+  const recovered = { receipts: 0, images: 0 }
+
+  for (const group of backup.groups) {
+    if (groupKeys.has(group.key)) {
+      summary.skipped++
+      continue
+    }
+    groupKeys.add(group.key)
+    const { key: _key, ...fields } = group
+    groupWrites.push({
+      event: "GroupCreate",
+      payload: ReceiptGroup.insert.make({
+        ...fields,
+        createdAt: Model.Override(group.createdAt),
+        updatedAt: Model.Override(group.updatedAt),
+      }),
+    })
+    summary.groups++
+  }
+
+  // recreate missing parents with their original ids, so the orphaned
+  // records import unchanged and a re-import skips them like anything else
+  const recoverGroup = (
+    id: typeof ReceiptGroupId.Type,
+    key: string,
+    currency: string,
+  ) => {
+    groupKeys.add(key)
+    groupWrites.push({
+      event: "GroupCreate",
+      payload: ReceiptGroup.insert.make({
+        id,
+        name: recoveredGroupName,
+        defaultCurrency: currency,
+      }),
+    })
+  }
+
+  for (const receipt of backup.receipts) {
+    if (receiptKeys.has(receipt.key)) {
+      summary.skipped++
+      continue
+    }
+    receiptKeys.add(receipt.key)
+    if (!groupKeys.has(receipt.groupKey)) {
+      recoverGroup(receipt.groupId, receipt.groupKey, receipt.currency)
+      recovered.receipts++
+    }
+    const { key: _key, groupKey: _groupKey, ...fields } = receipt
+    receiptWrites.push({
+      event: "ReceiptCreate",
+      payload: Receipt.insert.make({
+        ...fields,
+        createdAt: Model.Override(receipt.createdAt),
+        updatedAt: Model.Override(receipt.updatedAt),
+      }),
+    })
+    summary.receipts++
+  }
+
+  let placeholderGroup: typeof ReceiptGroupId.Type | undefined
+  const placeholderKeys = new Set<string>()
+  for (const image of backup.images) {
+    if (imageKeys.has(image.key)) {
+      summary.skipped++
+      continue
+    }
+    imageKeys.add(image.key)
+    if (!receiptKeys.has(image.receiptKey)) {
+      if (placeholderGroup === undefined) {
+        const group = ReceiptGroup.insert.make({ name: recoveredGroupName })
+        groupWrites.push({ event: "GroupCreate", payload: group })
+        placeholderGroup = group.id!
+      }
+      receiptKeys.add(image.receiptKey)
+      placeholderKeys.add(image.receiptKey)
+      receiptWrites.push({
+        event: "ReceiptCreate",
+        payload: Receipt.insert.make({
+          id: image.receiptId,
+          groupId: placeholderGroup,
+          date: image.createdAt,
+          description: "",
+          merchant: "Recovered image",
+          amount: BigDecimal.fromNumberUnsafe(0),
+          currency: "USD",
+          // don't send recovered images to OpenAI on import
+          processed: true,
+        }),
+      })
+    }
+    if (placeholderKeys.has(image.receiptKey)) {
+      recovered.images++
+    }
+    const { key: _key, receiptKey: _receiptKey, ...fields } = image
+    imageWrites.push({
+      event: "ImageCreate",
+      payload: Image.insert.make({
+        ...fields,
+        createdAt: Model.Override(image.createdAt),
+        updatedAt: Model.Override(image.updatedAt),
+      }),
+    })
+    summary.images++
+  }
+
+  return {
+    // parents before children
+    writes: [...groupWrites, ...receiptWrites, ...imageWrites],
+    summary:
+      recovered.receipts + recovered.images > 0
+        ? { ...summary, recovered }
+        : summary,
+  }
+}
+
+const payloadSchemas = {
+  GroupCreate: ReceiptGroup.insert,
+  ReceiptCreate: Receipt.insert,
+  ImageCreate: Image.insert,
+} as const
+
+// encode each payload the way the EventLog journal will, so a write can't
+// fail half way through an import
+const validateWrite = (write: BackupWrite) =>
+  Schema.encodeUnknownEffect(payloadSchemas[write.event])(write.payload).pipe(
+    Effect.mapError(
+      (error) =>
+        new BackupError({ reason: "InvalidData", message: error.message }),
+    ),
+  )
 
 export const importBackup = (
   file: Blob,
 ): Effect.Effect<ImportSummary, BackupError, BackupStore> =>
   Effect.gen(function* () {
     const store = yield* BackupStore
-    // validate the whole file before writing anything
+    // validate the whole file and every event payload before writing anything
     const backup = yield* readBackup(file)
     const existing = yield* store.snapshot
-
-    const idSet = (items: ReadonlyArray<{ readonly id: Uint8Array }>) =>
-      new Set(items.map((item) => uuidString(item.id)))
-    const groupIds = idSet(existing.groups)
-    const receiptIds = idSet(existing.receipts)
-    const imageIds = idSet(existing.images)
-    const summary = { groups: 0, receipts: 0, images: 0, skipped: 0 }
-
-    for (const group of backup.groups) {
-      const id = uuidString(group.id)
-      if (groupIds.has(id)) {
-        summary.skipped++
-        continue
-      }
-      groupIds.add(id)
-      yield* store.write({
-        event: "GroupCreate",
-        payload: ReceiptGroup.insert.make({
-          ...group,
-          createdAt: Model.Override(group.createdAt),
-          updatedAt: Model.Override(group.updatedAt),
-        }),
-      })
-      summary.groups++
-    }
-
-    for (const receipt of backup.receipts) {
-      const id = uuidString(receipt.id)
-      if (receiptIds.has(id)) {
-        summary.skipped++
-        continue
-      }
-      receiptIds.add(id)
-      yield* store.write({
-        event: "ReceiptCreate",
-        payload: Receipt.insert.make({
-          ...receipt,
-          createdAt: Model.Override(receipt.createdAt),
-          updatedAt: Model.Override(receipt.updatedAt),
-        }),
-      })
-      summary.receipts++
-    }
-
-    for (const image of backup.images) {
-      const id = uuidString(image.id)
-      if (imageIds.has(id)) {
-        summary.skipped++
-        continue
-      }
-      imageIds.add(id)
-      yield* store.write({
-        event: "ImageCreate",
-        payload: Image.insert.make({
-          ...image,
-          createdAt: Model.Override(image.createdAt),
-          updatedAt: Model.Override(image.updatedAt),
-        }),
-      })
-      summary.images++
-    }
-
-    return summary
+    const plan = yield* Effect.try({
+      try: () => planImport(backup, existing),
+      catch: (cause) =>
+        new BackupError({ reason: "InvalidData", message: String(cause) }),
+    })
+    yield* Effect.forEach(plan.writes, validateWrite, { discard: true })
+    yield* Effect.forEach(plan.writes, store.write, { discard: true })
+    return plan.summary
   })
