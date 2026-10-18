@@ -602,7 +602,7 @@ function BackupSection() {
     setBusy(true)
     const exit = await exportBackup()
     setBusy(false)
-    if (Exit.isFailure(exit)) toast.error("Could not export the backup")
+    if (Exit.isFailure(exit)) toast.error("Export failed")
   }, [exportBackup])
 
   // @effect-diagnostics-next-line asyncFunction:off
@@ -617,13 +617,10 @@ function BackupSection() {
       if (Exit.isSuccess(exit)) {
         const { groups, receipts, images, skipped, recovered } = exit.value
         toast.success(
-          `Imported ${groups} groups, ${receipts} receipts and ${images} images` +
+          `Imported ${groups} groups, ${receipts} receipts, ${images} images` +
             (skipped > 0 ? ` (${skipped} already existed)` : ""),
           recovered && {
-            description:
-              `Recovered ${recovered.receipts} receipts and ${recovered.images} images ` +
-              `whose group or receipt had been deleted. ` +
-              `They are in the "Recovered receipts" groups.`,
+            description: `${recovered.receipts} receipts and ${recovered.images} images moved to "Recovered receipts"`,
           },
         )
       } else {
@@ -631,7 +628,7 @@ function BackupSection() {
           Option.map((error) => error.message),
           Option.getOrElse(() => "Unknown error"),
         )
-        toast.error(`Backup not imported: ${message}`)
+        toast.error(`Import failed: ${message}`)
       }
     },
     [importBackup],
@@ -641,13 +638,8 @@ function BackupSection() {
     <div className="grid gap-3 px-3 pb-5">
       <TypoH3>Backup</TypoH3>
       <p className="text-sm text-muted-foreground">
-        Backups include all receipt groups, receipts and images. Settings and
-        API keys (OpenAI, Open Exchange Rates and the remote address) are{" "}
-        <strong>not</strong> included.
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Importing only adds records that are missing. Existing data is never
-        overwritten or deleted.
+        Includes groups, receipts and images. Settings and API keys are{" "}
+        <strong>not</strong> included. Import only adds missing records.
       </p>
       <div className="flex gap-2">
         <Button
