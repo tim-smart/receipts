@@ -27,11 +27,13 @@
     "plugins": [
       {
         "name": "@effect/language-service",
+        "ignoreEffectWarningsInTscExitCode": true,
         "diagnosticSeverity": {
           "abortControllerInEffect": "warning",
           "asyncFunction": "warning",
           "cryptoRandomUUID": "warning",
           "cryptoRandomUUIDInEffect": "warning",
+          "experimentalApiUsage": "off",
           "extendsNativeError": "warning",
           "globalConsole": "warning",
           "globalConsoleInEffect": "warning",
@@ -48,7 +50,8 @@
           "nodeBuiltinImport": "warning",
           "preferSchemaOverJson": "warning",
           "processEnv": "warning",
-          "processEnvInEffect": "warning"
+          "processEnvInEffect": "warning",
+          "unstableApiUsage": "off"
         }
       }
     ]
