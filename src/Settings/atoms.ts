@@ -28,9 +28,12 @@ export const setSettingAtom = Atom.family(
     runtime.fn(
       Effect.fnUntraced(function* (value: S["Type"]) {
         const client = yield* EventLogClient
-        yield* client("SettingChange", {
-          name: setting.name,
-          json: setting.encodeSync(value),
+        yield* client({
+          event: "SettingChange",
+          payload: {
+            name: setting.name,
+            json: setting.encodeSync(value),
+          },
         })
       }),
     ),

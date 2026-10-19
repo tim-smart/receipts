@@ -24,9 +24,9 @@ export const shareAtom = Atom.make(
     if (!data) return
 
     const groupId = yield* get.some(settingOptionAtom(currentGroupId))
-    const receipt = yield* client(
-      "ReceiptCreate",
-      Receipt.insert.make({
+    const receipt = yield* client({
+      event: "ReceiptCreate",
+      payload: Receipt.insert.make({
         groupId,
         date: yield* DateTime.now,
         description: "",
@@ -35,7 +35,7 @@ export const shareAtom = Atom.make(
         currency: "USD",
         processed: false,
       }),
-    )
+    })
     yield* get.setResult(createImageAtom, {
       receiptId: receipt.id,
       file: new File([data.data], "receipt", {
