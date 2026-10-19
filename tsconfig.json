@@ -27,6 +27,7 @@
     "plugins": [
       {
         "name": "@effect/language-service",
+        "ignoreEffectWarningsInTscExitCode": true,
         "diagnosticSeverity": {
           "abortControllerInEffect": "warning",
           "asyncFunction": "warning",
