@@ -23,17 +23,11 @@ export const BackupStoreLive = Layer.effect(
       write: (write) => {
         switch (write.event) {
           case "GroupCreate":
-            return client("GroupCreate", write.payload).pipe(
-              Effect.asVoid,
-              Effect.orDie,
-            )
+            return client(write).pipe(Effect.asVoid, Effect.orDie)
           case "ReceiptCreate":
-            return client("ReceiptCreate", write.payload).pipe(
-              Effect.asVoid,
-              Effect.orDie,
-            )
+            return client(write).pipe(Effect.asVoid, Effect.orDie)
           case "ImageCreate":
-            return client("ImageCreate", write.payload).pipe(Effect.orDie)
+            return client(write).pipe(Effect.orDie)
         }
       },
     })

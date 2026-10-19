@@ -66,13 +66,13 @@ export const AiWorkerLive = Effect.gen(function* () {
       if (metadata.date) {
         update.date = metadata.date
       }
-      yield* client(
-        "ReceiptUpdate",
-        Receipt.update.make({
+      yield* client({
+        event: "ReceiptUpdate",
+        payload: Receipt.update.make({
           ...update,
           updatedAt: undefined,
         }),
-      )
+      })
     },
     Effect.tapCause(Effect.log),
     Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),

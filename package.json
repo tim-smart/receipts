@@ -31,7 +31,7 @@
     "cmdk": "1.1.1",
     "compressorjs": "^1.4.0",
     "csv-stringify": "^6.9.0",
-    "effect": "https://pkg.pr.new/effect@0c8b446",
+    "effect": "https://pkg.pr.new/effect@ba2b00c",
     "fflate": "^0.8.3",
     "file-saver": "^2.0.5",
     "lucide-react": "^1.59.0",

@@ -21,7 +21,7 @@ export const createImageAtom = runtime.fn<{
       contentType: file.type,
       data: new Uint8Array(data),
     })
-    yield* client("ImageCreate", image)
+    yield* client({ event: "ImageCreate", payload: image })
     return new Image(image)
   }),
   { concurrent: true },
