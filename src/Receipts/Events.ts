@@ -1,9 +1,17 @@
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { uuidString } from "@/lib/utils"
 import { Schema } from "effect"
-import { EventGroup } from "effect/eventlog"
+import { EventGroup, EventRow } from "effect/eventlog"
+
+export const ReceiptRow = EventRow.make("Receipt", {
+  key: "id",
+  schema: Receipt.select,
+})
 
 export const ReceiptEvents = EventGroup.empty
+  .add(ReceiptRow)
+  // Legacy events, kept only so existing journals still replay. Nothing
+  // writes them any more.
   .add({
     tag: "ReceiptCreate",
     primaryKey: (g) => uuidString(g.id!),

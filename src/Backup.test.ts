@@ -11,6 +11,9 @@ import {
 import { Image, ImageId } from "./Domain/Image"
 import { Receipt, ReceiptId } from "./Domain/Receipt"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
+import { ImageRow } from "./Images/Events"
+import { ReceiptGroupRow } from "./ReceiptGroups/Events"
+import { ReceiptRow } from "./Receipts/Events"
 import { uuidBytes, uuidString } from "./lib/utils"
 
 const at = (iso: string) => DateTime.makeUnsafe(iso)
@@ -121,9 +124,9 @@ const expectReachable = (data: Encoded) => {
   }
 }
 
-// In-memory BackupStore. Writes round-trip the payload through the event's
-// payload schema, like the EventLog journal does, then apply it the way the
-// app's event handlers do.
+// In-memory BackupStore. Writes round-trip the payload through the row
+// event's payload schema, like the EventLog journal does, then apply the row
+// the way the app's event handlers do.
 const makeStore = (initial: BackupData) => {
   const state = {
     groups: [...initial.groups],
@@ -148,19 +151,25 @@ const makeStore = (initial: BackupData) => {
     write: Effect.fnUntraced(function* (write) {
       writes.push(write)
       switch (write.event) {
-        case "GroupCreate": {
-          const payload = yield* roundTrip(ReceiptGroup.insert, write.payload)
-          state.groups.push(new ReceiptGroup(payload))
+        case "ReceiptGroup": {
+          const payload = yield* roundTrip(
+            ReceiptGroupRow.payload,
+            write.payload,
+          )
+          if (payload._tag !== "set") return yield* Effect.die(payload)
+          state.groups.push(new ReceiptGroup(payload.row))
           break
         }
-        case "ReceiptCreate": {
-          const payload = yield* roundTrip(Receipt.insert, write.payload)
-          state.receipts.push(new Receipt(payload))
+        case "Receipt": {
+          const payload = yield* roundTrip(ReceiptRow.payload, write.payload)
+          if (payload._tag !== "set") return yield* Effect.die(payload)
+          state.receipts.push(new Receipt(payload.row))
           break
         }
-        case "ImageCreate": {
-          const payload = yield* roundTrip(Image.insert, write.payload)
-          state.images.push(new Image(payload))
+        case "Image": {
+          const payload = yield* roundTrip(ImageRow.payload, write.payload)
+          if (payload._tag !== "set") return yield* Effect.die(payload)
+          state.images.push(new Image(payload.row))
           break
         }
       }
@@ -193,7 +202,78 @@ const editJson =
     entries["backup.json"] = strToU8(JSON.stringify(json))
   }
 
+// backup.json as exported before receipts, groups and images moved to EventRow
+const previousVersionManifest = {
+  format: "receipts-backup",
+  version: 1,
+  exportedAt: "1970-01-01T00:00:00.000Z",
+  groups: [
+    {
+      id: "C2wdLj9ASlGLYnyD2U6l9g==",
+      name: "Home",
+      defaultCurrency: "NZD",
+      createdAt: "2026-01-02T03:04:05.000Z",
+      updatedAt: "2026-02-03T04:05:06.000Z",
+    },
+  ],
+  receipts: [
+    {
+      id: "LY4/QFFiTHOthJ6l+2wHGA==",
+      date: 1772582400000,
+      description: "Weekly shop — café & bakery",
+      merchant: "Countdown",
+      amount: "123.45",
+      currency: "NZD",
+      processed: 1,
+      groupId: "C2wdLj9ASlGLYnyD2U6l9g==",
+      createdAt: "2026-03-04T05:06:07.000Z",
+      updatedAt: "2026-03-05T05:06:07.000Z",
+    },
+  ],
+  images: [
+    {
+      id: "T6BRYnOETpWPprDH2OKTOg==",
+      receiptId: "LY4/QFFiTHOthJ6l+2wHGA==",
+      contentType: "image/jpeg",
+      createdAt: "2026-03-04T05:06:08.000Z",
+      updatedAt: "2026-03-04T05:06:08.000Z",
+      path: "images/4fa05162-7384-4e95-8fa6-b0c7d8e2933a.jpeg",
+    },
+  ],
+}
+
 describe("Backup", () => {
+  it.effect("reads and writes backups of the previous version", () =>
+    Effect.gen(function* () {
+      const data: BackupData = {
+        groups: [home],
+        receipts: [groceries],
+        images: [groceriesFront],
+      }
+      const previous = new Blob([
+        zipSync({
+          "backup.json": strToU8(JSON.stringify(previousVersionManifest)),
+          [previousVersionManifest.images[0].path]: groceriesFront.data,
+        }) as Uint8Array<ArrayBuffer>,
+      ])
+      const target = makeStore(emptyData)
+
+      yield* importBackup(previous).pipe(Effect.provide(target.layer))
+
+      expect(target.snapshot()).toEqual(normalize(data))
+
+      const exported = yield* exportFrom(data)
+      const entries = unzipSync(
+        new Uint8Array(yield* Effect.promise(() => exported.arrayBuffer())),
+      )
+      const manifest = JSON.parse(strFromU8(entries["backup.json"]))
+      expect({
+        ...manifest,
+        exportedAt: previousVersionManifest.exportedAt,
+      }).toEqual(previousVersionManifest)
+    }),
+  )
+
   it.effect("restores all data and image bytes into an empty app", () =>
     Effect.gen(function* () {
       const backup = yield* exportFrom(fullData)

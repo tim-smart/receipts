@@ -74,6 +74,8 @@ import {
   openExchangeApiKey,
 } from "@/Domain/Setting"
 import { ReceiptGroup } from "@/Domain/ReceiptGroup"
+import { ReceiptGroupRow } from "@/ReceiptGroups/Events"
+import { changedFields } from "@/lib/utils"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import { sessionDestroyAtom } from "@/Session"
@@ -229,10 +231,7 @@ function GroupDrawer() {
       name: data.get("name") as string,
       defaultCurrency: data.get("defaultCurrency") as string,
     })
-    writeEvent({
-      event: "GroupCreate",
-      payload: group,
-    })
+    writeEvent(ReceiptGroupRow.set(group))
     setCurrentGroup(group.id)
     setOpen(false)
   }, [])
@@ -289,15 +288,18 @@ function GroupSettings() {
     (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      writeEvent({
-        event: "GroupUpdate",
-        payload: ReceiptGroup.update.make({
-          ...currentGroup!,
-          name: data.get("name") as string,
-          defaultCurrency: data.get("defaultCurrency") as string,
-          updatedAt: undefined,
-        }),
+      const fields = changedFields(currentGroup!, {
+        name: data.get("name") as string,
+        defaultCurrency: data.get("defaultCurrency") as string,
       })
+      if (Object.keys(fields).length > 0) {
+        writeEvent(
+          ReceiptGroupRow.patch(currentGroup!.id, {
+            ...fields,
+            updatedAt: DateTime.nowUnsafe(),
+          }),
+        )
+      }
       setOpen(false)
     },
     [currentGroup],
@@ -306,10 +308,7 @@ function GroupSettings() {
   const onRemove = useCallback(
     (event: any) => {
       event.preventDefault()
-      writeEvent({
-        event: "GroupDelete",
-        payload: currentGroup!.id,
-      })
+      writeEvent(ReceiptGroupRow.remove(currentGroup!.id))
       setOpen(false)
     },
     [currentGroup],

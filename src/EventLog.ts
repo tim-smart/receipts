@@ -1,4 +1,5 @@
 import { Effect, Layer, Option, Schema, Context } from "effect"
+import type * as Arr from "effect/Array"
 import { Atom } from "effect/reactivity"
 import {
   Event,
@@ -80,6 +81,20 @@ export const writeEventAtom = eventLogAtom
           schema: ReceiptAppEvents,
           ...payload,
         } as any),
+      ).pipe(Effect.tapCause(Effect.logWarning)),
+    { concurrent: true },
+  )
+  .pipe(Atom.keepAlive)
+
+// writes several events as one journal transaction
+export const writeEventsAtom = eventLogAtom
+  .fn<Arr.NonEmptyReadonlyArray<EventPayload>>()(
+    (events) =>
+      EventLog.EventLog.use((_) =>
+        _.writeMany({
+          schema: ReceiptAppEvents,
+          events: events as any,
+        }),
       ).pipe(Effect.tapCause(Effect.logWarning)),
     { concurrent: true },
   )

@@ -21,6 +21,8 @@ import * as Uuid from "uuid"
 import { openaiApiKey } from "@/Domain/Setting"
 import { settingAtom } from "@/Settings/atoms"
 import { writeEventAtom } from "@/EventLog"
+import { ReceiptRow } from "./Events"
+import { changedFields } from "@/lib/utils"
 import { Model } from "effect/schema"
 import { AsyncResult } from "effect/reactivity"
 import { createImageAtom } from "@/Images/atoms"
@@ -66,44 +68,48 @@ export function ReceiptForm({
       await Promise.all(promises)
 
       if (initialValue) {
-        await writeEvent({
-          event: "ReceiptUpdate",
-          payload: Receipt.update.make({
-            ...initialValue,
-            date: (data.get("date") as string)
-              ? DateTime.makeUnsafe(data.get("date") as string)
-              : initialValue.date,
-            amount: BigDecimal.fromString(data.get("amount") as string).pipe(
-              Option.getOrElse(() => initialValue.amount),
-            ),
-            merchant: data.get("merchant") as string,
-            description: data.get("description") as string,
-            currency: data.get("currency") as string,
-            updatedAt: undefined,
-          }),
+        const fields = changedFields(initialValue, {
+          date: (data.get("date") as string)
+            ? DateTime.makeUnsafe(data.get("date") as string)
+            : initialValue.date,
+          amount: BigDecimal.fromString(data.get("amount") as string).pipe(
+            Option.getOrElse(() => initialValue.amount),
+          ),
+          merchant: data.get("merchant") as string,
+          description: data.get("description") as string,
+          currency: data.get("currency") as string,
         })
+        if (Object.keys(fields).length > 0) {
+          await writeEvent(
+            ReceiptRow.patch(initialValue.id, {
+              ...fields,
+              updatedAt: DateTime.nowUnsafe(),
+            }),
+          )
+        }
       } else {
         const amount = BigDecimal.fromString(data.get("amount") as string).pipe(
           Option.getOrElse(() => BigDecimal.fromNumberUnsafe(0)),
         )
-        await writeEvent({
-          event: "ReceiptCreate",
-          payload: Receipt.insert.make({
-            id: Model.Override(receiptId),
-            groupId: group.id,
-            date: (data.get("date") as string)
-              ? DateTime.makeUnsafe(data.get("date") as string)
-              : DateTime.nowUnsafe(),
-            merchant: data.get("merchant") as string,
-            description: data.get("description") as string,
-            amount,
-            currency: data.get("currency") as string,
-            processed:
-              images.length === 0 ||
-              !BigDecimal.isZero(amount) ||
-              Option.isNone(openaiKey),
-          }),
-        })
+        await writeEvent(
+          ReceiptRow.set(
+            Receipt.insert.make({
+              id: Model.Override(receiptId),
+              groupId: group.id,
+              date: (data.get("date") as string)
+                ? DateTime.makeUnsafe(data.get("date") as string)
+                : DateTime.nowUnsafe(),
+              merchant: data.get("merchant") as string,
+              description: data.get("description") as string,
+              amount,
+              currency: data.get("currency") as string,
+              processed:
+                images.length === 0 ||
+                !BigDecimal.isZero(amount) ||
+                Option.isNone(openaiKey),
+            }),
+          ),
+        )
       }
       onSubmit()
     },

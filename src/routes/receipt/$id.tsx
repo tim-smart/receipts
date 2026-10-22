@@ -19,9 +19,11 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { receiptAtom } from "@/Receipts/atoms"
 import { ImageWithObjectUrl } from "@/Domain/Image"
 import { ImageRender } from "@/components/ui/ImageRender"
-import { writeEventAtom } from "@/EventLog"
+import { writeEventsAtom } from "@/EventLog"
 import { AsyncResult } from "effect/reactivity"
 import { Receipt } from "@/Domain/Receipt"
+import { ReceiptRow } from "@/Receipts/Events"
+import { ImageRow } from "@/Images/Events"
 
 export const Route = createFileRoute("/receipt/$id")({
   component: ReceiptScreen,
@@ -33,7 +35,7 @@ function ReceiptScreen() {
     AsyncResult.value,
     Option.getOrNull,
   )
-  const writeEvent = useAtomSet(writeEventAtom)
+  const writeEvents = useAtomSet(writeEventsAtom)
   const router = useRouter()
 
   if (!result) return null
@@ -71,16 +73,10 @@ function ReceiptScreen() {
       <Mutations
         receipt={receipt}
         onDelete={() => {
-          writeEvent({
-            event: "ReceiptDelete",
-            payload: receipt.id,
-          })
-          for (const image of images) {
-            writeEvent({
-              event: "ImageDelete",
-              payload: image.id,
-            })
-          }
+          writeEvents([
+            ReceiptRow.remove(receipt.id),
+            ...images.map((image) => ImageRow.remove(image.id)),
+          ])
           router.navigate({ to: "/" })
         }}
       />

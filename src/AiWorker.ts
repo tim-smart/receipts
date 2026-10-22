@@ -1,10 +1,19 @@
-import { BigDecimal, Effect, FiberMap, Layer, Queue, Schedule } from "effect"
+import {
+  BigDecimal,
+  DateTime,
+  Effect,
+  FiberMap,
+  Layer,
+  Queue,
+  Schedule,
+} from "effect"
 import { AiHelpers } from "./Ai"
 import { ReceiptRepo } from "./Receipts/Repo"
 import { ImagesRepo } from "./Images/Repo"
 import { EventLogClient } from "@/EventLog"
-import { uuidString } from "./lib/utils"
+import { changedFields, uuidString } from "./lib/utils"
 import { Receipt } from "./Domain/Receipt"
+import { ReceiptRow } from "./Receipts/Events"
 
 export const AiWorkerLive = Effect.gen(function* () {
   const ai = yield* AiHelpers
@@ -47,32 +56,30 @@ export const AiWorkerLive = Effect.gen(function* () {
         type: image.contentType,
       })
       const metadata = yield* ai.extractReceipt(blob)
-      const update = {
-        ...receipt,
-        processed: true,
+      const extracted = {
+        amount: BigDecimal.isZero(receipt.amount)
+          ? metadata.amount
+          : receipt.amount,
+        currency: metadata.currency
+          ? metadata.currency.toUpperCase()
+          : receipt.currency,
+        merchant:
+          receipt.merchant.trim() === "" ? metadata.merchant : receipt.merchant,
+        description:
+          receipt.description.trim() === ""
+            ? metadata.description
+            : receipt.description,
+        date: metadata.date ?? receipt.date,
       }
-      if (BigDecimal.isZero(update.amount)) {
-        update.amount = metadata.amount
-      }
-      if (metadata.currency) {
-        update.currency = metadata.currency.toUpperCase()
-      }
-      if (update.merchant.trim() === "") {
-        update.merchant = metadata.merchant
-      }
-      if (update.description.trim() === "") {
-        update.description = metadata.description
-      }
-      if (metadata.date) {
-        update.date = metadata.date
-      }
-      yield* client({
-        event: "ReceiptUpdate",
-        payload: Receipt.update.make({
-          ...update,
-          updatedAt: undefined,
+      // only patch what the extraction changed, so edits made meanwhile on
+      // other devices are kept
+      yield* client(
+        ReceiptRow.patch(receipt.id, {
+          ...changedFields(receipt, extracted),
+          processed: true,
+          updatedAt: yield* DateTime.now,
         }),
-      })
+      )
     },
     Effect.tapCause(Effect.log),
     Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),

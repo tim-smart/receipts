@@ -1,6 +1,7 @@
 import { Image } from "@/Domain/Image"
 import { ReceiptId } from "@/Domain/Receipt"
 import { clientAtom } from "@/EventLog"
+import { ImageRow } from "./Events"
 import { ImageCompressor } from "@/ImageCompressor"
 import { Effect } from "effect"
 import { Atom } from "effect/reactivity"
@@ -21,7 +22,7 @@ export const createImageAtom = runtime.fn<{
       contentType: file.type,
       data: new Uint8Array(data),
     })
-    yield* client({ event: "ImageCreate", payload: image })
+    yield* client(ImageRow.set(image))
     return new Image(image)
   }),
   { concurrent: true },
