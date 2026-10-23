@@ -1,40 +1,17 @@
-import { Effect, Layer, Option } from "effect"
+import { Effect, Layer } from "effect"
 import { ReceiptGroupEvents, ReceiptGroupRow } from "./ReceiptGroups/Events"
 import { EventLog, EventRow } from "effect/eventlog"
 import { QueryBuilder } from "./IndexedDb"
-import { Projection } from "./Projection"
+import { DataReset } from "./Reset"
+import { makeRowStores } from "./Rows"
 
 const ReceiptGroupsLive = EventLog.group(ReceiptGroupEvents, (handlers) =>
   Effect.gen(function* () {
-    const db = yield* QueryBuilder
-    const projection = yield* Projection
-    const groups = db.from("receiptGroups")
-
-    return (
-      handlers
-        .handle(
-          "ReceiptGroup",
-          projection.row(
-            EventRow.handler(ReceiptGroupRow, {
-              set: (row) => groups.upsert(row).pipe(Effect.orDie),
-              patch: Effect.fn(function* (id, fields) {
-                const current = yield* groups
-                  .select()
-                  .equals(id)
-                  .first()
-                  .pipe(Effect.catchNoSuchElement)
-                // a patch never recreates a missing (e.g. removed) row
-                if (Option.isNone(current)) return
-                yield* groups.upsert({ ...current.value, ...fields })
-              }, Effect.orDie),
-              remove: (id) => groups.delete().equals(id).pipe(Effect.orDie),
-            }),
-          ),
-        )
-        // legacy events, only replayed from remotes
-        .handle("GroupCreate", projection.legacy)
-        .handle("GroupUpdate", projection.legacy)
-        .handle("GroupDelete", projection.legacy)
+    const stores = makeRowStores(yield* QueryBuilder)
+    const reset = yield* DataReset
+    return handlers.handle(
+      "ReceiptGroup",
+      reset.guard(EventRow.handler(ReceiptGroupRow, stores.ReceiptGroup)),
     )
   }),
 ).pipe(Layer.provide(QueryBuilder.layer))

@@ -1,5 +1,4 @@
-import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
-import { uuidString } from "@/lib/utils"
+import { ReceiptGroup } from "@/Domain/ReceiptGroup"
 import { EventGroup, EventRow } from "effect/eventlog"
 
 export const ReceiptGroupRow = EventRow.make("ReceiptGroup", {
@@ -7,22 +6,4 @@ export const ReceiptGroupRow = EventRow.make("ReceiptGroup", {
   schema: ReceiptGroup.select,
 })
 
-export const ReceiptGroupEvents = EventGroup.empty
-  .add(ReceiptGroupRow)
-  // Legacy events, kept only so existing journals still replay. Nothing
-  // writes them any more.
-  .add({
-    tag: "GroupCreate",
-    primaryKey: (g) => uuidString(g.id!),
-    payload: ReceiptGroup.insert,
-  })
-  .add({
-    tag: "GroupUpdate",
-    primaryKey: (g) => uuidString(g.id),
-    payload: ReceiptGroup.update,
-  })
-  .add({
-    tag: "GroupDelete",
-    primaryKey: (id) => uuidString(id),
-    payload: ReceiptGroupId,
-  })
+export const ReceiptGroupEvents = EventGroup.empty.add(ReceiptGroupRow)

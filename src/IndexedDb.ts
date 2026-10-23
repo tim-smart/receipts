@@ -7,7 +7,7 @@ import { ImagesTable } from "./Images/Table"
 import { ReceiptGroupsTable } from "./ReceiptGroups/Table"
 import { ReceiptsTable } from "./Receipts/Table"
 import { SettingsTable } from "./Settings/Table"
-import { ProjectionTable } from "./Projection/Table"
+import { ResetTable } from "./Reset/Table"
 import { Effect, Layer, Context } from "effect"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
 import { currentGroupId, openaiModel } from "./Domain/Setting"
@@ -24,14 +24,21 @@ export class V2 extends IndexedDbVersion.make(
   ReceiptGroupsTable,
   ReceiptsTable,
   SettingsTable,
-  ProjectionTable,
+  ResetTable,
 ) {}
 
-export const initialReceiptGroupId = ReceiptGroupId.make(
+const initialReceiptGroupId = ReceiptGroupId.make(
   new Uint8Array([
     172, 114, 16, 212, 180, 1, 69, 189, 128, 6, 188, 134, 153, 205, 49, 21,
   ]),
 )
+
+// every device creates this group locally, with the same id
+export const makeInitialReceiptGroup = () =>
+  ReceiptGroup.insert.make({
+    id: initialReceiptGroupId,
+    name: "My Receipts",
+  })
 
 export class Database extends IndexedDbDatabase.make(
   V1,
@@ -48,12 +55,7 @@ export class Database extends IndexedDbDatabase.make(
 
     yield* api.createObjectStore("settings")
 
-    yield* api.from("receiptGroups").insert(
-      ReceiptGroup.insert.make({
-        id: initialReceiptGroupId,
-        name: "My Receipts",
-      }),
-    )
+    yield* api.from("receiptGroups").insert(makeInitialReceiptGroup())
     yield* api.from("settings").insertAll([
       {
         name: currentGroupId.name,
@@ -68,13 +70,11 @@ export class Database extends IndexedDbDatabase.make(
 ).add(
   V2,
   Effect.fn(function* (_, api) {
-    yield* api.createObjectStore("projection")
-    // rebuild once with the EventRow handlers, so entries an older version
-    // skipped or applied out of order are projected correctly
-    yield* api.from("projection").insert({
+    yield* api.createObjectStore("reset")
+    yield* api.from("reset").insert({
       name: "state",
-      rebuildPending: true,
-      legacyUntil: "",
+      appliedId: "",
+      scanJournal: true,
     })
   }),
 ) {}

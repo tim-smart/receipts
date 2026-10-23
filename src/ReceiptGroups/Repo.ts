@@ -22,11 +22,19 @@ export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
         ["receipt_groups", "settings"],
         Effect.gen(function* () {
           const groupId = yield* settings.get(currentGroupId)
-          return yield* Option.match(groupId, {
-            onNone: () => all.pipe(Effect.map(Array.head)),
+          const selected = yield* Option.match(groupId, {
+            onNone: () => Effect.succeedNone,
             onSome: (id) =>
-              receiptGroups.select().equals(id).first().pipe(Effect.option),
+              receiptGroups
+                .select()
+                .equals(id)
+                .first()
+                .pipe(Effect.catchNoSuchElement),
           })
+          // the selected group can be removed, e.g. by a data reset
+          return Option.isSome(selected)
+            ? selected
+            : yield* all.pipe(Effect.map(Array.head))
         }),
       )
 

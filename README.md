@@ -21,12 +21,20 @@ A simple local-first receipt scanner and tracker.
 
 3. Set the remote server URL in the client settings.
 
-## Upgrading synced devices
+## Upgrading to row sync
 
-Receipts, groups and images sync as `EventRow` events (`Receipt`, `ReceiptGroup`, `Image`). Older releases wrote separate create / update / delete events instead. The current release still reads those older events, from local journals and from the remote.
+Receipts, groups and images now sync as `EventRow` events (`Receipt`, `ReceiptGroup`, `Image`). Older releases wrote separate create / update / delete events, and this release ignores them. After upgrading, a device still shows the data it already has, but that data no longer reaches other devices: a new device, or one that signs out and back in, starts empty. Older releases also ignore the new events.
 
-Older and newer events for the same receipt never conflict with each other in the journal. So when an older event arrives after a newer edit, for example from a device that upgraded with edits it hadn't synced yet, the app doesn't apply it on its own. It rebuilds the receipts, groups and images tables from the whole journal in event order, which gives every device the same result. It also rebuilds once on the first start after upgrading, which picks up any new events an older release received but skipped.
+To move everything over, reset once and re-import a backup:
 
-Older releases ignore the new events without an error, so a device still on an older release won't show receipts, groups or images created or edited on upgraded devices. Its own edits still sync. Upgrade every device that syncs with the same remote. Nothing is lost while one lags behind; it catches up when it upgrades.
+1. Update every device that syncs with the same account to this release. Close and reopen the app if it doesn't update on its own.
+2. On the device with the complete data, open Settings and choose **Export backup**.
+3. Choose **Delete all data…**. Export a backup there or confirm that you have one, then choose **Delete everything**.
+4. Choose **Import backup** and pick the file from step 2.
+5. Open the other devices while they're online. They delete their data and receive the imported data without any action. A device that was still on an older release does this when it updates.
 
-Backups are unaffected. The backup file format hasn't changed, so backups import into either version.
+Deleting syncs to every device. The history on the sync server isn't erased, but each device ignores everything older than the deletion, so deleted data can't come back. That includes edits other devices made before the deletion but synced after it, so avoid editing elsewhere during steps 2 to 4.
+
+Settings are kept. The deletion recreates the default "My Receipts" group, and an import keeps groups that already exist, so if you renamed that group, rename it again.
+
+Backups are unaffected by the upgrade. The backup file format hasn't changed, so a backup exported by an older release imports here.

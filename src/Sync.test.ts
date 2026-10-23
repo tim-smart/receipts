@@ -10,15 +10,19 @@ import {
   Schedule,
   Schema,
 } from "effect"
+import { SchemaBinary } from "effect/encoding"
 import { EventJournal, EventLog, EventLogRemote } from "effect/eventlog"
 import { Model } from "effect/schema"
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb"
-import { Image, ImageId } from "./Domain/Image"
+import { exportBackup, importBackup } from "./Backup"
+import { BackupStoreLive } from "./Backup/Store"
 import { Receipt, ReceiptId } from "./Domain/Receipt"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
+import { EventLogClient } from "./EventLog"
 import { ReceiptAppEvents } from "./Events"
 import { layerEventLog } from "./EventLogLayer"
 import { QueryBuilder } from "./IndexedDb"
+import { ReceiptGroupRow } from "./ReceiptGroups/Events"
 import { ReceiptRow } from "./Receipts/Events"
 import { uuidBytes, uuidString } from "./lib/utils"
 
@@ -43,7 +47,6 @@ class Remote extends Context.Service<
     Effect.gen(function* () {
       const registry = yield* EventLog.Registry
       const journal = yield* EventJournal.EventJournal
-      const db = yield* QueryBuilder
       const id = EventJournal.makeRemoteIdUnsafe()
       const changes = yield* Queue.unbounded<
         EventJournal.RemoteEntry,
@@ -57,15 +60,11 @@ class Remote extends Context.Service<
         whenAuthenticated: (effect) => effect,
       })
 
-      // the batches are replayed, and any rebuild they requested is done
-      const settled = Effect.gen(function* () {
-        const next = yield* journal.nextRemoteSequence(id)
-        const state = yield* db.from("projection").select().first()
-        return next >= sequence && !state.rebuildPending
-      }).pipe(
+      // every delivered batch is replayed
+      const settled = journal.nextRemoteSequence(id).pipe(
         Effect.orDie,
         Effect.repeat({
-          until: (done) => done,
+          until: (next) => next >= sequence,
           schedule: Schedule.spaced("5 millis"),
         }),
       )
@@ -109,8 +108,11 @@ class Remote extends Context.Service<
 }
 
 // A device: the app's EventLog over a fresh in-memory journal and
-// IndexedDB, connected to a `Remote`.
-const Device = Remote.layer.pipe(
+// IndexedDB, connected to a `Remote`, with the app's backup store.
+const Device = Layer.mergeAll(
+  Remote.layer,
+  BackupStoreLive.pipe(Layer.provide(EventLogClient.layer)),
+).pipe(
   Layer.provideMerge(
     Layer.mergeAll(layerEventLog(EventJournal.layerMemory), QueryBuilder.layer),
   ),
@@ -142,29 +144,29 @@ const receive = (events: ReadonlyArray<readonly [Write, ageMillis: number]>) =>
 
 const tables = Effect.gen(function* () {
   const db = yield* QueryBuilder
-  return yield* Effect.all({
-    groups: db.from("receiptGroups").select(),
-    receipts: db.from("receipts").select(),
-    images: db.from("images").select(),
-  })
+  const groups = yield* db.from("receiptGroups").select()
+  const receipts = yield* db.from("receipts").select()
+  return {
+    groups: groups.map((_) => [uuidString(_.id), _.name]).sort(),
+    receipts: receipts.map((_) => [uuidString(_.id), _.merchant]).sort(),
+  }
 })
 
 const at = (iso: string) => DateTime.makeUnsafe(iso)
+
+// created with the database on every device
+const initialGroup = ["ac7210d4-b401-45bd-8006-bc8699cd3115", "My Receipts"]
 
 const home = ReceiptGroup.insert.make({
   id: ReceiptGroupId.make(uuidBytes("0b6c1d2e-3f40-4a51-8b62-7c83d94ea5f6")),
   name: "Home",
   defaultCurrency: "NZD",
 })
-const work = ReceiptGroup.insert.make({
-  id: ReceiptGroupId.make(uuidBytes("1c7d2e3f-4051-4b62-9c73-8d94ea5fb607")),
-  name: "Work",
-})
 const groceries = Receipt.insert.make({
   id: ReceiptId.make(uuidBytes("2d8e3f40-5162-4c73-ad84-9ea5fb6c0718")),
   date: at("2026-03-04T00:00:00.000Z"),
   description: "Weekly shop",
-  merchant: "",
+  merchant: "Countdown",
   amount: BigDecimal.fromNumberUnsafe(0),
   currency: "NZD",
   processed: false,
@@ -177,90 +179,31 @@ const taxi = Receipt.insert.make({
   createdAt: Model.Override(groceries.createdAt),
   updatedAt: Model.Override(groceries.updatedAt),
 })
-const photo = Image.insert.make({
-  id: ImageId.make(uuidBytes("4fa05162-7384-4e95-8fa6-b0c7d8e2933a")),
-  receiptId: groceries.id,
-  data: new Uint8Array([1, 2, 3]),
-  contentType: "image/jpeg",
+const lunch = Receipt.insert.make({
+  ...groceries,
+  id: ReceiptId.make(uuidBytes("5ac16273-8495-4fa6-90b7-c1d8e9f3a44b")),
+  merchant: "Lunch",
+  createdAt: Model.Override(groceries.createdAt),
+  updatedAt: Model.Override(groceries.updatedAt),
 })
-const otherPhoto = Image.insert.make({
-  ...photo,
-  id: ImageId.make(uuidBytes("50b16273-8495-4fa6-90b7-c1d8e9f3a44b")),
-  createdAt: Model.Override(photo.createdAt),
-  updatedAt: Model.Override(photo.updatedAt),
-})
+
+// a `ReceiptCreate` entry, as releases before EventRow wrote them
+const legacyReceiptCreate = (receipt: typeof Receipt.insert.Type) =>
+  new EventJournal.Entry({
+    id: EventJournal.makeEntryIdUnsafe({ msecs: Date.now() - 5000 }),
+    event: "ReceiptCreate",
+    primaryKey: uuidString(receipt.id),
+    payload: Schema.encodeSync(SchemaBinary.toCodec(Receipt.insert))(receipt),
+  })
 
 describe("Sync", () => {
-  it.live("replays journals written with the legacy events", () =>
-    Effect.gen(function* () {
-      yield* receive([
-        [{ event: "GroupCreate", payload: home }, 90],
-        [{ event: "GroupCreate", payload: work }, 89],
-        [
-          {
-            event: "GroupUpdate",
-            payload: ReceiptGroup.update.make({ ...work, name: "Office" }),
-          },
-          88,
-        ],
-        [{ event: "ReceiptCreate", payload: groceries }, 80],
-        [
-          {
-            event: "ReceiptUpdate",
-            payload: Receipt.update.make({
-              ...groceries,
-              merchant: "Countdown",
-            }),
-          },
-          79,
-        ],
-        [
-          {
-            event: "ReceiptSetProcessed",
-            payload: { id: groceries.id, processed: true },
-          },
-          78,
-        ],
-        [{ event: "ReceiptCreate", payload: taxi }, 77],
-        [{ event: "ReceiptDelete", payload: taxi.id }, 76],
-        [{ event: "ImageCreate", payload: photo }, 70],
-        [{ event: "ImageCreate", payload: otherPhoto }, 69],
-        [{ event: "ImageDelete", payload: otherPhoto.id }, 68],
-      ])
-
-      // new row events apply on top of rows created by legacy events
-      yield* write(ReceiptRow.patch(groceries.id, { description: "Edited" }))
-
-      const state = yield* tables
-      expect(
-        state.groups.map((_) => [uuidString(_.id), _.name]).sort(),
-      ).toEqual([
-        [uuidString(home.id), "Home"],
-        [uuidString(work.id), "Office"],
-        // created with the database
-        ["ac7210d4-b401-45bd-8006-bc8699cd3115", "My Receipts"],
-      ])
-      expect(
-        state.receipts.map((_) => [
-          uuidString(_.id),
-          _.merchant,
-          _.description,
-          _.processed,
-        ]),
-      ).toEqual([[uuidString(groceries.id), "Countdown", "Edited", true]])
-      expect(state.images.map((_) => uuidString(_.id))).toEqual([
-        uuidString(photo.id),
-      ])
-    }).pipe(Effect.provide(Device)),
-  )
-
   it.live("keeps concurrent edits to different fields of a receipt", () =>
     Effect.gen(function* () {
       // created on another device
       yield* receive([[ReceiptRow.set(groceries), 2000]])
 
       // edited here
-      yield* write(ReceiptRow.patch(groceries.id, { merchant: "Countdown" }))
+      yield* write(ReceiptRow.patch(groceries.id, { merchant: "Edited" }))
 
       // the other device's AI worker finished before the edit above but
       // syncs after it
@@ -275,56 +218,66 @@ describe("Sync", () => {
         ],
       ])
 
-      const [receipt] = (yield* tables).receipts
-      expect(receipt.merchant).toBe("Countdown")
+      const [receipt] = yield* QueryBuilder.use((db) =>
+        db.from("receipts").select(),
+      )
+      expect(receipt.merchant).toBe("Edited")
       expect(BigDecimal.format(receipt.amount)).toBe("12.34")
       expect(receipt.processed).toBe(true)
       expect(receipt.description).toBe("Weekly shop")
     }).pipe(Effect.provide(Device)),
   )
 
-  it.live("converges when legacy edits arrive after newer row edits", () =>
+  it.live("deletes all data everywhere and restores it from a backup", () =>
     Effect.gen(function* () {
       const thisDevice = yield* Effect.gen(function* () {
         yield* receive([
-          [{ event: "ReceiptCreate", payload: groceries }, 10_000],
+          [ReceiptGroupRow.set(home), 3000],
+          [ReceiptRow.set(groceries), 3000],
         ])
-        yield* write(ReceiptRow.patch(groceries.id, { merchant: "New edit" }))
+        const backup = yield* exportBackup
 
-        // a device that upgraded with unsynced legacy edits, in the same batch
-        // as two patches of which compaction keeps only the newer
-        yield* receive([
-          [
-            {
-              event: "ReceiptUpdate",
-              payload: Receipt.update.make({
-                ...groceries,
-                merchant: "Old edit",
-                description: "Old description",
-              }),
-            },
-            2000,
-          ],
-          [ReceiptRow.patch(groceries.id, { currency: "AUD" }), 1500],
-          [ReceiptRow.patch(groceries.id, { currency: "USD" }), 1000],
-        ])
+        yield* write({ event: "DataReset", payload: {} })
+        const afterReset = yield* tables
+
+        // history from before the reset that syncs late: an edit from
+        // another device, and an event from before EventRow
+        yield* receive([[ReceiptRow.set(taxi), 1000]])
+        yield* Remote.use((remote) =>
+          remote.receiveEntries([legacyReceiptCreate(lunch)]),
+        )
+
+        const summary = yield* importBackup(backup)
 
         return {
-          receipts: (yield* tables).receipts,
+          afterReset,
+          summary,
+          restored: yield* tables,
           entries: yield* EventLog.EventLog.use((log) => log.entries),
         }
       }).pipe(Effect.provide(Device))
 
-      newIndexedDb()
-      const newDevice = yield* Effect.gen(function* () {
-        yield* Remote.use((remote) => remote.receiveEntries(thisDevice.entries))
-        return (yield* tables).receipts
-      }).pipe(Effect.provide(Device))
+      expect(thisDevice.afterReset).toEqual({
+        groups: [initialGroup],
+        receipts: [],
+      })
+      // the initial group exists again, so it is skipped
+      expect(thisDevice.summary).toMatchObject({
+        groups: 1,
+        receipts: 1,
+        skipped: 1,
+      })
+      expect(thisDevice.restored).toEqual({
+        groups: [[uuidString(home.id), "Home"], initialGroup],
+        receipts: [[uuidString(groceries.id), "Countdown"]],
+      })
 
-      expect(
-        thisDevice.receipts.map((_) => [_.merchant, _.description, _.currency]),
-      ).toEqual([["New edit", "Old description", "USD"]])
-      expect(newDevice).toEqual(thisDevice.receipts)
+      // a device that syncs the whole history ends the same
+      newIndexedDb()
+      const newDevice = yield* Remote.use((remote) =>
+        remote.receiveEntries(thisDevice.entries),
+      ).pipe(Effect.andThen(tables), Effect.provide(Device))
+      expect(newDevice).toEqual(thisDevice.restored)
     }),
   )
 })

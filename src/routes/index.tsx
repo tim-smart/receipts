@@ -570,6 +570,7 @@ function SettingsDrawer() {
             </div>
           </div>
           <BackupSection />
+          <ResetSection />
           <DrawerFooter>
             <Button
               variant="destructive"
@@ -667,6 +668,108 @@ function BackupSection() {
         className="hidden"
         onChange={onImport}
       />
+    </div>
+  )
+}
+
+function ResetSection() {
+  const exportBackup = useAtomSet(exportBackupAtom, { mode: "promiseExit" })
+  const writeEvent = useAtomSet(writeEventAtom, { mode: "promiseExit" })
+  const [confirming, setConfirming] = useState(false)
+  const [backedUp, setBackedUp] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const cancel = useCallback(() => {
+    setConfirming(false)
+    setBackedUp(false)
+  }, [])
+
+  // @effect-diagnostics-next-line asyncFunction:off
+  const onExport = useCallback(async () => {
+    setBusy(true)
+    const exit = await exportBackup()
+    setBusy(false)
+    if (Exit.isSuccess(exit)) {
+      setBackedUp(true)
+    } else {
+      toast.error("Export failed")
+    }
+  }, [exportBackup])
+
+  // @effect-diagnostics-next-line asyncFunction:off
+  const onDelete = useCallback(async () => {
+    setBusy(true)
+    const exit = await writeEvent({ event: "DataReset", payload: {} })
+    setBusy(false)
+    if (Exit.isSuccess(exit)) {
+      cancel()
+      toast.success("All data deleted", {
+        description: "Import a backup to restore it.",
+      })
+    } else {
+      toast.error("Deleting data failed")
+    }
+  }, [writeEvent, cancel])
+
+  return (
+    <div className="grid gap-3 px-3 pb-5">
+      <TypoH3>Delete all data</TypoH3>
+      <p className="text-sm text-muted-foreground">
+        Deletes every group, receipt and image, on this device and on every
+        device that syncs with it. Settings are kept.
+      </p>
+      {confirming ? (
+        <>
+          <p className="text-sm font-medium text-destructive">
+            Export a backup first. Deleted data can only be restored by
+            importing a backup.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={onExport}
+          >
+            Export backup
+          </Button>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="backedUp"
+              checked={backedUp}
+              onCheckedChange={setBackedUp}
+            />
+            <Label htmlFor="backedUp">I have a backup of my data</Label>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={busy}
+              onClick={cancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="flex-1"
+              disabled={busy || !backedUp}
+              onClick={onDelete}
+            >
+              Delete everything
+            </Button>
+          </div>
+        </>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setConfirming(true)}
+        >
+          Delete all data…
+        </Button>
+      )}
     </div>
   )
 }
