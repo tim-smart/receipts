@@ -3,7 +3,6 @@ import { convert } from "@/Domain/Totals"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
 import { ImagesRepo } from "@/Images/Repo"
-import { uuidString } from "@/lib/utils"
 import { SettingRepo } from "@/Settings/Repo"
 import { Zip } from "@/Zip"
 import { BigDecimal, DateTime, Effect, Layer, Context } from "effect"
@@ -11,6 +10,7 @@ import FileSaver from "file-saver"
 import * as Csv from "csv-stringify/browser/esm/sync"
 import { QueryBuilder } from "@/IndexedDb"
 import { Reactivity } from "effect/reactivity"
+import { ReceiptRow } from "./Events"
 
 export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
   make: Effect.gen(function* () {
@@ -105,7 +105,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
 
     const byId = (id: ReceiptId) =>
       reactivity.stream(
-        [`receipts:${uuidString(id)}`],
+        { receipts: [ReceiptRow.keyOf({ id })] },
         Effect.gen(function* () {
           const receipt = yield* receipts.select().equals(id).first()
           const images = yield* imageRepo.forReceipt(id)
