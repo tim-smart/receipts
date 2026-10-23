@@ -16,10 +16,12 @@ export class ReceiptGroupRepo extends Context.Service<ReceiptGroupRepo>()(
 
       const all = byName
 
-      const stream = byName.reactive(["receipt_groups"])
+      const stream = byName.reactive([
+        "receipt_groups",
+      ] satisfies Reactivity.KeysInput)
 
       const current = reactivity.stream(
-        ["receipt_groups", "settings"],
+        ["receipt_groups", "settings"] satisfies Reactivity.KeysInput,
         Effect.gen(function* () {
           const groupId = yield* settings.get(currentGroupId)
           return yield* Option.match(groupId, {

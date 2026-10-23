@@ -4,6 +4,7 @@ import {
   DateTime,
   Effect,
   Layer,
+  Option,
   Queue,
   Redacted,
   Stream,
@@ -12,13 +13,17 @@ import { EventJournal, EventLog } from "effect/eventlog"
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb"
 import { Receipt, ReceiptId } from "@/Domain/Receipt"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
+import { Image } from "@/Domain/Image"
+import { openaiModel } from "@/Domain/Setting"
+import { SettingRepo } from "@/Settings/Repo"
+import { ImageRow } from "@/Images/Events"
 import { EventLogClient } from "@/EventLog"
 import { layerEventLog } from "@/EventLogLayer"
 import { uuidBytes } from "@/lib/utils"
 import { ReceiptRow } from "./Events"
 import { ReceiptRepo } from "./Repo"
 
-const Device = ReceiptRepo.layer.pipe(
+const Device = Layer.merge(ReceiptRepo.layer, SettingRepo.layer).pipe(
   Layer.provideMerge(EventLogClient.layer),
   Layer.provide(layerEventLog(EventJournal.layerMemory)),
   Layer.provide(
@@ -34,7 +39,27 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-it.live("updates the receipt detail stream after saving an edit", () =>
+it.live("updates a setting stream after saving a setting", () =>
+  Effect.gen(function* () {
+    const write = yield* EventLogClient
+    const repo = yield* SettingRepo
+    const changes = yield* Stream.toQueue(repo.stream(openaiModel), {
+      capacity: 8,
+    })
+    expect(yield* Queue.take(changes)).toEqual(Option.some("gpt-5.4"))
+
+    yield* write({
+      event: "SettingChange",
+      payload: { name: openaiModel.name, json: "updated-model" },
+    })
+
+    expect(yield* Queue.take(changes).pipe(Effect.timeout("1 second"))).toEqual(
+      Option.some("updated-model"),
+    )
+  }).pipe(Effect.scoped, Effect.provide(Device)),
+)
+
+it.live("updates the receipt detail stream after receipt and image edits", () =>
   Effect.gen(function* () {
     const write = yield* EventLogClient
     const repo = yield* ReceiptRepo
@@ -69,5 +94,25 @@ it.live("updates the receipt detail stream after saving an edit", () =>
     expect(updated.receipt.merchant).toBe("Edited merchant")
     expect(BigDecimal.format(updated.receipt.amount)).toBe("56.78")
     expect(updated.receipt.description).toBe("Groceries")
+    expect(updated.images).toEqual([])
+
+    const image = Image.insert.make({
+      receiptId: receipt.id,
+      contentType: "image/png",
+      data: new Uint8Array([1, 2, 3]),
+    })
+    yield* write(ImageRow.set(image))
+    const withImage = yield* Queue.take(changes).pipe(
+      Effect.timeout("1 second"),
+    )
+    expect(withImage.images.map((image) => image.contentType)).toEqual([
+      "image/png",
+    ])
+
+    yield* write(ImageRow.remove(image.id))
+    const withoutImage = yield* Queue.take(changes).pipe(
+      Effect.timeout("1 second"),
+    )
+    expect(withoutImage.images).toEqual([])
   }).pipe(Effect.scoped, Effect.provide(Device)),
 )

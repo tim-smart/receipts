@@ -95,7 +95,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
     })
 
     const current = reactivity.stream(
-      ["receipts", "settings"],
+      ["receipts", "settings"] satisfies Reactivity.KeysInput,
       Effect.gen(function* () {
         const groupId = yield* settings.get(currentGroupId)
         if (groupId._tag === "None") return []
@@ -105,7 +105,11 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
 
     const byId = (id: ReceiptId) =>
       reactivity.stream(
-        { receipts: [ReceiptRow.keyOf({ id })] },
+        {
+          receipts: [ReceiptRow.keyOf({ id })],
+          // Image events are keyed by image ID, so watch all image writes.
+          images: [],
+        } satisfies Reactivity.KeysInput,
         Effect.gen(function* () {
           const receipt = yield* receipts.select().equals(id).first()
           const images = yield* imageRepo.forReceipt(id)
@@ -114,7 +118,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       )
 
     const unprocessed = reactivity.query(
-      ["receipts", "images"],
+      ["receipts", "images"] satisfies Reactivity.KeysInput,
       receipts
         .select("processed")
         .equals(0)
