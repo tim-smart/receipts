@@ -31,8 +31,11 @@ export const useViewCurrency = (
   const [viewCurrencies, setViewCurrencies] = useAtom(viewCurrenciesAtom)
   const groupId = uuidString(group.id)
   const chosen = viewCurrencies[groupId]
+  // only use the chosen currency while there's a rate to convert into it
   const currency =
-    chosen && rates?._tag === "Available" ? chosen : group.defaultCurrency
+    chosen && rates?._tag === "Available" && rates.rates.rates[chosen]
+      ? chosen
+      : group.defaultCurrency
   const setCurrency = (currency: string) => {
     const { [groupId]: _, ...rest } = viewCurrencies
     setViewCurrencies(
@@ -78,6 +81,7 @@ export function TotalsTape({
       used={
         summary._tag === "Exact" ? [] : summary.lines.map((_) => _.currency)
       }
+      rates={available.rates}
       approximate={isApproximate(summary)}
       onChange={onCurrencyChange}
     />
@@ -256,19 +260,25 @@ function CurrencyPicker({
   value,
   folderCurrency,
   used,
+  rates,
   approximate,
   onChange,
 }: {
   value: string
   folderCurrency: string
   used: ReadonlyArray<string>
+  rates: Record<string, number>
   approximate: boolean
   onChange: (currency: string) => void
 }) {
-  // the folder currency first, then the ones used in the folder
+  // the folder currency first, then the ones used in the folder, leaving out
+  // currencies without a rate
   const items = useMemo(
-    () => Array.from(new Set([folderCurrency, ...used, ...codes])),
-    [folderCurrency, used],
+    () =>
+      Array.from(new Set([folderCurrency, ...used, ...codes])).filter(
+        (currency) => currency === folderCurrency || rates[currency],
+      ),
+    [folderCurrency, used, rates],
   )
 
   return (

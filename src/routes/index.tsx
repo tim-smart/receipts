@@ -29,7 +29,6 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-  ComboboxValue,
 } from "@/components/ui/combobox"
 import { Camera, Download, Plus, Settings, Settings2 } from "lucide-react"
 import { Dock } from "@/components/ui/Dock"
@@ -98,6 +97,7 @@ function ReceiptsScreen() {
   const addButton = (
     <Button
       className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-black/15 dark:shadow-black/40"
+      disabled={!group}
       onClick={() => setAdding(true)}
     >
       <Camera className="size-4.5" />
@@ -234,10 +234,9 @@ function FolderMenu({
   onFolderSettings: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const groups = useAtomValue(
-    receiptGroupsAtom,
-    AsyncResult.getOrElse(() => []),
-  )
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const groupsResult = useAtomValue(receiptGroupsAtom)
+  const groups = AsyncResult.getOrElse(groupsResult, () => [])
   const groupId = useAtomValue(
     settingAtom(currentGroupId),
     AsyncResult.value,
@@ -258,6 +257,8 @@ function FolderMenu({
   )
   const menuAction = (action: () => void) => () => {
     setOpen(false)
+    // the drawer returns focus here when it closes, as the menu is gone
+    triggerRef.current?.focus()
     action()
   }
 
@@ -274,11 +275,17 @@ function FolderMenu({
       }}
     >
       <ComboboxTrigger
-        aria-label="Change folder"
+        ref={triggerRef}
+        // comboboxes take their name from a label, not their content
+        aria-label={
+          currentGroup ? `Folder: ${currentGroup.name}` : "Choose a folder"
+        }
         className="-ml-1 mt-2 inline-flex max-w-full items-center gap-1 rounded-md px-1 py-0.5 text-[15px] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:text-foreground"
       >
         <span className="truncate">
-          <ComboboxValue>{(group: ReceiptGroup) => group?.name}</ComboboxValue>
+          {currentGroup
+            ? currentGroup.name
+            : AsyncResult.isSuccess(groupsResult) && "Choose a folder"}
         </span>
       </ComboboxTrigger>
       <ComboboxContent className="w-64">
@@ -745,12 +752,13 @@ function ExportDrawer({
   // @effect-diagnostics-next-line asyncFunction:off
   const onExport = useCallback(async () => {
     if (groupId._tag === "None") return
-    await exportReceipts({
-      groupId: groupId.value,
-      rates:
-        convert && available ? rebase(available.rates, currency) : undefined,
-      currency,
-    })
+    const rates =
+      convert && available ? rebase(available.rates, currency) : undefined
+    if (convert && !rates) {
+      toast.error(`There's no exchange rate for ${currency}`)
+      return
+    }
+    await exportReceipts({ groupId: groupId.value, rates, currency })
     setOpen(false)
   }, [convert, currency, available, exportReceipts, groupId])
 

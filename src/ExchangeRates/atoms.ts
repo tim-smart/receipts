@@ -15,30 +15,52 @@ export interface Rates extends RatesSnapshot {
 const storageKey = "receipts_exchange_rates"
 const SavedRates = Schema.fromJsonString(RatesSnapshot)
 
+// storage can throw (quota, private browsing), which must not block the rates
 const save = (snapshot: RatesSnapshot) =>
   Schema.encodeEffect(SavedRates)(snapshot).pipe(
     Effect.flatMap((json) =>
-      Effect.sync(() => localStorage.setItem(storageKey, json)),
+      Effect.try(() => localStorage.setItem(storageKey, json)),
     ),
     Effect.ignore,
   )
 
-const loadSaved = Effect.suspend(() =>
-  Schema.decodeUnknownEffect(SavedRates)(localStorage.getItem(storageKey)),
-).pipe(Effect.map((snapshot): Rates => ({ ...snapshot, stale: true })))
+const loadSaved = Effect.try(() => localStorage.getItem(storageKey)).pipe(
+  Effect.flatMap(Schema.decodeUnknownEffect(SavedRates)),
+  Effect.map((snapshot): Rates => ({ ...snapshot, stale: true })),
+)
+
+/**
+ * Changes when the app comes back into view or the device reconnects, so the
+ * rates are fetched again. Lookups are cached for 5 minutes.
+ */
+const refreshSignal = Atom.readable((get) => {
+  let count = 0
+  const update = () => {
+    if (document.visibilityState === "visible") get.setSelf(++count)
+  }
+  window.addEventListener("visibilitychange", update)
+  window.addEventListener("online", update)
+  get.addFinalizer(() => {
+    window.removeEventListener("visibilitychange", update)
+    window.removeEventListener("online", update)
+  })
+  return count
+})
 
 /**
  * The latest rates for an Open Exchange Rates app id. Falls back to the last
  * rates saved on this device when they can't be fetched.
  */
 export const ratesAtom = Atom.family((appId: string) =>
-  runtime.atom(
-    ExchangeRates.use((_) => _.latest(appId)).pipe(
-      Effect.tap(save),
-      Effect.map((snapshot): Rates => ({ ...snapshot, stale: false })),
-      Effect.catch(() => loadSaved),
-    ),
-  ),
+  runtime
+    .atom(
+      ExchangeRates.use((_) => _.latest(appId)).pipe(
+        Effect.tap(save),
+        Effect.map((snapshot): Rates => ({ ...snapshot, stale: false })),
+        Effect.catchCause(() => loadSaved),
+      ),
+    )
+    .pipe(Atom.makeRefreshOnSignal(refreshSignal)),
 )
 
 export type RatesState =

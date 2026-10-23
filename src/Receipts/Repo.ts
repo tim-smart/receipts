@@ -2,6 +2,7 @@ import { ReceiptId } from "@/Domain/Receipt"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
 import { ImagesRepo } from "@/Images/Repo"
+import { thumbnailUrl } from "@/Images/thumbnail"
 import { uuidString } from "@/lib/utils"
 import { SettingRepo } from "@/Settings/Repo"
 import { Zip } from "@/Zip"
@@ -113,6 +114,17 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
         }),
       )
 
+    const thumbnail = (id: ReceiptId) =>
+      reactivity.stream(
+        [`receipts:${uuidString(id)}`],
+        db
+          .from("images")
+          .select("receiptId")
+          .equals(id)
+          .first()
+          .pipe(Effect.flatMap(thumbnailUrl), Effect.option),
+      )
+
     const unprocessed = reactivity.query(
       ["receipts", "images"],
       receipts
@@ -125,6 +137,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       forGroup,
       exportForGroup,
       byId,
+      thumbnail,
       current,
       unprocessed,
     } as const
@@ -141,7 +154,12 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
   )
 }
 
-const convertString = (amount: BigDecimal.BigDecimal, rate: number) => {
+const convertString = (
+  amount: BigDecimal.BigDecimal,
+  rate: number | undefined,
+) => {
+  // leave the cell empty for currencies without a rate
+  if (!rate) return ""
   const rateNumber = 1 / rate
   return BigDecimal.multiply(
     amount,

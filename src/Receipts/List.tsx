@@ -1,13 +1,13 @@
 import { Link } from "@tanstack/react-router"
 import { useAtomValue } from "@effect/atom-react"
-import { BigDecimal, DateTime } from "effect"
+import { BigDecimal, DateTime, Option } from "effect"
 import { AsyncResult } from "effect/reactivity"
 import { RefObject, useEffect, useMemo, useRef, useState } from "react"
 import { Receipt } from "@/Domain/Receipt"
 import { formatAmount } from "@/Domain/Currency"
 import { isApproximate, summarize } from "@/Domain/Totals"
 import { Monogram } from "@/components/ui/Monogram"
-import { receiptAtom } from "./atoms"
+import { receiptThumbnailAtom } from "./atoms"
 
 interface Month {
   readonly key: string
@@ -109,14 +109,9 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
     receipt.description ||
     receipt.merchant ||
     (processing ? "New receipt" : "Receipt")
-  const details = [
-    receipt.merchant,
-    receipt.date.pipe(
-      DateTime.format({ weekday: "short", day: "numeric", month: "short" }),
-    ),
-  ]
-    .filter(Boolean)
-    .join(" · ")
+  const day = receipt.date.pipe(
+    DateTime.format({ weekday: "short", day: "numeric", month: "short" }),
+  )
   const hasAmount = !(processing && BigDecimal.isZero(receipt.amount))
 
   return (
@@ -130,9 +125,21 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
         <div className="truncate text-[15px] font-medium tracking-tight">
           {title}
         </div>
-        <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-          {processing ? <ProcessingPill /> : details}
-        </div>
+        {processing ? (
+          <div className="mt-0.5 text-[13px]">
+            <ProcessingPill />
+          </div>
+        ) : (
+          // long merchant names truncate before the date does
+          <div className="mt-0.5 flex text-[13px] text-muted-foreground">
+            {receipt.merchant && (
+              <span className="truncate">{receipt.merchant}</span>
+            )}
+            <span className="shrink-0 whitespace-pre">
+              {receipt.merchant ? ` · ${day}` : day}
+            </span>
+          </div>
+        )}
       </div>
       <div className="shrink-0 text-right">
         <div className="font-mono text-[15px] font-medium tabular-nums">
@@ -174,21 +181,21 @@ function ReceiptThumbnail({ receipt }: { receipt: Receipt }) {
 }
 
 function LoadedThumbnail({ receipt }: { receipt: Receipt }) {
-  const result = useAtomValue(receiptAtom(receipt.idString))
+  const result = useAtomValue(receiptThumbnailAtom(receipt.idString))
   if (result._tag === "Initial") {
     return <div className="size-full rounded-[11px] bg-muted" />
   }
-  const image = AsyncResult.isSuccess(result)
-    ? result.value.images[0]
+  const url = AsyncResult.isSuccess(result)
+    ? Option.getOrUndefined(result.value)
     : undefined
-  if (!image) {
+  if (!url) {
     return <Monogram name={receipt.merchant || receipt.description} />
   }
   return (
     <img
-      src={image.objectUrl}
+      src={url}
       alt=""
-      className="size-full rounded-[11px] border object-cover object-top"
+      className="size-full rounded-[11px] border object-cover"
     />
   )
 }
