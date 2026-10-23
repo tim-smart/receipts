@@ -23,6 +23,9 @@ import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from "fflate"
 import { Image } from "./Domain/Image"
 import { Receipt } from "./Domain/Receipt"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
+import { ImageRow } from "./Images/Events"
+import { ReceiptGroupRow } from "./ReceiptGroups/Events"
+import { ReceiptRow } from "./Receipts/Events"
 import { uuidString } from "./lib/utils"
 
 export interface BackupData {
@@ -32,18 +35,9 @@ export interface BackupData {
 }
 
 export type BackupWrite =
-  | {
-      readonly event: "GroupCreate"
-      readonly payload: typeof ReceiptGroup.insert.Type
-    }
-  | {
-      readonly event: "ReceiptCreate"
-      readonly payload: typeof Receipt.insert.Type
-    }
-  | {
-      readonly event: "ImageCreate"
-      readonly payload: typeof Image.insert.Type
-    }
+  | ReturnType<typeof ReceiptGroupRow.set>
+  | ReturnType<typeof ReceiptRow.set>
+  | ReturnType<typeof ImageRow.set>
 
 /**
  * Where backups are read from and restored to. The app implementation reads
@@ -280,14 +274,15 @@ const planImport = (
     }
     groupKeys.add(group.key)
     const { key: _key, ...fields } = group
-    groupWrites.push({
-      event: "GroupCreate",
-      payload: ReceiptGroup.insert.make({
-        ...fields,
-        createdAt: Model.Override(group.createdAt),
-        updatedAt: Model.Override(group.updatedAt),
-      }),
-    })
+    groupWrites.push(
+      ReceiptGroupRow.set(
+        ReceiptGroup.insert.make({
+          ...fields,
+          createdAt: Model.Override(group.createdAt),
+          updatedAt: Model.Override(group.updatedAt),
+        }),
+      ),
+    )
     summary.groups++
   }
 
@@ -300,14 +295,15 @@ const planImport = (
   ) => {
     groupKeys.add(key)
     recoveredGroupKeys.add(key)
-    groupWrites.push({
-      event: "GroupCreate",
-      payload: ReceiptGroup.insert.make({
-        id,
-        name: recoveredGroupName,
-        defaultCurrency: currency,
-      }),
-    })
+    groupWrites.push(
+      ReceiptGroupRow.set(
+        ReceiptGroup.insert.make({
+          id,
+          name: recoveredGroupName,
+          defaultCurrency: currency,
+        }),
+      ),
+    )
   }
 
   for (const receipt of backup.receipts) {
@@ -323,14 +319,15 @@ const planImport = (
       recoveredReceiptKeys.add(receipt.key)
     }
     const { key: _key, groupKey: _groupKey, ...fields } = receipt
-    receiptWrites.push({
-      event: "ReceiptCreate",
-      payload: Receipt.insert.make({
-        ...fields,
-        createdAt: Model.Override(receipt.createdAt),
-        updatedAt: Model.Override(receipt.updatedAt),
-      }),
-    })
+    receiptWrites.push(
+      ReceiptRow.set(
+        Receipt.insert.make({
+          ...fields,
+          createdAt: Model.Override(receipt.createdAt),
+          updatedAt: Model.Override(receipt.updatedAt),
+        }),
+      ),
+    )
     summary.receipts++
   }
 
@@ -345,25 +342,26 @@ const planImport = (
     if (!receiptKeys.has(image.receiptKey)) {
       if (placeholderGroup === undefined) {
         const group = ReceiptGroup.insert.make({ name: recoveredGroupName })
-        groupWrites.push({ event: "GroupCreate", payload: group })
-        placeholderGroup = group.id!
+        groupWrites.push(ReceiptGroupRow.set(group))
+        placeholderGroup = group.id
       }
       receiptKeys.add(image.receiptKey)
       placeholderKeys.add(image.receiptKey)
-      receiptWrites.push({
-        event: "ReceiptCreate",
-        payload: Receipt.insert.make({
-          id: image.receiptId,
-          groupId: placeholderGroup,
-          date: image.createdAt,
-          description: "",
-          merchant: "Recovered image",
-          amount: BigDecimal.fromNumberUnsafe(0),
-          currency: "USD",
-          // don't send recovered images to OpenAI on import
-          processed: true,
-        }),
-      })
+      receiptWrites.push(
+        ReceiptRow.set(
+          Receipt.insert.make({
+            id: image.receiptId,
+            groupId: placeholderGroup,
+            date: image.createdAt,
+            description: "",
+            merchant: "Recovered image",
+            amount: BigDecimal.fromNumberUnsafe(0),
+            currency: "USD",
+            // don't send recovered images to OpenAI on import
+            processed: true,
+          }),
+        ),
+      )
     }
     if (placeholderKeys.has(image.receiptKey)) {
       recoveredImages++
@@ -381,14 +379,15 @@ const planImport = (
       }
     }
     const { key: _key, receiptKey: _receiptKey, ...fields } = image
-    imageWrites.push({
-      event: "ImageCreate",
-      payload: Image.insert.make({
-        ...fields,
-        createdAt: Model.Override(image.createdAt),
-        updatedAt: Model.Override(image.updatedAt),
-      }),
-    })
+    imageWrites.push(
+      ImageRow.set(
+        Image.insert.make({
+          ...fields,
+          createdAt: Model.Override(image.createdAt),
+          updatedAt: Model.Override(image.updatedAt),
+        }),
+      ),
+    )
     summary.images++
   }
 
@@ -409,9 +408,9 @@ const planImport = (
 }
 
 const payloadSchemas = {
-  GroupCreate: ReceiptGroup.insert,
-  ReceiptCreate: Receipt.insert,
-  ImageCreate: Image.insert,
+  ReceiptGroup: ReceiptGroupRow.payload,
+  Receipt: ReceiptRow.payload,
+  Image: ImageRow.payload,
 } as const
 
 // encode each payload the way the EventLog journal will, so a write can't

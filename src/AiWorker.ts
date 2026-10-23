@@ -3,8 +3,9 @@ import { AiHelpers } from "./Ai"
 import { ReceiptRepo } from "./Receipts/Repo"
 import { ImagesRepo } from "./Images/Repo"
 import { EventLogClient } from "@/EventLog"
-import { uuidString } from "./lib/utils"
+import { patchChanged, uuidString } from "./lib/utils"
 import { Receipt } from "./Domain/Receipt"
+import { ReceiptRow } from "./Receipts/Events"
 
 export const AiWorkerLive = Effect.gen(function* () {
   const ai = yield* AiHelpers
@@ -47,32 +48,25 @@ export const AiWorkerLive = Effect.gen(function* () {
         type: image.contentType,
       })
       const metadata = yield* ai.extractReceipt(blob)
-      const update = {
-        ...receipt,
+      // only patch what the extraction changed, so edits made meanwhile on
+      // other devices are kept
+      const patch = patchChanged(ReceiptRow, receipt, {
+        amount: BigDecimal.isZero(receipt.amount)
+          ? metadata.amount
+          : receipt.amount,
+        currency: metadata.currency
+          ? metadata.currency.toUpperCase()
+          : receipt.currency,
+        merchant:
+          receipt.merchant.trim() === "" ? metadata.merchant : receipt.merchant,
+        description:
+          receipt.description.trim() === ""
+            ? metadata.description
+            : receipt.description,
+        date: metadata.date ?? receipt.date,
         processed: true,
-      }
-      if (BigDecimal.isZero(update.amount)) {
-        update.amount = metadata.amount
-      }
-      if (metadata.currency) {
-        update.currency = metadata.currency.toUpperCase()
-      }
-      if (update.merchant.trim() === "") {
-        update.merchant = metadata.merchant
-      }
-      if (update.description.trim() === "") {
-        update.description = metadata.description
-      }
-      if (metadata.date) {
-        update.date = metadata.date
-      }
-      yield* client({
-        event: "ReceiptUpdate",
-        payload: Receipt.update.make({
-          ...update,
-          updatedAt: undefined,
-        }),
       })
+      if (patch) yield* client(patch)
     },
     Effect.tapCause(Effect.log),
     Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),

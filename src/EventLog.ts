@@ -1,4 +1,5 @@
 import { Effect, Layer, Option, Schema, Context } from "effect"
+import type * as Arr from "effect/Array"
 import { Atom } from "effect/reactivity"
 import {
   Event,
@@ -8,25 +9,17 @@ import {
   EventLogRemote,
 } from "effect/eventlog"
 import { ReceiptAppEvents } from "./Events"
-import { ReceiptGroupsLayer } from "./ReceiptGroups"
-import { ReceiptsLayer } from "./Receipts"
-import { SettingsLayer } from "./Settings"
-import { ImagesLive } from "./Images"
+import { layerEventLog } from "./EventLogLayer"
 import { identityAtom } from "./Auth"
 import { kvsRuntime } from "./lib/utils"
 import { Identity } from "effect/eventlog/EventLog"
 import { RpcClient, RpcSerialization } from "effect/rpc"
 import { BrowserSocket } from "@effect/platform-browser"
 
-const EventLogLayer = EventLog.layer(
-  ReceiptAppEvents,
-  Layer.mergeAll(ReceiptGroupsLayer, ReceiptsLayer, SettingsLayer, ImagesLive),
-).pipe(
-  Layer.provide(
-    EventJournal.layerIndexedDb({
-      database: "receipts_events",
-    }),
-  ),
+const EventLogLayer = layerEventLog(
+  EventJournal.layerIndexedDb({
+    database: "receipts_events",
+  }),
 )
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)
@@ -80,6 +73,20 @@ export const writeEventAtom = eventLogAtom
           schema: ReceiptAppEvents,
           ...payload,
         } as any),
+      ).pipe(Effect.tapCause(Effect.logWarning)),
+    { concurrent: true },
+  )
+  .pipe(Atom.keepAlive)
+
+// writes several events as one journal transaction
+export const writeEventsAtom = eventLogAtom
+  .fn<Arr.NonEmptyReadonlyArray<EventPayload>>()(
+    (events) =>
+      EventLog.EventLog.use((_) =>
+        _.writeMany({
+          schema: ReceiptAppEvents,
+          events: events as any,
+        }),
       ).pipe(Effect.tapCause(Effect.logWarning)),
     { concurrent: true },
   )

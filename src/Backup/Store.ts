@@ -20,16 +20,7 @@ export const BackupStoreLive = Layer.effect(
 
     return BackupStore.of({
       snapshot,
-      write: (write) => {
-        switch (write.event) {
-          case "GroupCreate":
-            return client(write).pipe(Effect.asVoid, Effect.orDie)
-          case "ReceiptCreate":
-            return client(write).pipe(Effect.asVoid, Effect.orDie)
-          case "ImageCreate":
-            return client(write).pipe(Effect.orDie)
-        }
-      },
+      write: (write) => client(write).pipe(Effect.orDie),
     })
   }),
 ).pipe(Layer.provide(QueryBuilder.layer))

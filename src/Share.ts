@@ -2,6 +2,7 @@ import { BigDecimal, DateTime, Effect } from "effect"
 import { Atom } from "effect/reactivity"
 import { clientAtom } from "./EventLog"
 import { Receipt } from "./Domain/Receipt"
+import { ReceiptRow } from "./Receipts/Events"
 import { settingOptionAtom } from "./Settings/atoms"
 import { currentGroupId } from "./Domain/Setting"
 import { createImageAtom } from "./Images/atoms"
@@ -24,18 +25,16 @@ export const shareAtom = Atom.make(
     if (!data) return
 
     const groupId = yield* get.some(settingOptionAtom(currentGroupId))
-    const receipt = yield* client({
-      event: "ReceiptCreate",
-      payload: Receipt.insert.make({
-        groupId,
-        date: yield* DateTime.now,
-        description: "",
-        amount: BigDecimal.fromNumberUnsafe(0),
-        merchant: "",
-        currency: "USD",
-        processed: false,
-      }),
+    const receipt = Receipt.insert.make({
+      groupId,
+      date: yield* DateTime.now,
+      description: "",
+      amount: BigDecimal.fromNumberUnsafe(0),
+      merchant: "",
+      currency: "USD",
+      processed: false,
     })
+    yield* client(ReceiptRow.set(receipt))
     yield* get.setResult(createImageAtom, {
       receiptId: receipt.id,
       file: new File([data.data], "receipt", {
