@@ -11,9 +11,9 @@ export interface CurrencyTotal {
  * Sums receipts per currency. `lead` is listed first when present, followed by
  * the most used currencies.
  */
-export const totalsByCurrency = (
+const totalsByCurrency = (
   receipts: ReadonlyArray<Receipt>,
-  lead?: string,
+  lead: string,
 ): Array<CurrencyTotal> => {
   const totals = new Map<string, CurrencyTotal>()
   for (const receipt of receipts) {
@@ -53,45 +53,29 @@ export const convert = (
   return (value / fromRate) * toRate
 }
 
-/**
- * Re-expresses US dollar based rates as units of each currency per `base`.
- */
-export const rebase = (
-  rates: Record<string, number>,
-  base: string,
-): Record<string, number> | undefined => {
-  const baseRate = rates[base]
-  if (!baseRate) return undefined
-  return Object.fromEntries(
-    Object.entries(rates).map(([currency, rate]) => [
-      currency,
-      currency === base ? 1 : rate / baseRate,
-    ]),
-  )
-}
-
 export type Summary =
   /** Every receipt is in `currency`, so the total needs no conversion. */
   | {
       readonly _tag: "Exact"
       readonly currency: string
       readonly total: BigDecimal.BigDecimal
-      readonly count: number
     }
-  /** Converted into `currency`. `excluded` currencies have no rate. */
+  /**
+   * Converted into `currency`. `excluded` currencies have no rate, and
+   * `approximate` is true when any line was actually converted.
+   */
   | {
       readonly _tag: "Converted"
       readonly currency: string
       readonly total: number
       readonly lines: ReadonlyArray<CurrencyTotal>
       readonly excluded: ReadonlyArray<string>
-      readonly count: number
+      readonly approximate: boolean
     }
   /** Mixed currencies that can't be combined. The first line leads. */
   | {
       readonly _tag: "Separate"
       readonly lines: ReadonlyArray<CurrencyTotal>
-      readonly count: number
     }
 
 export const summarize = (options: {
@@ -101,13 +85,13 @@ export const summarize = (options: {
 }): Summary | undefined => {
   const { receipts, currency, rates } = options
   const lines = totalsByCurrency(receipts, currency)
-  const count = receipts.length
   if (lines.length === 0) return undefined
   if (lines.length === 1 && lines[0].currency === currency) {
-    return { _tag: "Exact", currency, total: lines[0].amount, count }
+    return { _tag: "Exact", currency, total: lines[0].amount }
   }
   if (rates && rates[currency]) {
     let total = 0
+    let approximate = false
     const excluded: Array<string> = []
     for (const line of lines) {
       const value = convert(line.amount, line.currency, currency, rates)
@@ -115,10 +99,18 @@ export const summarize = (options: {
         excluded.push(line.currency)
       } else {
         total += value
+        if (line.currency !== currency) approximate = true
       }
     }
     if (excluded.length < lines.length) {
-      return { _tag: "Converted", currency, total, lines, excluded, count }
+      return {
+        _tag: "Converted",
+        currency,
+        total,
+        lines,
+        excluded,
+        approximate,
+      }
     }
   }
   if (lines.length === 1) {
@@ -126,19 +118,7 @@ export const summarize = (options: {
       _tag: "Exact",
       currency: lines[0].currency,
       total: lines[0].amount,
-      count,
     }
   }
-  return { _tag: "Separate", lines, count }
+  return { _tag: "Separate", lines }
 }
-
-/**
- * Whether a summary's total depends on exchange rates.
- */
-export const isApproximate = (summary: Summary): boolean =>
-  summary._tag === "Converted" &&
-  summary.lines.some(
-    (line) =>
-      line.currency !== summary.currency &&
-      !summary.excluded.includes(line.currency),
-  )

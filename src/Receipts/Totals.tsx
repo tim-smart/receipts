@@ -1,15 +1,27 @@
-import { useAtom } from "@effect/atom-react"
+import { useAtom, useAtomValue } from "@effect/atom-react"
 import { DateTime } from "effect"
+import { AsyncResult } from "effect/reactivity"
 import { ReactNode, useMemo } from "react"
 import { ChevronDown } from "lucide-react"
 import { Receipt } from "@/Domain/Receipt"
 import { ReceiptGroup } from "@/Domain/ReceiptGroup"
 import { codes, formatAmount, formatCurrency } from "@/Domain/Currency"
-import { isApproximate, Summary, summarize } from "@/Domain/Totals"
-import { Rates, RatesState, viewCurrenciesAtom } from "@/ExchangeRates/atoms"
-import { uuidString } from "@/lib/utils"
+import { Summary, summarize } from "@/Domain/Totals"
+import { Rates } from "@/ExchangeRates"
+import {
+  availableRates,
+  currentRatesAtom,
+  RatesState,
+  viewCurrenciesAtom,
+} from "@/ExchangeRates/atoms"
 import { Button } from "@/components/ui/button"
-import { TillTape, TillTapeHead, TillTapeLine } from "@/components/ui/TillTape"
+import {
+  TillTape,
+  TillTapeAmount,
+  TillTapeHead,
+  TillTapeLine,
+  TillTapeLines,
+} from "@/components/ui/TillTape"
 import {
   Combobox,
   ComboboxContent,
@@ -21,35 +33,36 @@ import {
 } from "@/components/ui/combobox"
 
 /**
- * The currency a folder's totals are shown in on this device. Falls back to
- * the folder's default currency when there are no rates to convert with.
+ * The current rates and the currency a folder's totals are shown in on this
+ * device. Falls back to the folder's default currency when there are no rates
+ * to convert with.
  */
-export const useViewCurrency = (
-  group: ReceiptGroup,
-  rates: RatesState | undefined,
-) => {
+export const useViewCurrency = (group: ReceiptGroup) => {
+  const rates = useAtomValue(
+    currentRatesAtom,
+    AsyncResult.getOrElse(() => undefined),
+  )
   const [viewCurrencies, setViewCurrencies] = useAtom(viewCurrenciesAtom)
-  const groupId = uuidString(group.id)
-  const chosen = viewCurrencies[groupId]
+  const chosen = viewCurrencies[group.idString]
   // only use the chosen currency while there's a rate to convert into it
   const currency =
-    chosen && rates?._tag === "Available" && rates.rates.rates[chosen]
+    chosen && availableRates(rates)?.rates[chosen]
       ? chosen
       : group.defaultCurrency
   const setCurrency = (currency: string) => {
-    const { [groupId]: _, ...rest } = viewCurrencies
+    const { [group.idString]: _, ...rest } = viewCurrencies
     setViewCurrencies(
       currency === group.defaultCurrency
         ? rest
-        : { ...rest, [groupId]: currency },
+        : { ...rest, [group.idString]: currency },
     )
   }
-  return [currency, setCurrency] as const
+  return { rates, currency, setCurrency }
 }
 
 export function TotalsTape({
   receipts,
-  group,
+  folderCurrency,
   rates,
   currency,
   onCurrencyChange,
@@ -58,7 +71,7 @@ export function TotalsTape({
   className,
 }: {
   receipts: ReadonlyArray<Receipt>
-  group: ReceiptGroup
+  folderCurrency: string
   /** `undefined` while the rates are loading. */
   rates: RatesState | undefined
   currency: string
@@ -67,32 +80,24 @@ export function TotalsTape({
   action?: ReactNode
   className?: string
 }) {
-  const available = rates?._tag === "Available" ? rates.rates : undefined
+  const available = availableRates(rates)
   const summary = useMemo(
     () => summarize({ receipts, currency, rates: available?.rates }),
     [receipts, currency, available],
   )
   if (!summary) return null
 
-  const picker = available && (
-    <CurrencyPicker
-      value={currency}
-      folderCurrency={group.defaultCurrency}
-      used={
-        summary._tag === "Exact" ? [] : summary.lines.map((_) => _.currency)
-      }
-      rates={available.rates}
-      approximate={isApproximate(summary)}
-      onChange={onCurrencyChange}
-    />
-  )
+  const lead =
+    summary._tag === "Separate"
+      ? summary.lines[0]
+      : { currency: summary.currency, amount: summary.total }
 
   return (
     <TillTape className={className}>
       <TillTapeHead>
         <span>
           <span className="whitespace-nowrap">
-            {summary.count} {summary.count === 1 ? "receipt" : "receipts"} ·
+            {receipts.length} {receipts.length === 1 ? "receipt" : "receipts"} ·
           </span>{" "}
           <span className="whitespace-nowrap">{dateRange(receipts)}</span>
         </span>
@@ -100,14 +105,18 @@ export function TotalsTape({
       </TillTapeHead>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <span className="text-[40px] leading-tight font-bold tracking-[-0.04em] tabular-nums">
-          {headline(summary)}
-        </span>
-        {picker || (
+        <TillTapeAmount>{formatCurrency(lead)}</TillTapeAmount>
+        {available ? (
+          <CurrencyPicker
+            value={currency}
+            folderCurrency={folderCurrency}
+            summary={summary}
+            rates={available.rates}
+            onChange={onCurrencyChange}
+          />
+        ) : (
           <span className="pt-2 font-mono text-[13px] text-muted-foreground">
-            {summary._tag === "Separate"
-              ? summary.lines[0].currency
-              : summary.currency}
+            {lead.currency}
           </span>
         )}
       </div>
@@ -116,48 +125,38 @@ export function TotalsTape({
       <Footer
         summary={summary}
         rates={rates}
-        available={available}
         currency={currency}
-        folderCurrency={group.defaultCurrency}
-        onReset={() => onCurrencyChange(group.defaultCurrency)}
+        folderCurrency={folderCurrency}
+        onReset={() => onCurrencyChange(folderCurrency)}
         onOpenSettings={onOpenSettings}
       />
     </TillTape>
   )
 }
 
-const headline = (summary: Summary) => {
-  return summary._tag === "Separate"
-    ? formatCurrency(summary.lines[0])
-    : formatCurrency({ amount: summary.total, currency: summary.currency })
-}
-
 function Lines({ summary }: { summary: Summary }) {
   if (summary._tag === "Exact") return null
   const lines =
     summary._tag === "Separate" ? summary.lines.slice(1) : summary.lines
-  const excluded = summary._tag === "Converted" ? summary.excluded : []
+  // currencies that aren't part of the total are shown as additions
+  const separate = (currency: string) =>
+    summary._tag === "Separate" || summary.excluded.includes(currency)
   return (
-    <div className="mt-3.5 grid gap-1">
+    <TillTapeLines>
       {lines.map((line) => (
         <TillTapeLine
           key={line.currency}
-          label={
-            summary._tag === "Separate" || excluded.includes(line.currency)
-              ? `+ ${line.currency}`
-              : line.currency
-          }
+          label={separate(line.currency) ? `+ ${line.currency}` : line.currency}
           value={formatAmount(line.amount, line.currency)}
         />
       ))}
-    </div>
+    </TillTapeLines>
   )
 }
 
 function Footer({
   summary,
   rates,
-  available,
   currency,
   folderCurrency,
   onReset,
@@ -165,7 +164,6 @@ function Footer({
 }: {
   summary: Summary
   rates: RatesState | undefined
-  available: Rates | undefined
   currency: string
   folderCurrency: string
   onReset: () => void
@@ -174,8 +172,9 @@ function Footer({
   let note: ReactNode = null
   let link: ReactNode = null
 
-  if (summary._tag === "Converted" && available) {
-    note = ratesNote(available)
+  if (summary._tag === "Converted") {
+    const available = availableRates(rates)
+    if (available) note = ratesNote(available)
   } else if (summary._tag === "Separate") {
     if (rates === undefined) {
       note = "Updating rates…"
@@ -227,19 +226,37 @@ function FooterLink({
   )
 }
 
+const dayFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "short" })
+const timeFormat = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+})
+const dayMonthFormat = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+})
+
 const ratesNote = (rates: Rates) => {
   const published = DateTime.makeUnsafe(rates.timestamp)
-  const day = DateTime.formatLocal({ dateStyle: "short" })
-  const when =
-    day(published) === day(DateTime.nowUnsafe())
-      ? `today, ${DateTime.formatLocal(published, { hour: "numeric", minute: "2-digit" })}`
-      : DateTime.formatLocal(published, { day: "numeric", month: "short" })
+  const today =
+    DateTime.formatIntl(published, dayFormat) ===
+    DateTime.formatIntl(DateTime.nowUnsafe(), dayFormat)
+  const when = today
+    ? `today, ${DateTime.formatIntl(published, timeFormat)}`
+    : DateTime.formatIntl(published, dayMonthFormat)
   if (!rates.stale) return `Rates from ${when}`
   return `${navigator.onLine ? "Couldn't update" : "Offline"} · rates from ${when}`
 }
 
-const monthFormat = DateTime.format({ month: "short" })
-const monthYearFormat = DateTime.format({ month: "short", year: "numeric" })
+const monthFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  timeZone: "UTC",
+})
+const monthYearFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+})
 
 /**
  * The months the receipts span, e.g. `Sep – Oct 2026`. Receipts are sorted
@@ -250,36 +267,38 @@ const dateRange = (receipts: ReadonlyArray<Receipt>) => {
   const first = receipts[receipts.length - 1].date
   const a = DateTime.toPartsUtc(first)
   const b = DateTime.toPartsUtc(last)
-  if (a.year === b.year && a.month === b.month) return monthYearFormat(last)
-  if (a.year === b.year)
-    return `${monthFormat(first)} – ${monthYearFormat(last)}`
-  return `${monthYearFormat(first)} – ${monthYearFormat(last)}`
+  const end = DateTime.formatIntl(last, monthYearFormat)
+  if (a.year === b.year && a.month === b.month) return end
+  const start = DateTime.formatIntl(
+    first,
+    a.year === b.year ? monthFormat : monthYearFormat,
+  )
+  return `${start} – ${end}`
 }
 
 function CurrencyPicker({
   value,
   folderCurrency,
-  used,
+  summary,
   rates,
-  approximate,
   onChange,
 }: {
   value: string
   folderCurrency: string
-  used: ReadonlyArray<string>
+  summary: Summary
   rates: Record<string, number>
-  approximate: boolean
   onChange: (currency: string) => void
 }) {
   // the folder currency first, then the ones used in the folder, leaving out
   // currencies without a rate
-  const items = useMemo(
-    () =>
-      Array.from(new Set([folderCurrency, ...used, ...codes])).filter(
-        (currency) => currency === folderCurrency || rates[currency],
-      ),
-    [folderCurrency, used, rates],
-  )
+  const items = useMemo(() => {
+    const used =
+      summary._tag === "Exact" ? [] : summary.lines.map((_) => _.currency)
+    return Array.from(new Set([folderCurrency, ...used, ...codes])).filter(
+      (currency) => currency === folderCurrency || rates[currency],
+    )
+  }, [folderCurrency, summary, rates])
+  const approximate = summary._tag === "Converted" && summary.approximate
 
   return (
     <Combobox

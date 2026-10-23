@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect"
 import { Currency } from "./Currency"
 import { Model } from "effect/schema"
 import { DateTimeInsert } from "./Fields"
-import { TrimmedString } from "@/lib/utils"
+import { TrimmedString, uuidString } from "@/lib/utils"
 
 export const ReceiptGroupId = Model.Uint8Array.pipe(
   Schema.brand("ReceiptGroupId"),
@@ -22,4 +22,5 @@ export class ReceiptGroup extends Model.Class<ReceiptGroup>("ReceiptGroup")({
   updatedAt: Model.DateTimeUpdate,
 }) {
   static readonly Array = Schema.Array(ReceiptGroup)
+  readonly idString = uuidString(this.id)
 }

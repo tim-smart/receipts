@@ -6,6 +6,8 @@ import {
   HttpClientResponse,
 } from "effect/http"
 import { TracerPropagationEnabled } from "effect/http/HttpClient"
+import { KeyValueStore } from "effect/persistence"
+import { BrowserKeyValueStore } from "@effect/platform-browser"
 
 /**
  * Latest exchange rates, as units of each currency per US dollar.
@@ -16,6 +18,13 @@ export const RatesSnapshot = Schema.Struct({
   timestamp: Schema.Finite,
 })
 export type RatesSnapshot = typeof RatesSnapshot.Type
+
+export interface Rates extends RatesSnapshot {
+  /** True when the latest rates couldn't be fetched and saved ones are used. */
+  readonly stale: boolean
+}
+
+const savedKey = "receipts_exchange_rates"
 
 export class ExchangeRates extends Context.Service<ExchangeRates>()(
   "ExchangeRates",
@@ -33,6 +42,11 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
           Effect.provideService(TracerPropagationEnabled, false),
         ),
       )
+      // the last fetched rates are kept on the device for offline use
+      const saved = KeyValueStore.toSchemaStore(
+        yield* KeyValueStore.KeyValueStore,
+        RatesSnapshot,
+      )
 
       const latest = yield* Cache.makeWith(
         (appId: string) =>
@@ -43,12 +57,18 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
               },
             })
             .pipe(
-              Effect.flatMap(HttpClientResponse.schemaBodyJson(Rates)),
+              Effect.flatMap(HttpClientResponse.schemaBodyJson(LatestJson)),
               Effect.scoped,
               Effect.map(({ rates, timestamp }): RatesSnapshot => ({
                 rates,
                 timestamp: timestamp * 1000,
               })),
+              // storage can fail (quota, private browsing), which must not
+              // block the rates
+              Effect.tap((snapshot) =>
+                saved.set(savedKey, snapshot).pipe(Effect.ignore),
+              ),
+              Effect.map((snapshot): Rates => ({ ...snapshot, stale: false })),
             ),
         {
           // only cache successful lookups, so a failed request can be retried
@@ -57,16 +77,31 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
         },
       )
 
-      return { latest: (appId: string) => Cache.get(latest, appId) } as const
+      const loadSaved = saved.get(savedKey).pipe(
+        Effect.flatMap(Effect.fromOption),
+        Effect.map((snapshot): Rates => ({ ...snapshot, stale: true })),
+      )
+
+      return {
+        /**
+         * The latest rates for an Open Exchange Rates app id, or the last
+         * rates saved on this device when they can't be fetched.
+         */
+        latest: (appId: string) =>
+          Cache.get(latest, appId).pipe(Effect.catchCause(() => loadSaved)),
+      } as const
     }),
   },
 ) {
   static readonly layer = Layer.effect(this, this.make).pipe(
-    Layer.provide(FetchHttpClient.layer),
+    Layer.provide([
+      FetchHttpClient.layer,
+      BrowserKeyValueStore.layerLocalStorage,
+    ]),
   )
 }
 
-const Rates = Schema.Struct({
+const LatestJson = Schema.Struct({
   base: Schema.String,
   timestamp: Schema.Finite,
   rates: Schema.Record(Schema.String, Schema.Finite),

@@ -11,10 +11,16 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { BigDecimal, DateTime, Option } from "effect"
-import { Dock } from "@/components/ui/Dock"
+import { DateTime, Option } from "effect"
+import { Dock, DockButton } from "@/components/ui/Dock"
 import { Monogram } from "@/components/ui/Monogram"
-import { TillTape, TillTapeHead, TillTapeLine } from "@/components/ui/TillTape"
+import {
+  TillTape,
+  TillTapeAmount,
+  TillTapeHead,
+  TillTapeLine,
+  TillTapeLines,
+} from "@/components/ui/TillTape"
 import { ProcessingPill } from "@/Receipts/List"
 import { receiptGroupsAtom } from "@/ReceiptGroups/atoms"
 import { uuidString } from "@/lib/utils"
@@ -57,14 +63,12 @@ function ReceiptScreen() {
 
       <header className="mt-7 flex items-center gap-3.5">
         <Monogram
-          name={receipt.merchant || receipt.description}
+          name={receipt.monogramName}
           className="size-12 rounded-xl text-lg"
         />
         <div className="min-w-0">
           <h1 className="text-[28px] leading-tight font-extrabold tracking-tight break-words sm:text-3xl">
-            {receipt.description ||
-              receipt.merchant ||
-              (receipt.processed ? "Receipt" : "New receipt")}
+            {receipt.title}
           </h1>
           {receipt.merchant && receipt.description && (
             <p className="mt-0.5 text-[15px] text-muted-foreground">
@@ -97,53 +101,50 @@ function ReceiptScreen() {
   )
 }
 
+const dateFormat = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+})
+const addedFormat = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+})
+
 function Summary({ receipt }: { receipt: Receipt }) {
+  const groupId = uuidString(receipt.groupId)
   const group = useAtomValue(
     receiptGroupsAtom,
     AsyncResult.getOrElse(() => []),
-  ).find((group) => uuidString(group.id) === uuidString(receipt.groupId))
-  const processing = receipt.processed === false
-  const hasAmount = !(processing && BigDecimal.isZero(receipt.amount))
+  ).find((group) => group.idString === groupId)
 
   return (
     <TillTape className="mt-6">
       <TillTapeHead>
-        <span>
-          {receipt.date.pipe(
-            DateTime.format({
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            }),
-          )}
-        </span>
+        <span>{DateTime.formatIntl(receipt.date, dateFormat)}</span>
         <span>{receipt.currency}</span>
       </TillTapeHead>
-      {hasAmount && (
-        <div className="mt-2 text-[40px] leading-tight font-bold tracking-[-0.04em] tabular-nums">
+      {receipt.hasAmount && (
+        <TillTapeAmount className="mt-2">
           {formatCurrency(receipt)}
-        </div>
+        </TillTapeAmount>
       )}
-      {processing && (
+      {receipt.processing && (
         <div className="mt-3">
           <ProcessingPill />
         </div>
       )}
-      <div className="mt-3.5 grid gap-1">
+      <TillTapeLines>
         {group && <TillTapeLine label="Folder" value={group.name} />}
         <TillTapeLine
           label="Added"
-          value={receipt.createdAt.pipe(
-            DateTime.formatLocal({
-              day: "numeric",
-              month: "short",
-              hour: "numeric",
-              minute: "2-digit",
-            }),
-          )}
+          value={DateTime.formatIntl(receipt.createdAt, addedFormat)}
         />
-      </div>
+      </TillTapeLines>
     </TillTape>
   )
 }
@@ -226,10 +227,10 @@ function EditDrawer({ receipt }: { receipt: Receipt }) {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-black/15 dark:shadow-black/40">
+        <DockButton>
           <Pencil className="size-4" />
           Edit receipt
-        </Button>
+        </DockButton>
       </DrawerTrigger>
       <DrawerContent ref={container}>
         <ReceiptForm

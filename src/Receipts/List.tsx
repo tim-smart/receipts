@@ -1,16 +1,17 @@
 import { Link } from "@tanstack/react-router"
 import { useAtomValue } from "@effect/atom-react"
-import { BigDecimal, DateTime, Option } from "effect"
+import { DateTime, Option } from "effect"
 import { AsyncResult } from "effect/reactivity"
-import { RefObject, useEffect, useMemo, useRef, useState } from "react"
+import { memo, RefObject, useEffect, useMemo, useRef, useState } from "react"
 import { Receipt } from "@/Domain/Receipt"
 import { formatAmount } from "@/Domain/Currency"
-import { isApproximate, summarize } from "@/Domain/Totals"
+import { summarize } from "@/Domain/Totals"
 import { Monogram } from "@/components/ui/Monogram"
 import { receiptThumbnailAtom } from "./atoms"
 
 interface Month {
   readonly key: string
+  readonly year: number
   readonly date: DateTime.Utc
   readonly receipts: Array<Receipt>
 }
@@ -18,13 +19,13 @@ interface Month {
 const groupByMonth = (receipts: ReadonlyArray<Receipt>): Array<Month> => {
   const months: Array<Month> = []
   for (const receipt of receipts) {
-    const parts = DateTime.toPartsUtc(receipt.date)
-    const key = `${parts.year}-${parts.month}`
+    const { year, month } = DateTime.toPartsUtc(receipt.date)
+    const key = `${year}-${month}`
     const last = months[months.length - 1]
     if (last?.key === key) {
       last.receipts.push(receipt)
     } else {
-      months.push({ key, date: receipt.date, receipts: [receipt] })
+      months.push({ key, year, date: receipt.date, receipts: [receipt] })
     }
   }
   return months
@@ -48,7 +49,7 @@ export function ReceiptList({
         <MonthSection
           key={month.key}
           month={month}
-          showYear={DateTime.toPartsUtc(month.date).year !== thisYear}
+          showYear={month.year !== thisYear}
           currency={currency}
           rates={rates}
         />
@@ -57,7 +58,17 @@ export function ReceiptList({
   )
 }
 
-function MonthSection({
+const monthHeading = new Intl.DateTimeFormat(undefined, {
+  month: "long",
+  timeZone: "UTC",
+})
+const monthYearHeading = new Intl.DateTimeFormat(undefined, {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+})
+
+const MonthSection = memo(function MonthSection({
   month,
   showYear,
   currency,
@@ -68,11 +79,14 @@ function MonthSection({
   currency: string
   rates: Record<string, number> | undefined
 }) {
-  const summary = summarize({ receipts: month.receipts, currency, rates })
+  const summary = useMemo(
+    () => summarize({ receipts: month.receipts, currency, rates }),
+    [month, currency, rates],
+  )
   const subtotal =
-    summary?._tag === "Separate" || !summary
+    !summary || summary._tag === "Separate"
       ? `${month.receipts.length} receipts`
-      : `${isApproximate(summary) ? "≈ " : ""}${summary.currency} ${formatAmount(summary.total, summary.currency)}`
+      : `${summary._tag === "Converted" && summary.approximate ? "≈ " : ""}${summary.currency} ${formatAmount(summary.total, summary.currency)}`
 
   return (
     <section aria-labelledby={`month-${month.key}`}>
@@ -81,11 +95,9 @@ function MonthSection({
           id={`month-${month.key}`}
           className="text-[15px] font-semibold tracking-tight"
         >
-          {month.date.pipe(
-            DateTime.format({
-              month: "long",
-              year: showYear ? "numeric" : undefined,
-            }),
+          {DateTime.formatIntl(
+            month.date,
+            showYear ? monthYearHeading : monthHeading,
           )}
         </h2>
         <span className="font-mono text-xs text-muted-foreground tabular-nums">
@@ -101,18 +113,17 @@ function MonthSection({
       </ul>
     </section>
   )
-}
+})
 
-function ReceiptRow({ receipt }: { receipt: Receipt }) {
-  const processing = receipt.processed === false
-  const title =
-    receipt.description ||
-    receipt.merchant ||
-    (processing ? "New receipt" : "Receipt")
-  const day = receipt.date.pipe(
-    DateTime.format({ weekday: "short", day: "numeric", month: "short" }),
-  )
-  const hasAmount = !(processing && BigDecimal.isZero(receipt.amount))
+const dayFormat = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+})
+
+const ReceiptRow = memo(function ReceiptRow({ receipt }: { receipt: Receipt }) {
+  const day = DateTime.formatIntl(receipt.date, dayFormat)
 
   return (
     <Link
@@ -123,9 +134,9 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
       <ReceiptThumbnail receipt={receipt} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] font-medium tracking-tight">
-          {title}
+          {receipt.title}
         </div>
-        {processing ? (
+        {receipt.processing ? (
           <div className="mt-0.5 text-[13px]">
             <ProcessingPill />
           </div>
@@ -143,7 +154,9 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
       </div>
       <div className="shrink-0 text-right">
         <div className="font-mono text-[15px] font-medium tabular-nums">
-          {hasAmount ? formatAmount(receipt.amount, receipt.currency) : "—"}
+          {receipt.hasAmount
+            ? formatAmount(receipt.amount, receipt.currency)
+            : "—"}
         </div>
         <div className="mt-0.5 font-mono text-[10.5px] tracking-[0.08em] text-muted-foreground">
           {receipt.currency}
@@ -151,7 +164,7 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
       </div>
     </Link>
   )
-}
+})
 
 export function ProcessingPill() {
   return (
@@ -174,7 +187,7 @@ function ReceiptThumbnail({ receipt }: { receipt: Receipt }) {
       {visible ? (
         <LoadedThumbnail receipt={receipt} />
       ) : (
-        <div className="size-full rounded-[11px] bg-muted" />
+        <ThumbnailPlaceholder />
       )}
     </div>
   )
@@ -182,15 +195,11 @@ function ReceiptThumbnail({ receipt }: { receipt: Receipt }) {
 
 function LoadedThumbnail({ receipt }: { receipt: Receipt }) {
   const result = useAtomValue(receiptThumbnailAtom(receipt.idString))
-  if (result._tag === "Initial") {
-    return <div className="size-full rounded-[11px] bg-muted" />
-  }
+  if (result._tag === "Initial") return <ThumbnailPlaceholder />
   const url = AsyncResult.isSuccess(result)
     ? Option.getOrUndefined(result.value)
     : undefined
-  if (!url) {
-    return <Monogram name={receipt.merchant || receipt.description} />
-  }
+  if (!url) return <Monogram name={receipt.monogramName} />
   return (
     <img
       src={url}
@@ -198,6 +207,10 @@ function LoadedThumbnail({ receipt }: { receipt: Receipt }) {
       className="size-full rounded-[11px] border object-cover"
     />
   )
+}
+
+function ThumbnailPlaceholder() {
+  return <div className="size-full rounded-[11px] bg-muted" />
 }
 
 const useInView = (ref: RefObject<HTMLElement | null>) => {

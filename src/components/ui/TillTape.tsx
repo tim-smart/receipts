@@ -35,6 +35,35 @@ export function TillTapeHead({
 }
 
 /**
+ * The big number on the tape.
+ */
+export function TillTapeAmount({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        "text-[40px] leading-tight font-bold tracking-[-0.04em] tabular-nums",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+/**
+ * A stack of `TillTapeLine`s under the amount.
+ */
+export function TillTapeLines({ children }: { children: ReactNode }) {
+  return <div className="mt-3.5 grid gap-1">{children}</div>
+}
+
+/**
  * A label and value joined by a dotted leader, like a line on a printed
  * receipt.
  */

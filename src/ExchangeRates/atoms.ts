@@ -1,4 +1,4 @@
-import { ExchangeRates, RatesSnapshot } from "@/ExchangeRates"
+import { ExchangeRates, Rates } from "@/ExchangeRates"
 import { kvsRuntime } from "@/lib/utils"
 import { openExchangeApiKey } from "@/Domain/Setting"
 import { settingAtom } from "@/Settings/atoms"
@@ -6,28 +6,6 @@ import { Effect, Option, Redacted, Schema } from "effect"
 import { Atom } from "effect/reactivity"
 
 const runtime = Atom.runtime(ExchangeRates.layer)
-
-export interface Rates extends RatesSnapshot {
-  /** True when the latest rates couldn't be fetched and saved ones are used. */
-  readonly stale: boolean
-}
-
-const storageKey = "receipts_exchange_rates"
-const SavedRates = Schema.fromJsonString(RatesSnapshot)
-
-// storage can throw (quota, private browsing), which must not block the rates
-const save = (snapshot: RatesSnapshot) =>
-  Schema.encodeEffect(SavedRates)(snapshot).pipe(
-    Effect.flatMap((json) =>
-      Effect.try(() => localStorage.setItem(storageKey, json)),
-    ),
-    Effect.ignore,
-  )
-
-const loadSaved = Effect.try(() => localStorage.getItem(storageKey)).pipe(
-  Effect.flatMap(Schema.decodeUnknownEffect(SavedRates)),
-  Effect.map((snapshot): Rates => ({ ...snapshot, stale: true })),
-)
 
 /**
  * Changes when the app comes back into view or the device reconnects, so the
@@ -47,19 +25,9 @@ const refreshSignal = Atom.readable((get) => {
   return count
 })
 
-/**
- * The latest rates for an Open Exchange Rates app id. Falls back to the last
- * rates saved on this device when they can't be fetched.
- */
-export const ratesAtom = Atom.family((appId: string) =>
+const ratesAtom = Atom.family((appId: string) =>
   runtime
-    .atom(
-      ExchangeRates.use((_) => _.latest(appId)).pipe(
-        Effect.tap(save),
-        Effect.map((snapshot): Rates => ({ ...snapshot, stale: false })),
-        Effect.catchCause(() => loadSaved),
-      ),
-    )
+    .atom(ExchangeRates.use((_) => _.latest(appId)))
     .pipe(Atom.makeRefreshOnSignal(refreshSignal)),
 )
 
@@ -87,6 +55,13 @@ export const currentRatesAtom = Atom.make(
     )
   }),
 )
+
+/**
+ * The rates when they're available, and `undefined` while they're loading or
+ * when there are none.
+ */
+export const availableRates = (state: RatesState | undefined) =>
+  state?._tag === "Available" ? state.rates : undefined
 
 /**
  * The currency each folder's totals are shown in on this device, keyed by

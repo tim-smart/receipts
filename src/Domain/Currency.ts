@@ -3565,13 +3565,10 @@ const formatter = (key: string, make: () => Intl.NumberFormat) => {
 }
 
 const currencyFormatter = (currency: string) =>
-  formatter(`currency:${currency}`, () => {
-    try {
-      return new Intl.NumberFormat(undefined, { style: "currency", currency })
-    } catch {
-      return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2 })
-    }
-  })
+  formatter(
+    `currency:${currency}`,
+    () => new Intl.NumberFormat(undefined, { style: "currency", currency }),
+  )
 
 const toNumber = (amount: BigDecimal.BigDecimal | number) =>
   typeof amount === "number" ? amount : BigDecimal.toNumberUnsafe(amount)
@@ -3592,15 +3589,12 @@ export const formatCurrency = (options: {
 export const formatAmount = (
   amount: BigDecimal.BigDecimal | number,
   currency: string,
-): string => {
-  const digits =
-    currencyFormatter(currency).resolvedOptions().maximumFractionDigits ?? 2
-  return formatter(
-    `amount:${digits}`,
-    () =>
-      new Intl.NumberFormat(undefined, {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-      }),
-  ).format(toNumber(amount))
-}
+): string =>
+  formatter(`amount:${currency}`, () => {
+    const digits =
+      currencyFormatter(currency).resolvedOptions().maximumFractionDigits ?? 2
+    return new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    })
+  }).format(toNumber(amount))

@@ -1,5 +1,6 @@
-import { ReactNode } from "react"
+import { ComponentProps, ReactNode } from "react"
 import { cn } from "@/lib/utils"
+import { Button } from "./button"
 
 /**
  * Pins its actions to the bottom of the screen, fading out the content that
@@ -23,5 +24,23 @@ export function Dock({
         {children}
       </div>
     </div>
+  )
+}
+
+/**
+ * The primary action in a `Dock`.
+ */
+export function DockButton({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
+  return (
+    <Button
+      className={cn(
+        "h-12 w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-black/15 dark:shadow-black/40",
+        className,
+      )}
+      {...props}
+    />
   )
 }

@@ -31,14 +31,13 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox"
 import { Camera, Download, Plus, Settings, Settings2 } from "lucide-react"
-import { Dock } from "@/components/ui/Dock"
+import { Dock, DockButton } from "@/components/ui/Dock"
 import { ReceiptForm } from "@/Receipts/Form"
 import { ReceiptList } from "@/Receipts/List"
 import { TotalsTape, useViewCurrency } from "@/Receipts/Totals"
-import { rebase } from "@/Domain/Totals"
 import { Exit, Option, pipe, Redacted, String } from "effect"
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react"
-import { currentRatesAtom, RatesState } from "@/ExchangeRates/atoms"
+import { availableRates, RatesState } from "@/ExchangeRates/atoms"
 import { Switch } from "@/components/ui/switch"
 import { currentGroupAtom, receiptGroupsAtom } from "@/ReceiptGroups/atoms"
 import { uuidString } from "@/lib/utils"
@@ -49,7 +48,7 @@ import {
   openaiModel,
   openExchangeApiKey,
 } from "@/Domain/Setting"
-import { ReceiptGroup } from "@/Domain/ReceiptGroup"
+import { ReceiptGroup, ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { Receipt } from "@/Domain/Receipt"
 import { ReceiptGroupRow } from "@/ReceiptGroups/Events"
 import { patchChanged } from "@/lib/utils"
@@ -95,14 +94,10 @@ function ReceiptsScreen() {
   )
 
   const addButton = (
-    <Button
-      className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-black/15 dark:shadow-black/40"
-      disabled={!group}
-      onClick={() => setAdding(true)}
-    >
+    <DockButton disabled={!group} onClick={() => setAdding(true)}>
       <Camera className="size-4.5" />
       Add receipt
-    </Button>
+    </DockButton>
   )
 
   return (
@@ -173,22 +168,20 @@ function FolderTotals({
   receipts: ReadonlyArray<Receipt>
   onOpenSettings: () => void
 }) {
-  const rates = useAtomValue(
-    currentRatesAtom,
-    AsyncResult.getOrElse(() => undefined),
-  )
-  const [currency, setCurrency] = useViewCurrency(group, rates)
+  const { rates, currency, setCurrency } = useViewCurrency(group)
 
   return (
     <TotalsTape
       className="mt-6"
       receipts={receipts}
-      group={group}
+      folderCurrency={group.defaultCurrency}
       rates={rates}
       currency={currency}
       onCurrencyChange={setCurrency}
       onOpenSettings={onOpenSettings}
-      action={<ExportDrawer currency={currency} rates={rates} />}
+      action={
+        <ExportDrawer groupId={group.id} currency={currency} rates={rates} />
+      }
     />
   )
 }
@@ -200,17 +193,13 @@ function FolderReceipts({
   group: ReceiptGroup
   receipts: ReadonlyArray<Receipt>
 }) {
-  const rates = useAtomValue(
-    currentRatesAtom,
-    AsyncResult.getOrElse(() => undefined),
-  )
-  const [currency] = useViewCurrency(group, rates)
+  const { rates, currency } = useViewCurrency(group)
 
   return (
     <ReceiptList
       receipts={receipts}
       currency={currency}
-      rates={rates?._tag === "Available" ? rates.rates.rates : undefined}
+      rates={availableRates(rates)?.rates}
     />
   )
 }
@@ -251,8 +240,7 @@ function FolderMenu({
     [groupId],
   )
   const currentGroup = useMemo(
-    () =>
-      groups.find((group) => uuidString(group.id) === groupIdString) ?? null,
+    () => groups.find((group) => group.idString === groupIdString) ?? null,
     [groups, groupIdString],
   )
   const menuAction = (action: () => void) => () => {
@@ -293,7 +281,7 @@ function FolderMenu({
         <ComboboxEmpty>No folders</ComboboxEmpty>
         <ComboboxList>
           {(group: ReceiptGroup) => (
-            <ComboboxItem key={uuidString(group.id)} value={group}>
+            <ComboboxItem key={group.idString} value={group}>
               {group?.name}
             </ComboboxItem>
           )}
@@ -731,9 +719,11 @@ function BackupSection() {
 }
 
 function ExportDrawer({
+  groupId,
   currency: viewCurrency,
   rates,
 }: {
+  groupId: typeof ReceiptGroupId.Type
   currency: string
   rates: RatesState | undefined
 }) {
@@ -742,23 +732,17 @@ function ExportDrawer({
   const [currency, setCurrency] = useState(viewCurrency)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const groupId = useAtomValue(
-    settingAtom(currentGroupId),
-    AsyncResult.value,
-  ).pipe(Option.flatten)
   const exportReceipts = useAtomSet(exportReceiptsAtom, { mode: "promise" })
-  const available = rates?._tag === "Available" ? rates.rates : undefined
+  const available = availableRates(rates)
 
   // @effect-diagnostics-next-line asyncFunction:off
   const onExport = useCallback(async () => {
-    if (groupId._tag === "None") return
-    const rates =
-      convert && available ? rebase(available.rates, currency) : undefined
-    if (convert && !rates) {
+    const rates = convert ? available?.rates : undefined
+    if (convert && !rates?.[currency]) {
       toast.error(`There's no exchange rate for ${currency}`)
       return
     }
-    await exportReceipts({ groupId: groupId.value, rates, currency })
+    await exportReceipts({ groupId, rates, currency })
     setOpen(false)
   }, [convert, currency, available, exportReceipts, groupId])
 
