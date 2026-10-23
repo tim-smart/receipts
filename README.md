@@ -25,16 +25,16 @@ A simple local-first receipt scanner and tracker.
 
 Receipts, groups and images now sync as `EventRow` events (`Receipt`, `ReceiptGroup`, `Image`). Older releases wrote separate create / update / delete events, and this release ignores them. After upgrading, a device still shows the data it already has, but that data no longer reaches other devices: a new device, or one that signs out and back in, starts empty. Older releases also ignore the new events.
 
-To move everything over, reset once and re-import a backup:
+To move everything over, sign out and re-import a backup:
 
 1. Update every device that syncs with the same account to this release. Close and reopen the app if it doesn't update on its own.
-2. On the device with the complete data, open Settings and choose **Export backup**.
-3. Choose **Delete all data…**. Export a backup there or confirm that you have one, then choose **Delete everything**.
-4. Choose **Import backup** and pick the file from step 2.
-5. Open the other devices while they're online. They delete their data and receive the imported data without any action. A device that was still on an older release does this when it updates.
+2. On the device with the complete data, open Settings and choose **Export backup**. Make sure the file downloaded, because the next step deletes this device's data.
+3. Choose **Sign out**, then sign in again with the same passkey. The device starts empty.
+4. Open Settings, choose **Import backup** and pick the file from step 2. The imported data syncs to the other devices.
+5. On each other device, sign out and sign back in. Until then, it also shows its old data, which doesn't sync. If a device has receipts that aren't in the backup, export a backup there first and import it after signing back in.
 
-Deleting syncs to every device. The history on the sync server isn't erased, but each device ignores everything older than the deletion, so deleted data can't come back. That includes edits other devices made before the deletion but synced after it, so avoid editing elsewhere during steps 2 to 4.
+Signing out also clears the API keys and the OpenAI model in Settings, so enter them again after signing in. The remote address is kept.
 
-Settings are kept. The deletion recreates the default "My Receipts" group, and an import keeps groups that already exist, so if you renamed that group, rename it again.
+Signing in recreates the default "My Receipts" group, and an import keeps groups that already exist, so if you renamed that group, rename it again.
 
 Backups are unaffected by the upgrade. The backup file format hasn't changed, so a backup exported by an older release imports here.
