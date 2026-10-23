@@ -18,6 +18,11 @@ export class Image extends Model.Class<Image>("Image")({
   readonly idString = uuidString(this.id)
 }
 
+export const imageBlob = (image: Image): Blob =>
+  new Blob([image.data as Uint8Array<ArrayBuffer>], {
+    type: image.contentType,
+  })
+
 export class ImageWithObjectUrl extends Data.Class<
   Image & {
     readonly objectUrl: string

@@ -3554,10 +3554,47 @@ export const options = codes.map(
 
 export const Currency = Schema.Literals(codes)
 
-export const formatCurrency = (options: {
-  readonly amount: BigDecimal.BigDecimal
-  readonly currency?: string
-}): string => {
-  const amount = options.amount.pipe(BigDecimal.toNumberUnsafe)
-  return `$${amount}${options.currency ? ` ${options.currency}` : ""}`
+const formatters = new Map<string, Intl.NumberFormat>()
+const formatter = (key: string, make: () => Intl.NumberFormat) => {
+  let format = formatters.get(key)
+  if (!format) {
+    format = make()
+    formatters.set(key, format)
+  }
+  return format
 }
+
+const currencyFormatter = (currency: string) =>
+  formatter(
+    `currency:${currency}`,
+    () => new Intl.NumberFormat(undefined, { style: "currency", currency }),
+  )
+
+const toNumber = (amount: BigDecimal.BigDecimal | number) =>
+  typeof amount === "number" ? amount : BigDecimal.toNumberUnsafe(amount)
+
+/**
+ * Formats an amount with its currency symbol, e.g. `$102.96` or `A$612.00`.
+ */
+export const formatCurrency = (options: {
+  readonly amount: BigDecimal.BigDecimal | number
+  readonly currency: string
+}): string =>
+  currencyFormatter(options.currency).format(toNumber(options.amount))
+
+/**
+ * Formats an amount with the currency's minor units but without a symbol,
+ * e.g. `102.96`. Use it where the currency code is shown separately.
+ */
+export const formatAmount = (
+  amount: BigDecimal.BigDecimal | number,
+  currency: string,
+): string =>
+  formatter(`amount:${currency}`, () => {
+    const digits =
+      currencyFormatter(currency).resolvedOptions().maximumFractionDigits ?? 2
+    return new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    })
+  }).format(toNumber(amount))

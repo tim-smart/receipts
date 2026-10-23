@@ -1,7 +1,8 @@
-import { Image, ImageWithObjectUrl } from "@/Domain/Image"
+import { Image, imageBlob, ImageWithObjectUrl } from "@/Domain/Image"
 import { ReceiptId } from "@/Domain/Receipt"
 import { EventLogClient } from "@/EventLog"
 import { QueryBuilder } from "@/IndexedDb"
+import { thumbnailUrl } from "./thumbnail"
 import { Cache, Data, Effect, Equal, Hash, Layer, Context } from "effect"
 
 export class ImagesRepo extends Context.Service<ImagesRepo>()(
@@ -16,13 +17,15 @@ export class ImagesRepo extends Context.Service<ImagesRepo>()(
             () =>
               new ImageWithObjectUrl({
                 ...image,
-                objectUrl: URL.createObjectURL(
-                  new Blob([image.data as Uint8Array<ArrayBuffer>], {
-                    type: image.contentType,
-                  }),
-                ),
+                objectUrl: URL.createObjectURL(imageBlob(image)),
               }),
           ),
+        capacity: 100,
+      })
+      // thumbnails are kept for the session, so the full-size image is only
+      // decoded once
+      const thumbnails = yield* Cache.make({
+        lookup: ({ image }: ObjectUrlLookup) => thumbnailUrl(image),
         capacity: 100,
       })
 
@@ -38,7 +41,22 @@ export class ImagesRepo extends Context.Service<ImagesRepo>()(
             ),
           )
 
-      return { forReceipt } as const
+      /**
+       * A small thumbnail of the receipt's first image, if it has one.
+       */
+      const thumbnailForReceipt = (receiptId: ReceiptId) =>
+        images
+          .select("receiptId")
+          .equals(receiptId)
+          .first()
+          .pipe(
+            Effect.flatMap((image) =>
+              Cache.get(thumbnails, new ObjectUrlLookup({ image })),
+            ),
+            Effect.option,
+          )
+
+      return { forReceipt, thumbnailForReceipt } as const
     }),
   },
 ) {

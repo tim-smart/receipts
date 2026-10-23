@@ -1,5 +1,5 @@
 import { Currency } from "./Currency"
-import { DateTime, Order, Schema } from "effect"
+import { BigDecimal, DateTime, Order, Schema } from "effect"
 import { ReceiptGroupId } from "./ReceiptGroup"
 import { TrimmedString, uuidString } from "@/lib/utils"
 import { Model } from "effect/schema"
@@ -22,6 +22,30 @@ export class Receipt extends Model.Class<Receipt>("Receipt")({
 }) {
   static readonly Array = Schema.Array(Receipt)
   readonly idString = uuidString(this.id)
+
+  /** True while the receipt is still being read from its photo. */
+  get processing(): boolean {
+    return this.processed === false
+  }
+
+  /** The description, falling back to the merchant and then a placeholder. */
+  get title(): string {
+    return (
+      this.description ||
+      this.merchant ||
+      (this.processing ? "New receipt" : "Receipt")
+    )
+  }
+
+  /** The name the monogram tile is derived from. */
+  get monogramName(): string {
+    return this.merchant || this.description
+  }
+
+  /** False while a receipt being read from its photo still has no amount. */
+  get hasAmount(): boolean {
+    return !(this.processing && BigDecimal.isZero(this.amount))
+  }
 }
 
 export const ReceiptOrder = Order.make<Receipt>((a, b) => {

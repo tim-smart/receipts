@@ -1,4 +1,5 @@
-import { ReceiptId } from "@/Domain/Receipt"
+import { Receipt, ReceiptId } from "@/Domain/Receipt"
+import { convert } from "@/Domain/Totals"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
 import { ImagesRepo } from "@/Images/Repo"
@@ -44,7 +45,8 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
         (receipt) => imageRepo.forReceipt(receipt.id),
         { concurrency: 5 },
       )
-      const convert = options.currency && options.rates
+      const { currency, rates } = options
+      const convert = currency && rates
       const rows = [
         [
           "#",
@@ -53,7 +55,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
           "Description",
           "Amount",
           "Currency",
-          ...(convert ? [`Amount (${options.currency})`] : []),
+          ...(convert ? [`Amount (${currency})`] : []),
         ],
       ]
       const images: Array<File> = []
@@ -67,9 +69,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
           receipt.description,
           BigDecimal.format(receipt.amount),
           receipt.currency,
-          ...(convert
-            ? [convertString(receipt.amount, options.rates[receipt.currency])]
-            : []),
+          ...(convert ? [convertedString(receipt, currency, rates)] : []),
         ])
         for (let j = 0; j < allImages[i].length; j++) {
           const image = allImages[i][j]
@@ -113,6 +113,12 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
         }),
       )
 
+    const thumbnail = (id: ReceiptId) =>
+      reactivity.stream(
+        [`receipts:${uuidString(id)}`],
+        imageRepo.thumbnailForReceipt(id),
+      )
+
     const unprocessed = reactivity.query(
       ["receipts", "images"],
       receipts
@@ -125,6 +131,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       forGroup,
       exportForGroup,
       byId,
+      thumbnail,
       current,
       unprocessed,
     } as const
@@ -141,10 +148,19 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
   )
 }
 
-const convertString = (amount: BigDecimal.BigDecimal, rate: number) => {
-  const rateNumber = 1 / rate
-  return BigDecimal.multiply(
-    amount,
-    BigDecimal.fromNumberUnsafe(rateNumber),
-  ).pipe(BigDecimal.scale(2), BigDecimal.format)
+/**
+ * The receipt's amount in `currency` to two decimal places, or an empty cell
+ * when its currency has no rate.
+ */
+const convertedString = (
+  receipt: Receipt,
+  currency: string,
+  rates: Record<string, number>,
+) => {
+  const converted = convert(receipt.amount, receipt.currency, currency, rates)
+  if (converted === undefined) return ""
+  return BigDecimal.fromNumberUnsafe(converted).pipe(
+    BigDecimal.scale(2),
+    BigDecimal.format,
+  )
 }
