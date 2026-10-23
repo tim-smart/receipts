@@ -3,7 +3,6 @@ import { convert } from "@/Domain/Totals"
 import { ReceiptGroupId } from "@/Domain/ReceiptGroup"
 import { currentGroupId } from "@/Domain/Setting"
 import { ImagesRepo } from "@/Images/Repo"
-import { uuidString } from "@/lib/utils"
 import { SettingRepo } from "@/Settings/Repo"
 import { Zip } from "@/Zip"
 import { BigDecimal, DateTime, Effect, Layer, Context } from "effect"
@@ -11,6 +10,7 @@ import FileSaver from "file-saver"
 import * as Csv from "csv-stringify/browser/esm/sync"
 import { QueryBuilder } from "@/IndexedDb"
 import { Reactivity } from "effect/reactivity"
+import { ReceiptRow } from "./Events"
 
 export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
   make: Effect.gen(function* () {
@@ -95,7 +95,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
     })
 
     const current = reactivity.stream(
-      ["receipts", "settings"],
+      ["receipts", "settings"] satisfies Reactivity.KeysInput,
       Effect.gen(function* () {
         const groupId = yield* settings.get(currentGroupId)
         if (groupId._tag === "None") return []
@@ -105,7 +105,11 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
 
     const byId = (id: ReceiptId) =>
       reactivity.stream(
-        [`receipts:${uuidString(id)}`],
+        {
+          receipts: [ReceiptRow.keyOf({ id })],
+          // Image events are keyed by image ID, so watch all image writes.
+          images: [],
+        } satisfies Reactivity.KeysInput,
         Effect.gen(function* () {
           const receipt = yield* receipts.select().equals(id).first()
           const images = yield* imageRepo.forReceipt(id)
@@ -114,7 +118,7 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       )
 
     const unprocessed = reactivity.query(
-      ["receipts", "images"],
+      ["receipts", "images"] satisfies Reactivity.KeysInput,
       receipts
         .select("processed")
         .equals(0)

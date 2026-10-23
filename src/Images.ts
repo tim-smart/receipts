@@ -33,4 +33,10 @@ const ImagesHandlers = EventLog.group(ImageEvents, (handlers) =>
 
 const ImagesCompaction = EventRow.compaction(ImageEvents, ImageRow)
 
-export const ImagesLive = Layer.mergeAll(ImagesHandlers, ImagesCompaction)
+const ImagesReactivity = EventLog.groupReactivity(ImageEvents, ["images"])
+
+export const ImagesLive = Layer.mergeAll(
+  ImagesHandlers,
+  ImagesCompaction,
+  ImagesReactivity,
+)

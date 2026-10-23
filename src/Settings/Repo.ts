@@ -24,7 +24,10 @@ export class SettingRepo extends Context.Service<SettingRepo>()("SettingRepo", {
     const stream = <Name extends string, S extends Schema.Top>(
       setting: Setting<Name, S>,
     ): Stream.Stream<Option.Option<S["Type"]>> =>
-      reactivity.stream([`settings:${setting.name}`], get(setting))
+      reactivity.stream(
+        { settings: [setting.name] } satisfies Reactivity.KeysInput,
+        get(setting),
+      )
 
     return { get, stream } as const
   }),
