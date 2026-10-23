@@ -1,13 +1,10 @@
 import { Link } from "@tanstack/react-router"
-import { useAtomValue } from "@effect/atom-react"
-import { DateTime, Option } from "effect"
-import { AsyncResult } from "effect/reactivity"
-import { memo, RefObject, useEffect, useMemo, useRef, useState } from "react"
+import { DateTime } from "effect"
+import { memo, useMemo } from "react"
 import { Receipt } from "@/Domain/Receipt"
 import { formatAmount } from "@/Domain/Currency"
 import { summarize } from "@/Domain/Totals"
 import { Monogram } from "@/components/ui/Monogram"
-import { receiptThumbnailAtom } from "./atoms"
 
 interface Month {
   readonly key: string
@@ -131,7 +128,7 @@ const ReceiptRow = memo(function ReceiptRow({ receipt }: { receipt: Receipt }) {
       params={{ id: receipt.idString }}
       className="flex items-center gap-3.5 px-4 py-3 outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
     >
-      <ReceiptThumbnail receipt={receipt} />
+      <Monogram name={receipt.monogramName} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] font-medium tracking-tight">
           {receipt.title}
@@ -173,59 +170,4 @@ export function ProcessingPill() {
       Reading receipt…
     </span>
   )
-}
-
-/**
- * The receipt's first photo, or the merchant's monogram when it has none.
- * Images are only read from the database once the row scrolls into view.
- */
-function ReceiptThumbnail({ receipt }: { receipt: Receipt }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const visible = useInView(ref)
-  return (
-    <div ref={ref} className="size-10.5 shrink-0">
-      {visible ? (
-        <LoadedThumbnail receipt={receipt} />
-      ) : (
-        <ThumbnailPlaceholder />
-      )}
-    </div>
-  )
-}
-
-function LoadedThumbnail({ receipt }: { receipt: Receipt }) {
-  const result = useAtomValue(receiptThumbnailAtom(receipt.idString))
-  if (result._tag === "Initial") return <ThumbnailPlaceholder />
-  const url = AsyncResult.isSuccess(result)
-    ? Option.getOrUndefined(result.value)
-    : undefined
-  if (!url) return <Monogram name={receipt.monogramName} />
-  return (
-    <img
-      src={url}
-      alt=""
-      className="size-full rounded-[11px] border object-cover"
-    />
-  )
-}
-
-function ThumbnailPlaceholder() {
-  return <div className="size-full rounded-[11px] bg-muted" />
-}
-
-const useInView = (ref: RefObject<HTMLElement | null>) => {
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const element = ref.current
-    if (!element || inView) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) setInView(true)
-      },
-      { rootMargin: "200px" },
-    )
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [ref, inView])
-  return inView
 }

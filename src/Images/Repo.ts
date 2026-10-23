@@ -2,7 +2,6 @@ import { Image, imageBlob, ImageWithObjectUrl } from "@/Domain/Image"
 import { ReceiptId } from "@/Domain/Receipt"
 import { EventLogClient } from "@/EventLog"
 import { QueryBuilder } from "@/IndexedDb"
-import { thumbnailUrl } from "./thumbnail"
 import { Cache, Data, Effect, Equal, Hash, Layer, Context } from "effect"
 
 export class ImagesRepo extends Context.Service<ImagesRepo>()(
@@ -22,12 +21,6 @@ export class ImagesRepo extends Context.Service<ImagesRepo>()(
           ),
         capacity: 100,
       })
-      // thumbnails are kept for the session, so the full-size image is only
-      // decoded once
-      const thumbnails = yield* Cache.make({
-        lookup: ({ image }: ObjectUrlLookup) => thumbnailUrl(image),
-        capacity: 100,
-      })
 
       const forReceipt = (receiptId: ReceiptId) =>
         images
@@ -41,22 +34,7 @@ export class ImagesRepo extends Context.Service<ImagesRepo>()(
             ),
           )
 
-      /**
-       * A small thumbnail of the receipt's first image, if it has one.
-       */
-      const thumbnailForReceipt = (receiptId: ReceiptId) =>
-        images
-          .select("receiptId")
-          .equals(receiptId)
-          .first()
-          .pipe(
-            Effect.flatMap((image) =>
-              Cache.get(thumbnails, new ObjectUrlLookup({ image })),
-            ),
-            Effect.option,
-          )
-
-      return { forReceipt, thumbnailForReceipt } as const
+      return { forReceipt } as const
     }),
   },
 ) {

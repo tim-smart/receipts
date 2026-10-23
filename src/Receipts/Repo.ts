@@ -113,12 +113,6 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
         }),
       )
 
-    const thumbnail = (id: ReceiptId) =>
-      reactivity.stream(
-        [`receipts:${uuidString(id)}`],
-        imageRepo.thumbnailForReceipt(id),
-      )
-
     const unprocessed = reactivity.query(
       ["receipts", "images"],
       receipts
@@ -131,7 +125,6 @@ export class ReceiptRepo extends Context.Service<ReceiptRepo>()("ReceiptRepo", {
       forGroup,
       exportForGroup,
       byId,
-      thumbnail,
       current,
       unprocessed,
     } as const
