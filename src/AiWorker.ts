@@ -1,17 +1,9 @@
-import {
-  BigDecimal,
-  DateTime,
-  Effect,
-  FiberMap,
-  Layer,
-  Queue,
-  Schedule,
-} from "effect"
+import { BigDecimal, Effect, FiberMap, Layer, Queue, Schedule } from "effect"
 import { AiHelpers } from "./Ai"
 import { ReceiptRepo } from "./Receipts/Repo"
 import { ImagesRepo } from "./Images/Repo"
 import { EventLogClient } from "@/EventLog"
-import { changedFields, uuidString } from "./lib/utils"
+import { patchChanged, uuidString } from "./lib/utils"
 import { Receipt } from "./Domain/Receipt"
 import { ReceiptRow } from "./Receipts/Events"
 
@@ -56,7 +48,9 @@ export const AiWorkerLive = Effect.gen(function* () {
         type: image.contentType,
       })
       const metadata = yield* ai.extractReceipt(blob)
-      const extracted = {
+      // only patch what the extraction changed, so edits made meanwhile on
+      // other devices are kept
+      const patch = patchChanged(ReceiptRow, receipt, {
         amount: BigDecimal.isZero(receipt.amount)
           ? metadata.amount
           : receipt.amount,
@@ -70,16 +64,9 @@ export const AiWorkerLive = Effect.gen(function* () {
             ? metadata.description
             : receipt.description,
         date: metadata.date ?? receipt.date,
-      }
-      // only patch what the extraction changed, so edits made meanwhile on
-      // other devices are kept
-      yield* client(
-        ReceiptRow.patch(receipt.id, {
-          ...changedFields(receipt, extracted),
-          processed: true,
-          updatedAt: yield* DateTime.now,
-        }),
-      )
+        processed: true,
+      })
+      if (patch) yield* client(patch)
     },
     Effect.tapCause(Effect.log),
     Effect.retry({ times: 2, schedule: Schedule.spaced(1000) }),

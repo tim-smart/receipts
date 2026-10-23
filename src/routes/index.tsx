@@ -75,7 +75,7 @@ import {
 } from "@/Domain/Setting"
 import { ReceiptGroup } from "@/Domain/ReceiptGroup"
 import { ReceiptGroupRow } from "@/ReceiptGroups/Events"
-import { changedFields } from "@/lib/utils"
+import { patchChanged } from "@/lib/utils"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
 import { remoteAddressAtom, writeEventAtom } from "@/EventLog"
 import { sessionDestroyAtom } from "@/Session"
@@ -288,18 +288,11 @@ function GroupSettings() {
     (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault()
       const data = new FormData(event.target as HTMLFormElement)
-      const fields = changedFields(currentGroup!, {
+      const patch = patchChanged(ReceiptGroupRow, currentGroup!, {
         name: data.get("name") as string,
         defaultCurrency: data.get("defaultCurrency") as string,
       })
-      if (Object.keys(fields).length > 0) {
-        writeEvent(
-          ReceiptGroupRow.patch(currentGroup!.id, {
-            ...fields,
-            updatedAt: DateTime.nowUnsafe(),
-          }),
-        )
-      }
+      if (patch) writeEvent(patch)
       setOpen(false)
     },
     [currentGroup],
