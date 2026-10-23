@@ -108,7 +108,9 @@ export function TotalsTape({
         <TillTapeAmount>{formatCurrency(lead)}</TillTapeAmount>
         {available ? (
           <CurrencyPicker
-            value={currency}
+            // label the amount shown, which isn't the requested currency
+            // when that currency has no rate
+            value={lead.currency}
             folderCurrency={folderCurrency}
             summary={summary}
             rates={available.rates}
@@ -126,6 +128,7 @@ export function TotalsTape({
         summary={summary}
         rates={rates}
         currency={currency}
+        shownCurrency={lead.currency}
         folderCurrency={folderCurrency}
         onReset={() => onCurrencyChange(folderCurrency)}
         onOpenSettings={onOpenSettings}
@@ -158,6 +161,7 @@ function Footer({
   summary,
   rates,
   currency,
+  shownCurrency,
   folderCurrency,
   onReset,
   onOpenSettings,
@@ -165,16 +169,23 @@ function Footer({
   summary: Summary
   rates: RatesState | undefined
   currency: string
+  shownCurrency: string
   folderCurrency: string
   onReset: () => void
   onOpenSettings: () => void
 }) {
   let note: ReactNode = null
   let link: ReactNode = null
+  const available = availableRates(rates)
 
   if (summary._tag === "Converted") {
-    const available = availableRates(rates)
     if (available) note = ratesNote(available)
+  } else if (
+    available &&
+    !available.rates[currency] &&
+    (summary._tag === "Separate" || shownCurrency !== currency)
+  ) {
+    note = `No exchange rate for ${currency}`
   } else if (summary._tag === "Separate") {
     if (rates === undefined) {
       note = "Updating rates…"
@@ -290,12 +301,12 @@ function CurrencyPicker({
   onChange: (currency: string) => void
 }) {
   // the folder currency first, then the ones used in the folder, leaving out
-  // currencies without a rate
+  // currencies without a rate, which can't be converted into
   const items = useMemo(() => {
     const used =
       summary._tag === "Exact" ? [] : summary.lines.map((_) => _.currency)
     return Array.from(new Set([folderCurrency, ...used, ...codes])).filter(
-      (currency) => currency === folderCurrency || rates[currency],
+      (currency) => rates[currency],
     )
   }, [folderCurrency, summary, rates])
   const approximate = summary._tag === "Converted" && summary.approximate
