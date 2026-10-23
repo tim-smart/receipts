@@ -511,66 +511,75 @@ function SettingsDrawer() {
       </DrawerTrigger>
 
       <DrawerContent>
-        <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
+        <form
+          className="mx-auto flex min-h-0 w-full max-w-sm flex-col"
+          onSubmit={onSubmit}
+        >
           <DrawerHeader>
             <TypoH3>Settings</TypoH3>
           </DrawerHeader>
-          <div className="grid gap-4 py-5 px-3">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="remoteAddress" className="text-right">
-                Remote address
-              </Label>
-              <Input
-                id="remoteAddress"
-                name="remoteAddress"
-                className="col-span-3"
-                defaultValue={Option.getOrElse(currentRemoteAddress, () => "")}
-                placeholder="wss://example.com"
-                type="text"
-                onChange={onChange}
-              />
+          {/* scrolls between the pinned header and footer on short screens */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid gap-4 py-5 px-3">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="remoteAddress" className="text-right">
+                  Remote address
+                </Label>
+                <Input
+                  id="remoteAddress"
+                  name="remoteAddress"
+                  className="col-span-3"
+                  defaultValue={Option.getOrElse(
+                    currentRemoteAddress,
+                    () => "",
+                  )}
+                  placeholder="wss://example.com"
+                  type="text"
+                  onChange={onChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="openaiApiKey" className="text-right">
+                  OpenAI API key
+                </Label>
+                <Input
+                  id="openaiApiKey"
+                  name="openaiApiKey"
+                  className="col-span-3"
+                  defaultValue={currentOpenaiApiKey}
+                  type="password"
+                  onChange={onChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="openaiModel" className="text-right">
+                  OpenAI Model
+                </Label>
+                <Input
+                  id="openaiModel"
+                  name="openaiModel"
+                  className="col-span-3"
+                  defaultValue={currentOpenaiModel}
+                  onChange={onChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="openExchangeApiKey" className="text-right">
+                  Open Exchange Rates API key
+                </Label>
+                <Input
+                  id="openExchangeApiKey"
+                  name="openExchangeApiKey"
+                  className="col-span-3"
+                  defaultValue={currentOpenExchangeKey}
+                  type="password"
+                  onChange={onChange}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="openaiApiKey" className="text-right">
-                OpenAI API key
-              </Label>
-              <Input
-                id="openaiApiKey"
-                name="openaiApiKey"
-                className="col-span-3"
-                defaultValue={currentOpenaiApiKey}
-                type="password"
-                onChange={onChange}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="openaiModel" className="text-right">
-                OpenAI Model
-              </Label>
-              <Input
-                id="openaiModel"
-                name="openaiModel"
-                className="col-span-3"
-                defaultValue={currentOpenaiModel}
-                onChange={onChange}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="openExchangeApiKey" className="text-right">
-                Open Exchange Rates API key
-              </Label>
-              <Input
-                id="openExchangeApiKey"
-                name="openExchangeApiKey"
-                className="col-span-3"
-                defaultValue={currentOpenExchangeKey}
-                type="password"
-                onChange={onChange}
-              />
-            </div>
+            <BackupSection />
+            <ResetSection />
           </div>
-          <BackupSection />
-          <ResetSection />
           <DrawerFooter>
             <Button
               variant="destructive"
