@@ -1,4 +1,4 @@
-import { Cache, Cause, Effect, Layer, Schedule, Schema, Context } from "effect"
+import { Cache, Effect, Exit, Layer, Schedule, Schema, Context } from "effect"
 import {
   FetchHttpClient,
   HttpClient,
@@ -6,6 +6,16 @@ import {
   HttpClientResponse,
 } from "effect/http"
 import { TracerPropagationEnabled } from "effect/http/HttpClient"
+
+/**
+ * Latest exchange rates, as units of each currency per US dollar.
+ */
+export const RatesSnapshot = Schema.Struct({
+  rates: Schema.Record(Schema.String, Schema.Finite),
+  /** When the rates were published, in epoch milliseconds. */
+  timestamp: Schema.Finite,
+})
+export type RatesSnapshot = typeof RatesSnapshot.Type
 
 export class ExchangeRates extends Context.Service<ExchangeRates>()(
   "ExchangeRates",
@@ -17,14 +27,15 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
         ),
         HttpClient.retryTransient({
           schedule: Schedule.spaced(1000),
+          times: 2,
         }),
         HttpClient.transformResponse(
           Effect.provideService(TracerPropagationEnabled, false),
         ),
       )
 
-      const latest = yield* Cache.make({
-        lookup: (appId: string) =>
+      const latest = yield* Cache.makeWith(
+        (appId: string) =>
           client
             .get(`/latest.json`, {
               headers: {
@@ -34,31 +45,19 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
             .pipe(
               Effect.flatMap(HttpClientResponse.schemaBodyJson(Rates)),
               Effect.scoped,
+              Effect.map(({ rates, timestamp }): RatesSnapshot => ({
+                rates,
+                timestamp: timestamp * 1000,
+              })),
             ),
-        timeToLive: "5 minutes",
-        capacity: 2,
-      })
+        {
+          // only cache successful lookups, so a failed request can be retried
+          timeToLive: (exit) => (Exit.isSuccess(exit) ? "5 minutes" : 0),
+          capacity: 2,
+        },
+      )
 
-      const rates = (appId: string, base: string) =>
-        Effect.gen(function* () {
-          if (base === "") {
-            return yield* new Cause.NoSuchElementError()
-          }
-          const { rates } = yield* Cache.get(latest, appId)
-          if (base === "USD") {
-            return rates
-          }
-          const baseRate = yield* Effect.fromNullishOr(rates[base])
-          const adjustment = 1 / baseRate
-          return Object.fromEntries(
-            Object.entries(rates).map(([key, value]) => [
-              key,
-              key === base ? 1 : value * adjustment,
-            ]),
-          )
-        })
-
-      return { rates } as const
+      return { latest: (appId: string) => Cache.get(latest, appId) } as const
     }),
   },
 ) {
@@ -69,5 +68,6 @@ export class ExchangeRates extends Context.Service<ExchangeRates>()(
 
 const Rates = Schema.Struct({
   base: Schema.String,
+  timestamp: Schema.Finite,
   rates: Schema.Record(Schema.String, Schema.Finite),
 })

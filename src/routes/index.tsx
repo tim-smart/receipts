@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { TypoH3 } from "@/components/ui/TypoH3"
 import {
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { CurrencySelect } from "@/components/ui/CurrencySelect"
 import {
   ChangeEvent,
+  ComponentProps,
   SubmitEvent,
   useCallback,
   useEffect,
@@ -20,7 +21,6 @@ import {
   useRef,
   useState,
 } from "react"
-import { Receipt } from "@/Domain/Receipt"
 import {
   Combobox,
   ComboboxContent,
@@ -31,38 +31,15 @@ import {
   ComboboxTrigger,
   ComboboxValue,
 } from "@/components/ui/combobox"
-import {
-  ArrowUpRight,
-  ChevronsUpDown,
-  Plus,
-  Settings,
-  Settings2,
-} from "lucide-react"
-import { Scaffold } from "@/components/ui/Scaffold"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { formatCurrency } from "@/Domain/Currency"
+import { Camera, Download, Plus, Settings, Settings2 } from "lucide-react"
+import { Dock } from "@/components/ui/Dock"
 import { ReceiptForm } from "@/Receipts/Form"
-import {
-  BigDecimal,
-  DateTime,
-  Exit,
-  Option,
-  pipe,
-  Redacted,
-  String,
-} from "effect"
+import { ReceiptList } from "@/Receipts/List"
+import { TotalsTape, useViewCurrency } from "@/Receipts/Totals"
+import { rebase } from "@/Domain/Totals"
+import { Exit, Option, pipe, Redacted, String } from "effect"
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react"
-import {
-  baseCurrencyAtom,
-  latestRates,
-  ratesWithAtom,
-} from "@/ExchangeRates/atoms"
+import { currentRatesAtom, RatesState } from "@/ExchangeRates/atoms"
 import { Switch } from "@/components/ui/switch"
 import { currentGroupAtom, receiptGroupsAtom } from "@/ReceiptGroups/atoms"
 import { uuidString } from "@/lib/utils"
@@ -74,6 +51,7 @@ import {
   openExchangeApiKey,
 } from "@/Domain/Setting"
 import { ReceiptGroup } from "@/Domain/ReceiptGroup"
+import { Receipt } from "@/Domain/Receipt"
 import { ReceiptGroupRow } from "@/ReceiptGroups/Events"
 import { patchChanged } from "@/lib/utils"
 import { currentReceiptsAtom, exportReceiptsAtom } from "@/Receipts/atoms"
@@ -96,25 +74,166 @@ interface ReceiptsSearchParams {
   readonly action?: "add"
 }
 
+interface DrawerState {
+  readonly open: boolean
+  readonly onOpenChange: (open: boolean) => void
+}
+
 function ReceiptsScreen() {
+  const { action } = Route.useSearch()
+  const [adding, setAdding] = useState(action === "add")
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [newFolderOpen, setNewFolderOpen] = useState(false)
+  const [folderSettingsOpen, setFolderSettingsOpen] = useState(false)
+
+  const group = useAtomValue(
+    currentGroupAtom,
+    AsyncResult.getOrElse(() => null),
+  )
+  const receipts = useAtomValue(
+    currentReceiptsAtom,
+    AsyncResult.getOrElse(() => []),
+  )
+
+  const addButton = (
+    <Button
+      className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-black/15 dark:shadow-black/40"
+      onClick={() => setAdding(true)}
+    >
+      <Camera className="size-4.5" />
+      Add receipt
+    </Button>
+  )
+
   return (
-    <Scaffold heading="Receipts">
-      <div className="flex flex-col gap-5">
-        <div className="w-full max-w-sm flex gap-2">
-          <GroupSelect />
-          <GroupSettings />
-          <GroupDrawer />
+    <>
+      <div className="mx-auto w-full max-w-2xl lg:grid lg:max-w-none lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-12 xl:grid-cols-[24rem_minmax(0,1fr)] xl:gap-16">
+        <div className="lg:sticky lg:top-0 lg:-mx-2 lg:max-h-svh lg:self-start lg:overflow-y-auto lg:px-2 lg:pb-10">
+          <header className="flex items-start justify-between gap-4 pt-14 lg:pt-16">
+            <div className="min-w-0">
+              <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
+                Receipts
+              </h1>
+              <FolderMenu
+                onNewFolder={() => setNewFolderOpen(true)}
+                onFolderSettings={() => setFolderSettingsOpen(true)}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon-lg"
+              className="mt-0.5 rounded-full"
+              aria-label="Settings"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings2 />
+            </Button>
+          </header>
+
+          {group && receipts.length > 0 && (
+            <FolderTotals
+              group={group}
+              receipts={receipts}
+              onOpenSettings={() => setSettingsOpen(true)}
+            />
+          )}
+
+          <div className="mt-7 hidden lg:block">{addButton}</div>
         </div>
 
-        <TotalsToggle />
-        <ReceiptGrid />
-        <AddReceiptButton />
+        <main className="pt-9 lg:pt-16">
+          {group && receipts.length > 0 ? (
+            <FolderReceipts group={group} receipts={receipts} />
+          ) : (
+            group && <EmptyFolder group={group} />
+          )}
+        </main>
       </div>
-    </Scaffold>
+
+      <div className="h-32 lg:h-16" />
+      <Dock className="lg:hidden">{addButton}</Dock>
+
+      <ReceiptDrawer open={adding} onOpenChange={setAdding} />
+      <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <GroupDrawer open={newFolderOpen} onOpenChange={setNewFolderOpen} />
+      <GroupSettings
+        open={folderSettingsOpen}
+        onOpenChange={setFolderSettingsOpen}
+      />
+    </>
   )
 }
 
-function GroupSelect() {
+function FolderTotals({
+  group,
+  receipts,
+  onOpenSettings,
+}: {
+  group: ReceiptGroup
+  receipts: ReadonlyArray<Receipt>
+  onOpenSettings: () => void
+}) {
+  const rates = useAtomValue(
+    currentRatesAtom,
+    AsyncResult.getOrElse(() => undefined),
+  )
+  const [currency, setCurrency] = useViewCurrency(group, rates)
+
+  return (
+    <TotalsTape
+      className="mt-6"
+      receipts={receipts}
+      group={group}
+      rates={rates}
+      currency={currency}
+      onCurrencyChange={setCurrency}
+      onOpenSettings={onOpenSettings}
+      action={<ExportDrawer currency={currency} rates={rates} />}
+    />
+  )
+}
+
+function FolderReceipts({
+  group,
+  receipts,
+}: {
+  group: ReceiptGroup
+  receipts: ReadonlyArray<Receipt>
+}) {
+  const rates = useAtomValue(
+    currentRatesAtom,
+    AsyncResult.getOrElse(() => undefined),
+  )
+  const [currency] = useViewCurrency(group, rates)
+
+  return (
+    <ReceiptList
+      receipts={receipts}
+      currency={currency}
+      rates={rates?._tag === "Available" ? rates.rates.rates : undefined}
+    />
+  )
+}
+
+function EmptyFolder({ group }: { group: ReceiptGroup }) {
+  return (
+    <div className="rounded-2xl border border-dashed px-6 py-12 text-center">
+      <p className="font-medium">No receipts in {group.name} yet</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Use Add receipt to take a photo or enter one by hand.
+      </p>
+    </div>
+  )
+}
+
+function FolderMenu({
+  onNewFolder,
+  onFolderSettings,
+}: {
+  onNewFolder: () => void
+  onFolderSettings: () => void
+}) {
+  const [open, setOpen] = useState(false)
   const groups = useAtomValue(
     receiptGroupsAtom,
     AsyncResult.getOrElse(() => []),
@@ -137,9 +256,15 @@ function GroupSelect() {
       groups.find((group) => uuidString(group.id) === groupIdString) ?? null,
     [groups, groupIdString],
   )
+  const menuAction = (action: () => void) => () => {
+    setOpen(false)
+    action()
+  }
 
   return (
     <Combobox<ReceiptGroup>
+      open={open}
+      onOpenChange={setOpen}
       items={groups}
       value={currentGroup}
       itemToStringValue={(item) => item.name}
@@ -149,21 +274,15 @@ function GroupSelect() {
       }}
     >
       <ComboboxTrigger
-        render={
-          <Button
-            variant="outline"
-            className="w-64 justify-between font-normal"
-          >
-            <ComboboxValue>
-              {(group: ReceiptGroup) => group?.name}
-            </ComboboxValue>
-            <div className="flex-1" />
-            <ChevronsUpDown />
-          </Button>
-        }
-      />
-      <ComboboxContent>
-        <ComboboxInput showTrigger={false} placeholder="Select a folder" />
+        aria-label="Change folder"
+        className="-ml-1 mt-2 inline-flex max-w-full items-center gap-1 rounded-md px-1 py-0.5 text-[15px] font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:text-foreground"
+      >
+        <span className="truncate">
+          <ComboboxValue>{(group: ReceiptGroup) => group?.name}</ComboboxValue>
+        </span>
+      </ComboboxTrigger>
+      <ComboboxContent className="w-64">
+        <ComboboxInput showTrigger={false} placeholder="Find a folder" />
         <ComboboxEmpty>No folders</ComboboxEmpty>
         <ComboboxList>
           {(group: ReceiptGroup) => (
@@ -172,26 +291,33 @@ function GroupSelect() {
             </ComboboxItem>
           )}
         </ComboboxList>
+        <div className="grid border-t p-1">
+          <MenuButton onClick={menuAction(onNewFolder)}>
+            <Plus />
+            New folder
+          </MenuButton>
+          <MenuButton onClick={menuAction(onFolderSettings)}>
+            <Settings />
+            Folder settings
+          </MenuButton>
+        </div>
       </ComboboxContent>
     </Combobox>
   )
 }
 
-function AddReceiptButton() {
+function MenuButton(props: ComponentProps<"button">) {
   return (
-    <div className="fixed bottom-0 left-0 w-full px-5 pb-safe flex flex-col items-center">
-      <div className="flex gap-2 w-full max-w-sm">
-        <ReceiptDrawer />
-        <SettingsDrawer />
-      </div>
-      <div className="h-5" />
-    </div>
+    <button
+      type="button"
+      className="flex items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent [&_svg]:size-4 [&_svg]:text-muted-foreground"
+      {...props}
+    />
   )
 }
 
-function ReceiptDrawer() {
+function ReceiptDrawer({ open, onOpenChange }: DrawerState) {
   const { action } = Route.useSearch()
-  const [open, setOpen] = useState(action === "add")
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -201,15 +327,11 @@ function ReceiptDrawer() {
   }, [action])
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button className="flex-1">Add receipt</Button>
-      </DrawerTrigger>
-
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent ref={contentRef}>
         <ReceiptForm
           onSubmit={() => {
-            setOpen(false)
+            onOpenChange(false)
           }}
           portalContainer={contentRef}
         />
@@ -218,8 +340,7 @@ function ReceiptDrawer() {
   )
 }
 
-function GroupDrawer() {
-  const [open, setOpen] = useState(false)
+function GroupDrawer({ open, onOpenChange }: DrawerState) {
   const writeEvent = useAtomSet(writeEventAtom)
   const setCurrentGroup = useAtomSet(setSettingAtom(currentGroupId))
   const contentRef = useRef<HTMLDivElement>(null)
@@ -233,21 +354,15 @@ function GroupDrawer() {
     })
     writeEvent(ReceiptGroupRow.set(group))
     setCurrentGroup(group.id)
-    setOpen(false)
+    onOpenChange(false)
   }, [])
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button className="px-3">
-          <Plus />
-        </Button>
-      </DrawerTrigger>
-
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent ref={contentRef}>
         <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
           <DrawerHeader>
-            <TypoH3>Add group</TypoH3>
+            <TypoH3>New folder</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -275,13 +390,12 @@ function GroupDrawer() {
   )
 }
 
-function GroupSettings() {
+function GroupSettings({ open, onOpenChange }: DrawerState) {
   const currentGroup = useAtomValue(
     currentGroupAtom,
     AsyncResult.getOrElse(() => null),
   )
   const writeEvent = useAtomSet(writeEventAtom)
-  const [open, setOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
   const onSubmit = useCallback(
@@ -293,7 +407,7 @@ function GroupSettings() {
         defaultCurrency: data.get("defaultCurrency") as string,
       })
       if (patch) writeEvent(patch)
-      setOpen(false)
+      onOpenChange(false)
     },
     [currentGroup],
   )
@@ -302,23 +416,17 @@ function GroupSettings() {
     (event: any) => {
       event.preventDefault()
       writeEvent(ReceiptGroupRow.remove(currentGroup!.id))
-      setOpen(false)
+      onOpenChange(false)
     },
     [currentGroup],
   )
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button className="px-3" variant="outline">
-          <Settings />
-        </Button>
-      </DrawerTrigger>
-
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent ref={contentRef}>
         <form className="mx-auto w-full max-w-sm" onSubmit={onSubmit}>
           <DrawerHeader>
-            <TypoH3>Group settings</TypoH3>
+            <TypoH3>Folder settings</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -342,7 +450,7 @@ function GroupSettings() {
           </div>
           <DrawerFooter>
             <Button variant="destructive" onClick={onRemove} type="button">
-              Delete
+              Delete folder
             </Button>
             <Button type="submit">Save</Button>
           </DrawerFooter>
@@ -353,59 +461,7 @@ function GroupSettings() {
   )
 }
 
-function ReceiptGrid() {
-  const receipts = useAtomValue(
-    currentReceiptsAtom,
-    AsyncResult.getOrElse(() => []),
-  )
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-      {receipts.map((receipt, index) => (
-        <Link
-          key={receipt.idString}
-          to="/receipt/$id"
-          params={{ id: receipt.idString }}
-          style={{ "--delay": `${index * 0.05}s` } as any}
-          className={`animate-fade-in opacity-0 delay-(--delay)`}
-        >
-          <ReceiptCard>{receipt}</ReceiptCard>
-        </Link>
-      ))}
-    </div>
-  )
-}
-
-function ReceiptCard({ children: receipt }: { children: Receipt }) {
-  return (
-    <Card className="p-0">
-      <CardHeader className="p-4">
-        <CardTitle className="whitespace-nowrap overflow-ellipsis overflow-hidden">
-          {receipt.description}
-        </CardTitle>
-        <CardDescription>
-          <div className="flex flex-col">
-            {receipt.merchant && (
-              <span className="overflow-ellipsis w-full whitespace-nowrap overflow-hidden">
-                {receipt.merchant}
-              </span>
-            )}
-            {receipt.amount && <span>{formatCurrency(receipt)}</span>}
-            {receipt.date && (
-              <span>
-                {receipt.date.pipe(DateTime.format({ dateStyle: "short" }))}
-              </span>
-            )}
-            {receipt.processed === false && <span>Processing...</span>}
-          </div>
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  )
-}
-
-function SettingsDrawer() {
-  const [open, setOpen] = useState(false)
+function SettingsDrawer({ open, onOpenChange }: DrawerState) {
   const writeEvent = useAtomSet(writeEventAtom, { mode: "promise" })
   const currentOpenaiApiKey = useAtomValue(
     settingAtom(openaiApiKey),
@@ -484,7 +540,7 @@ function SettingsDrawer() {
         )
       }
       changed.clear()
-      setOpen(false)
+      onOpenChange(false)
     },
     [writeEvent],
   )
@@ -493,16 +549,10 @@ function SettingsDrawer() {
     <Drawer
       open={open}
       onOpenChange={(open) => {
-        setOpen(open)
+        onOpenChange(open)
         if (!open) changed.clear()
       }}
     >
-      <DrawerTrigger asChild>
-        <Button variant="outline" className="px-3">
-          <Settings2 />
-        </Button>
-      </DrawerTrigger>
-
       <DrawerContent>
         <form
           className="mx-auto flex min-h-0 w-full max-w-sm flex-col"
@@ -673,134 +723,16 @@ function BackupSection() {
   )
 }
 
-function TotalsToggle() {
-  const [open, setOpen] = useState(false)
-  return (
-    <Card className="flex-1 p-0 gap-0">
-      <CardHeader className="pr-2 pl-5 py-2 cursor-pointer gap-0">
-        <div className="flex items-center">
-          <CardDescription
-            className="flex-1"
-            onClick={() => setOpen((_) => !_)}
-          >
-            {open ? "Hide" : "Show"} totals
-          </CardDescription>
-          <ExportDrawer />
-        </div>
-      </CardHeader>
-      {open && (
-        <CardContent className="px-5 pt-0 pb-3 text-sm">
-          <Totals />
-        </CardContent>
-      )}
-    </Card>
-  )
-}
-
-function Totals() {
-  const receipts = useAtomValue(
-    currentReceiptsAtom,
-    AsyncResult.getOrElse(() => []),
-  )
-  const apiKey = useAtomValue(
-    settingAtom(openExchangeApiKey),
-    AsyncResult.value,
-  ).pipe(
-    Option.flatten,
-    Option.map(Redacted.value),
-    Option.getOrElse(() => ""),
-  )
-
-  const [convertTo, setConvertTo] = useAtom(baseCurrencyAtom)
-  const [rates, getRates] = useAtom(latestRates)
-
-  const totals = useMemo(() => {
-    const currencies: Record<string, BigDecimal.BigDecimal> = {}
-    for (const receipt of receipts) {
-      const prev =
-        currencies[receipt.currency] ?? BigDecimal.fromNumberUnsafe(0)
-      currencies[receipt.currency] = BigDecimal.sum(prev, receipt.amount)
-    }
-    return currencies
-  }, [receipts])
-
-  const converted = useMemo(() => {
-    if (rates._tag !== "Success") return Option.none()
-    let converted: BigDecimal.BigDecimal = BigDecimal.fromNumberUnsafe(0)
-    for (const [currency, total] of Object.entries(totals)) {
-      const rate = 1 / rates.value[currency]
-      converted = BigDecimal.multiply(
-        total,
-        BigDecimal.fromNumberUnsafe(rate),
-      ).pipe(BigDecimal.sum(converted))
-    }
-    return Option.some(converted)
-  }, [totals, rates])
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div>
-        {Object.entries(totals)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([currency, total]) => (
-            <div key={currency}>
-              {currency}: ${BigDecimal.format(total)}
-              {rates._tag === "Success" && rates.value[currency] && (
-                <span>
-                  {" "}
-                  ({convert(total, rates.value[currency], convertTo)})
-                </span>
-              )}
-            </div>
-          ))}
-      </div>
-      {apiKey && (
-        <div className="flex items-center gap-2">
-          <div>Convert to:</div>
-          <CurrencySelect
-            initialValue={convertTo}
-            onChange={(base) => {
-              setConvertTo(base)
-              getRates(apiKey)
-            }}
-          />
-        </div>
-      )}
-      {Option.match(converted, {
-        onNone: () => null,
-        onSome: (converted) => (
-          <div>
-            Total in {convertTo}: $
-            {BigDecimal.scale(converted, 2).pipe(BigDecimal.format)}
-          </div>
-        ),
-      })}
-    </div>
-  )
-}
-
-const formatRate = (rate: number) => Math.round(rate * 10000) / 10000
-
-const convert = (
-  amount: BigDecimal.BigDecimal,
-  rate: number,
-  currency: string,
-) => {
-  const rateNumber = 1 / rate
-  const converted = convertString(amount, rateNumber)
-  return `x${formatRate(rateNumber)} = $${converted} ${currency}`
-}
-
-const convertString = (amount: BigDecimal.BigDecimal, rate: number) =>
-  BigDecimal.multiply(amount, BigDecimal.fromNumberUnsafe(rate)).pipe(
-    BigDecimal.scale(2),
-    BigDecimal.format,
-  )
-
-function ExportDrawer() {
+function ExportDrawer({
+  currency: viewCurrency,
+  rates,
+}: {
+  currency: string
+  rates: RatesState | undefined
+}) {
   const [open, setOpen] = useState(false)
   const [convert, setConvert] = useState(false)
-  const [currency, setCurrency] = useState("USD")
+  const [currency, setCurrency] = useState(viewCurrency)
   const contentRef = useRef<HTMLDivElement>(null)
 
   const groupId = useAtomValue(
@@ -808,37 +740,41 @@ function ExportDrawer() {
     AsyncResult.value,
   ).pipe(Option.flatten)
   const exportReceipts = useAtomSet(exportReceiptsAtom, { mode: "promise" })
-  const apiKey = useAtomValue(
-    settingAtom(openExchangeApiKey),
-    AsyncResult.value,
-  ).pipe(
-    Option.flatten,
-    Option.map(Redacted.value),
-    Option.getOrElse(() => ""),
-  )
-  const [rates, getRates] = useAtom(ratesWithAtom(apiKey))
-
-  useEffect(() => {
-    if (convert && currency) getRates(currency)
-  }, [getRates, convert, currency])
-  const loadingRates = convert && rates._tag !== "Success"
+  const available = rates?._tag === "Available" ? rates.rates : undefined
 
   // @effect-diagnostics-next-line asyncFunction:off
   const onExport = useCallback(async () => {
     if (groupId._tag === "None") return
     await exportReceipts({
       groupId: groupId.value,
-      rates: rates._tag === "Success" ? rates.value : undefined,
+      rates:
+        convert && available ? rebase(available.rates, currency) : undefined,
       currency,
     })
     setOpen(false)
-  }, [convert, currency, rates, exportReceipts, groupId])
+  }, [convert, currency, available, exportReceipts, groupId])
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer
+      open={open}
+      onOpenChange={(open) => {
+        // follow the currency the totals are shown in
+        if (open) {
+          setConvert(available !== undefined)
+          setCurrency(viewCurrency)
+        }
+        setOpen(open)
+      }}
+    >
       <DrawerTrigger asChild>
-        <Button type="button" className="px-3">
-          <ArrowUpRight />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="-mr-1.5 text-muted-foreground"
+          aria-label="Export receipts"
+        >
+          <Download />
         </Button>
       </DrawerTrigger>
       <DrawerContent ref={contentRef}>
@@ -847,15 +783,19 @@ function ExportDrawer() {
             <TypoH3>Export</TypoH3>
           </DrawerHeader>
           <div className="grid gap-4 py-5 px-3">
-            {apiKey && (
+            {available && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="convertCurrency" className="text-right">
                   Convert currency
                 </Label>
-                <Switch checked={convert} onCheckedChange={setConvert} />
+                <Switch
+                  id="convertCurrency"
+                  checked={convert}
+                  onCheckedChange={setConvert}
+                />
               </div>
             )}
-            {convert && (
+            {convert && available && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="currency" className="text-right">
                   Currency
@@ -870,8 +810,8 @@ function ExportDrawer() {
             )}
           </div>
           <DrawerFooter>
-            <Button type="submit" onClick={onExport} disabled={loadingRates}>
-              {loadingRates ? "Loading rates..." : "Export"}
+            <Button type="submit" onClick={onExport}>
+              Export
             </Button>
           </DrawerFooter>
           <div className="h-5"></div>
