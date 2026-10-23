@@ -15,7 +15,6 @@ export const ReceiptGroupEvents = EventGroup.empty
     tag: "GroupCreate",
     primaryKey: (g) => uuidString(g.id!),
     payload: ReceiptGroup.insert,
-    success: ReceiptGroup,
   })
   .add({
     tag: "GroupUpdate",

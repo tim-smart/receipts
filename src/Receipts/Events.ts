@@ -8,6 +8,11 @@ export const ReceiptRow = EventRow.make("Receipt", {
   schema: Receipt.select,
 })
 
+export const ReceiptSetProcessed = Schema.Struct({
+  id: ReceiptId,
+  processed: Schema.BooleanFromBit,
+})
+
 export const ReceiptEvents = EventGroup.empty
   .add(ReceiptRow)
   // Legacy events, kept only so existing journals still replay. Nothing
@@ -16,7 +21,6 @@ export const ReceiptEvents = EventGroup.empty
     tag: "ReceiptCreate",
     primaryKey: (g) => uuidString(g.id!),
     payload: Receipt.insert,
-    success: Receipt,
   })
   .add({
     tag: "ReceiptUpdate",
@@ -31,8 +35,5 @@ export const ReceiptEvents = EventGroup.empty
   .add({
     tag: "ReceiptSetProcessed",
     primaryKey: ({ id }) => uuidString(id),
-    payload: Schema.Struct({
-      id: ReceiptId,
-      processed: Schema.BooleanFromBit,
-    }),
+    payload: ReceiptSetProcessed,
   })

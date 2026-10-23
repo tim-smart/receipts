@@ -7,6 +7,7 @@ import { ImagesTable } from "./Images/Table"
 import { ReceiptGroupsTable } from "./ReceiptGroups/Table"
 import { ReceiptsTable } from "./Receipts/Table"
 import { SettingsTable } from "./Settings/Table"
+import { ProjectionTable } from "./Projection/Table"
 import { Effect, Layer, Context } from "effect"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
 import { currentGroupId, openaiModel } from "./Domain/Setting"
@@ -18,7 +19,15 @@ export class V1 extends IndexedDbVersion.make(
   SettingsTable,
 ) {}
 
-const initialReceiptGroupId = ReceiptGroupId.make(
+export class V2 extends IndexedDbVersion.make(
+  ImagesTable,
+  ReceiptGroupsTable,
+  ReceiptsTable,
+  SettingsTable,
+  ProjectionTable,
+) {}
+
+export const initialReceiptGroupId = ReceiptGroupId.make(
   new Uint8Array([
     172, 114, 16, 212, 180, 1, 69, 189, 128, 6, 188, 134, 153, 205, 49, 21,
   ]),
@@ -55,6 +64,18 @@ export class Database extends IndexedDbDatabase.make(
         json: openaiModel.encodeSync("gpt-5.4"),
       },
     ])
+  }),
+).add(
+  V2,
+  Effect.fn(function* (_, api) {
+    yield* api.createObjectStore("projection")
+    // rebuild once with the EventRow handlers, so entries an older version
+    // skipped or applied out of order are projected correctly
+    yield* api.from("projection").insert({
+      name: "state",
+      rebuildPending: true,
+      legacyUntil: "",
+    })
   }),
 ) {}
 

@@ -9,25 +9,17 @@ import {
   EventLogRemote,
 } from "effect/eventlog"
 import { ReceiptAppEvents } from "./Events"
-import { ReceiptGroupsLayer } from "./ReceiptGroups"
-import { ReceiptsLayer } from "./Receipts"
-import { SettingsLayer } from "./Settings"
-import { ImagesLive } from "./Images"
+import { layerEventLog } from "./EventLogLayer"
 import { identityAtom } from "./Auth"
 import { kvsRuntime } from "./lib/utils"
 import { Identity } from "effect/eventlog/EventLog"
 import { RpcClient, RpcSerialization } from "effect/rpc"
 import { BrowserSocket } from "@effect/platform-browser"
 
-const EventLogLayer = EventLog.layer(
-  ReceiptAppEvents,
-  Layer.mergeAll(ReceiptGroupsLayer, ReceiptsLayer, SettingsLayer, ImagesLive),
-).pipe(
-  Layer.provide(
-    EventJournal.layerIndexedDb({
-      database: "receipts_events",
-    }),
-  ),
+const EventLogLayer = layerEventLog(
+  EventJournal.layerIndexedDb({
+    database: "receipts_events",
+  }),
 )
 
 const makeClient = EventLog.makeClient(ReceiptAppEvents)

@@ -1,51 +1,134 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "@effect/vitest"
-import { BigDecimal, DateTime, Effect, Layer, Redacted, Schema } from "effect"
-import { EventJournal, EventLog, EventLogMessage } from "effect/eventlog"
+import {
+  BigDecimal,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Queue,
+  Redacted,
+  Schedule,
+  Schema,
+} from "effect"
+import { EventJournal, EventLog, EventLogRemote } from "effect/eventlog"
 import { Model } from "effect/schema"
-import { Reactivity } from "effect/reactivity"
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb"
 import { Image, ImageId } from "./Domain/Image"
 import { Receipt, ReceiptId } from "./Domain/Receipt"
 import { ReceiptGroup, ReceiptGroupId } from "./Domain/ReceiptGroup"
 import { ReceiptAppEvents } from "./Events"
-import { ImagesLive } from "./Images"
+import { layerEventLog } from "./EventLogLayer"
 import { QueryBuilder } from "./IndexedDb"
-import { ReceiptGroupsLayer } from "./ReceiptGroups"
-import { ReceiptsLayer } from "./Receipts"
 import { ReceiptRow } from "./Receipts/Events"
-import { SettingsLayer } from "./Settings"
 import { uuidBytes, uuidString } from "./lib/utils"
 
-// The app's EventLog over a fresh in-memory journal and IndexedDB.
-const identity = {
-  publicKey: "test",
-  privateKey: Redacted.make(new Uint8Array(32)),
+type Write = { readonly event: string; readonly payload: unknown }
+
+// A remote that delivers entries written on other devices, through the
+// EventLog's own replay, including compaction of each received batch.
+class Remote extends Context.Service<
+  Remote,
+  {
+    // events written `ageMillis` ago
+    readonly receive: (
+      events: ReadonlyArray<readonly [Write, ageMillis: number]>,
+    ) => Effect.Effect<void>
+    readonly receiveEntries: (
+      entries: ReadonlyArray<EventJournal.Entry>,
+    ) => Effect.Effect<void>
+  }
+>()("test/Remote") {
+  static readonly layer = Layer.effect(
+    this,
+    Effect.gen(function* () {
+      const registry = yield* EventLog.Registry
+      const journal = yield* EventJournal.EventJournal
+      const db = yield* QueryBuilder
+      const id = EventJournal.makeRemoteIdUnsafe()
+      const changes = yield* Queue.unbounded<
+        EventJournal.RemoteEntry,
+        EventLogRemote.EventLogRemoteError
+      >()
+      let sequence = 0
+      yield* registry.registerRemote({
+        id,
+        changes: () => Effect.succeed(changes),
+        write: () => Effect.void,
+        whenAuthenticated: (effect) => effect,
+      })
+
+      // the batches are replayed, and any rebuild they requested is done
+      const settled = Effect.gen(function* () {
+        const next = yield* journal.nextRemoteSequence(id)
+        const state = yield* db.from("projection").select().first()
+        return next >= sequence && !state.rebuildPending
+      }).pipe(
+        Effect.orDie,
+        Effect.repeat({
+          until: (done) => done,
+          schedule: Schedule.spaced("5 millis"),
+        }),
+      )
+
+      const receiveEntries = (entries: ReadonlyArray<EventJournal.Entry>) =>
+        Queue.offerAll(
+          changes,
+          entries.map(
+            (entry) =>
+              new EventJournal.RemoteEntry({
+                remoteSequence: sequence++,
+                entry,
+              }),
+          ),
+        ).pipe(Effect.andThen(settled))
+
+      return Remote.of({
+        receiveEntries,
+        receive: (events) => {
+          const now = Date.now()
+          return receiveEntries(
+            events.map(([{ event, payload }, ageMillis]) => {
+              const schema = registry.handlers.get(event)!.event
+              return new EventJournal.Entry({
+                id: EventJournal.makeEntryIdUnsafe({ msecs: now - ageMillis }),
+                event,
+                primaryKey: schema.primaryKey(payload as never),
+                payload: Schema.encodeUnknownSync(
+                  schema.payloadSchemaBinary as Schema.Codec<
+                    unknown,
+                    Uint8Array
+                  >,
+                )(payload),
+              })
+            }),
+          )
+        },
+      })
+    }),
+  )
 }
-const TestLayer = Layer.mergeAll(
-  EventLog.layer(
-    ReceiptAppEvents,
-    Layer.mergeAll(
-      ReceiptGroupsLayer,
-      ReceiptsLayer,
-      SettingsLayer,
-      ImagesLive,
-    ),
+
+// A device: the app's EventLog over a fresh in-memory journal and
+// IndexedDB, connected to a `Remote`.
+const Device = Remote.layer.pipe(
+  Layer.provideMerge(
+    Layer.mergeAll(layerEventLog(EventJournal.layerMemory), QueryBuilder.layer),
   ),
-  QueryBuilder.layer,
-  Reactivity.layer,
-).pipe(
-  Layer.provideMerge(EventJournal.layerMemory),
-  Layer.provide(Layer.succeed(EventLog.Identity, identity)),
+  Layer.provide(
+    Layer.succeed(EventLog.Identity, {
+      publicKey: "test",
+      privateKey: Redacted.make(new Uint8Array(32)),
+    }),
+  ),
 )
 
-beforeEach(() => {
+const newIndexedDb = () =>
   vi.stubGlobal("window", { indexedDB: new IDBFactory(), IDBKeyRange })
-})
+
+beforeEach(newIndexedDb)
 afterEach(() => {
   vi.unstubAllGlobals()
 })
-
-type Write = { readonly event: string; readonly payload: unknown }
 
 const write = (
   event: Write,
@@ -54,46 +137,8 @@ const write = (
     log.write({ schema: ReceiptAppEvents, ...event } as any),
   )
 
-const remoteId = EventJournal.makeRemoteIdUnsafe()
-let remoteSequence = 0
-
-// Delivers events written on another device `ageMillis` ago, the way the
-// EventLog replays a batch from a remote.
-const receiveFromRemote = Effect.fnUntraced(function* (
-  events: ReadonlyArray<readonly [Write, ageMillis: number]>,
-) {
-  const journal = yield* EventJournal.EventJournal
-  const registry = yield* EventLog.Registry
-  const replay = EventLog.makeReplayFromRemote({
-    handlers: registry.handlers,
-    storeId: EventLogMessage.StoreId.make("default"),
-    identity,
-    reactivity: yield* Reactivity.Reactivity,
-    reactivityKeys: registry.reactivityKeys,
-    logAnnotations: { service: "test", effect: "receiveFromRemote" },
-  })
-  const now = Date.now()
-  const entries = events.map(([{ event, payload }, ageMillis]) => {
-    const schema = registry.handlers.get(event)!.event
-    return new EventJournal.RemoteEntry({
-      remoteSequence: remoteSequence++,
-      entry: new EventJournal.Entry({
-        id: EventJournal.makeEntryIdUnsafe({ msecs: now - ageMillis }),
-        event,
-        primaryKey: schema.primaryKey(payload as never),
-        payload: Schema.encodeUnknownSync(
-          schema.payloadSchemaBinary as Schema.Codec<unknown, Uint8Array>,
-        )(payload),
-      }),
-    })
-  })
-  yield* journal.writeFromRemote({
-    remoteId,
-    entries,
-    effect: (batch) =>
-      Effect.forEach(batch, replay, { discard: true }).pipe(Effect.orDie),
-  })
-})
+const receive = (events: ReadonlyArray<readonly [Write, ageMillis: number]>) =>
+  Remote.use((remote) => remote.receive(events))
 
 const tables = Effect.gen(function* () {
   const db = yield* QueryBuilder
@@ -146,9 +191,9 @@ const otherPhoto = Image.insert.make({
 })
 
 describe("Sync", () => {
-  it.effect("replays journals written with the legacy events", () =>
+  it.live("replays journals written with the legacy events", () =>
     Effect.gen(function* () {
-      yield* receiveFromRemote([
+      yield* receive([
         [{ event: "GroupCreate", payload: home }, 90],
         [{ event: "GroupCreate", payload: work }, 89],
         [
@@ -206,20 +251,20 @@ describe("Sync", () => {
       expect(state.images.map((_) => uuidString(_.id))).toEqual([
         uuidString(photo.id),
       ])
-    }).pipe(Effect.provide(TestLayer)),
+    }).pipe(Effect.provide(Device)),
   )
 
-  it.effect("keeps concurrent edits to different fields of a receipt", () =>
+  it.live("keeps concurrent edits to different fields of a receipt", () =>
     Effect.gen(function* () {
       // created on another device
-      yield* receiveFromRemote([[ReceiptRow.set(groceries), 2000]])
+      yield* receive([[ReceiptRow.set(groceries), 2000]])
 
       // edited here
       yield* write(ReceiptRow.patch(groceries.id, { merchant: "Countdown" }))
 
       // the other device's AI worker finished before the edit above but
       // syncs after it
-      yield* receiveFromRemote([
+      yield* receive([
         [
           ReceiptRow.patch(groceries.id, {
             merchant: "COUNTDOWN LTD",
@@ -235,6 +280,51 @@ describe("Sync", () => {
       expect(BigDecimal.format(receipt.amount)).toBe("12.34")
       expect(receipt.processed).toBe(true)
       expect(receipt.description).toBe("Weekly shop")
-    }).pipe(Effect.provide(TestLayer)),
+    }).pipe(Effect.provide(Device)),
+  )
+
+  it.live("converges when legacy edits arrive after newer row edits", () =>
+    Effect.gen(function* () {
+      const thisDevice = yield* Effect.gen(function* () {
+        yield* receive([
+          [{ event: "ReceiptCreate", payload: groceries }, 10_000],
+        ])
+        yield* write(ReceiptRow.patch(groceries.id, { merchant: "New edit" }))
+
+        // a device that upgraded with unsynced legacy edits, in the same batch
+        // as two patches of which compaction keeps only the newer
+        yield* receive([
+          [
+            {
+              event: "ReceiptUpdate",
+              payload: Receipt.update.make({
+                ...groceries,
+                merchant: "Old edit",
+                description: "Old description",
+              }),
+            },
+            2000,
+          ],
+          [ReceiptRow.patch(groceries.id, { currency: "AUD" }), 1500],
+          [ReceiptRow.patch(groceries.id, { currency: "USD" }), 1000],
+        ])
+
+        return {
+          receipts: (yield* tables).receipts,
+          entries: yield* EventLog.EventLog.use((log) => log.entries),
+        }
+      }).pipe(Effect.provide(Device))
+
+      newIndexedDb()
+      const newDevice = yield* Effect.gen(function* () {
+        yield* Remote.use((remote) => remote.receiveEntries(thisDevice.entries))
+        return (yield* tables).receipts
+      }).pipe(Effect.provide(Device))
+
+      expect(
+        thisDevice.receipts.map((_) => [_.merchant, _.description, _.currency]),
+      ).toEqual([["New edit", "Old description", "USD"]])
+      expect(newDevice).toEqual(thisDevice.receipts)
+    }),
   )
 })

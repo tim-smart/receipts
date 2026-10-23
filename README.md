@@ -23,8 +23,10 @@ A simple local-first receipt scanner and tracker.
 
 ## Upgrading synced devices
 
-Receipts, groups and images sync as `EventRow` events (`Receipt`, `ReceiptGroup`, `Image`). Older releases wrote separate create / update / delete events instead. The current release still replays those older events, so existing journals and remote data load as before. Older releases can't read the new events, though: they skip them without an error.
+Receipts, groups and images sync as `EventRow` events (`Receipt`, `ReceiptGroup`, `Image`). Older releases wrote separate create / update / delete events instead. The current release still reads those older events, from local journals and from the remote.
 
-When you upgrade, update every device that syncs with the same remote. A device left on an older release won't see receipts, groups or images created or edited on upgraded devices.
+Older and newer events for the same receipt never conflict with each other in the journal. So when an older event arrives after a newer edit, for example from a device that upgraded with edits it hadn't synced yet, the app doesn't apply it on its own. It rebuilds the receipts, groups and images tables from the whole journal in event order, which gives every device the same result. It also rebuilds once on the first start after upgrading, which picks up any new events an older release received but skipped.
+
+Older releases ignore the new events without an error, so a device still on an older release won't show receipts, groups or images created or edited on upgraded devices. Its own edits still sync. Upgrade every device that syncs with the same remote. Nothing is lost while one lags behind; it catches up when it upgrades.
 
 Backups are unaffected. The backup file format hasn't changed, so backups import into either version.
