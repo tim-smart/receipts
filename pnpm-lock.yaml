@@ -16,14 +16,14 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@effect/ai-openai':
-        specifier: https://pkg.pr.new/@effect/ai-openai@f73059d
-        version: https://pkg.pr.new/@effect/ai-openai@f73059d(effect@https://pkg.pr.new/effect@f73059d)
+        specifier: ^4.1.0
+        version: 4.1.0(effect@4.1.0)
       '@effect/atom-react':
-        specifier: https://pkg.pr.new/@effect/atom-react@f73059d
-        version: https://pkg.pr.new/@effect/atom-react@f73059d(effect@https://pkg.pr.new/effect@f73059d)(react@19.3.1)(scheduler@0.28.0)
+        specifier: ^4.1.0
+        version: 4.1.0(effect@4.1.0)(react@19.3.1)(scheduler@0.28.0)
       '@effect/platform-browser':
-        specifier: https://pkg.pr.new/@effect/platform-browser@f73059d
-        version: https://pkg.pr.new/@effect/platform-browser@f73059d(effect@https://pkg.pr.new/effect@f73059d)
+        specifier: ^4.1.0
+        version: 4.1.0(effect@4.1.0)
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -67,8 +67,8 @@ importers:
         specifier: ^6.9.0
         version: 6.9.0
       effect:
-        specifier: https://pkg.pr.new/effect@f73059d
-        version: https://pkg.pr.new/effect@f73059d
+        specifier: ^4.1.0
+        version: 4.1.0
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
@@ -113,11 +113,11 @@ importers:
         version: 7.4.1
     devDependencies:
       '@effect/tsgo':
-        specifier: 0.56.0
-        version: 0.56.0
+        specifier: 0.63.0
+        version: 0.63.0
       '@effect/vitest':
-        specifier: https://pkg.pr.new/@effect/vitest@f73059d
-        version: https://pkg.pr.new/@effect/vitest@f73059d(effect@https://pkg.pr.new/effect@f73059d)(vitest@5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)))
+        specifier: ^4.1.0
+        version: 4.1.0(effect@4.1.0)(vitest@5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
@@ -815,70 +815,66 @@ packages:
   '@dotenvx/primitives@0.8.0':
     resolution: {integrity: sha512-VYJy0uhFm9zTJ1TxBaW/pA8bjbOM/OttaNMwZ1RHG4JKyRG7DhSdiqD1ipQoAyoD22olUtxbP78W9xY3Wd11bg==}
 
-  '@effect/ai-openai@https://pkg.pr.new/@effect/ai-openai@f73059d':
-    resolution: {tarball: https://pkg.pr.new/@effect/ai-openai@f73059d}
-    version: 4.0.6
+  '@effect/ai-openai@4.1.0':
+    resolution: {integrity: sha512-nliaAiyda83NE76Xd8CcHglYy9c0cLxm4iMK+maOODodarFIdVjWeGf8imps0svjd6/G14BAGhHBOOs+gSo7bw==}
     peerDependencies:
-      effect: ^4.0.6
+      effect: ^4.1.0
 
-  '@effect/atom-react@https://pkg.pr.new/@effect/atom-react@f73059d':
-    resolution: {tarball: https://pkg.pr.new/@effect/atom-react@f73059d}
-    version: 4.0.6
+  '@effect/atom-react@4.1.0':
+    resolution: {integrity: sha512-PeaBDmwqG9BPQfaPHeWCB2NF4NQaFlI6poKxjlBHMrMjKqV+LVBdryhpDNqSZOhqGgT+qnh9gV+19MYjNOQ+bg==}
     peerDependencies:
-      effect: ^4.0.6
+      effect: ^4.1.0
       react: '>=19.0.0 <20.0.0'
       scheduler: '>=0.25.0 <0.29.0'
 
-  '@effect/platform-browser@https://pkg.pr.new/@effect/platform-browser@f73059d':
-    resolution: {tarball: https://pkg.pr.new/@effect/platform-browser@f73059d}
-    version: 4.0.6
+  '@effect/platform-browser@4.1.0':
+    resolution: {integrity: sha512-IEyaPzejKozHDupOUSjQIgQYGv2C0I828up8z7/nvQTHzmQHUS2/tGMEwXX/FwAvnrWZ0H9MhlhTl18ZgCHQiQ==}
     peerDependencies:
-      effect: ^4.0.6
+      effect: ^4.1.0
 
-  '@effect/tsgo-darwin-arm64@0.56.0':
-    resolution: {integrity: sha512-08yYRU3OOw/jKzy582EF741xKvLJ2HK6GO+L2zuSR97b61ES7fER2fxg1xp4mv8u2Fc3bBRvk7026GzdKEGFgw==}
+  '@effect/tsgo-darwin-arm64@0.63.0':
+    resolution: {integrity: sha512-KBvYatuEol71+i+BERWuDRU9XE+4sTK78N83Ko6VNF5gy6yXiujj/bgtWs2P3cDGXsevAV6L+HtpuAWjAQKC6Q==}
     cpu: [arm64]
     os: [darwin]
 
-  '@effect/tsgo-darwin-x64@0.56.0':
-    resolution: {integrity: sha512-UQvYvVaam+EVMYm9gfHBx1WpKwLlW+ptjb2UD7qGhZdg+GzxMbl26AhuuqV2t/dN9shZ6EcFE2+++ThISMp/9g==}
+  '@effect/tsgo-darwin-x64@0.63.0':
+    resolution: {integrity: sha512-Qxp51/OFaHx5D+z5f1FtRKAiUH5rkMzaqjv/4ppUGNS0ppdqlcQ5rwQqbY6CiZOxqUlcnmKRirtWpmuxUgHP7w==}
     cpu: [x64]
     os: [darwin]
 
-  '@effect/tsgo-linux-arm64@0.56.0':
-    resolution: {integrity: sha512-zzzo/w7lLqiCMuJOI+jbjIuhHob3ccmth1bD9m1E98ukMuHhIqQMOXKU9EreoQkCGeoVrxGqHbXkl6E/+68/Sg==}
+  '@effect/tsgo-linux-arm64@0.63.0':
+    resolution: {integrity: sha512-uwnM3kSwaHDKPeU1WSMxijdZaM1NxpDREgJtyyIx2qdqB6HnRYhEZB8RrhWvYYPw1QDKaWHd+byzq5p49+o7+Q==}
     cpu: [arm64]
     os: [linux]
 
-  '@effect/tsgo-linux-arm@0.56.0':
-    resolution: {integrity: sha512-3WuPwP8vQPqKVpfGmKlnguuAZb7NGUyAhIHQjZnaINU6Aim7WczOy2WOmKjDPSKRlonU2WyYT+Q5T3B7f0VTLw==}
+  '@effect/tsgo-linux-arm@0.63.0':
+    resolution: {integrity: sha512-tVwlTyAqmDVPvDrr0oogCnlRVs96X19Ny9OD/XJ/6QQSp/1hIjXAvKjo9HAyncF2sAUQyVdF1E7Q7X3wFXvSnQ==}
     cpu: [arm]
     os: [linux]
 
-  '@effect/tsgo-linux-x64@0.56.0':
-    resolution: {integrity: sha512-R0d3dGf8qKPtvjff+J9HL0UjIBIES6xZiU16rMMezI4K52b+DGQkaWi1OX3tSgGivjlV+NSN7UhPJ2pYKufglw==}
+  '@effect/tsgo-linux-x64@0.63.0':
+    resolution: {integrity: sha512-fM3pJIhAZEX8LMbd/pN9iYNxkdVEkx68vMtILYGT4qazwxWelvouD/5fNV0SHDmY13Mv04NJ/550vTLC2hU8VA==}
     cpu: [x64]
     os: [linux]
 
-  '@effect/tsgo-win32-arm64@0.56.0':
-    resolution: {integrity: sha512-uVaLdXULUZx9U30YxlVu5PBiu+1a+9/UT2Ex7jQpIasnJy1CHWlhMbfCD/+7Ez1vqG5fLOvUESoQu5XSjs3Lnw==}
+  '@effect/tsgo-win32-arm64@0.63.0':
+    resolution: {integrity: sha512-LTS0CrEqZmQO0AJAIfFaETjIN/3d/Nda1Mi5zl90y/9BKZr4yyFfClCkz+DMl6/P/+TOuEQ5Wi8LvRiEdwWT4g==}
     cpu: [arm64]
     os: [win32]
 
-  '@effect/tsgo-win32-x64@0.56.0':
-    resolution: {integrity: sha512-Cf6SDixFTkp7Aoeg2eRwJps/2BG9lvx2m+iVRjUzxdqkTbCCNKmmOAIyDslNZm2sMwaDUw/iN/BPGqxx7xMxww==}
+  '@effect/tsgo-win32-x64@0.63.0':
+    resolution: {integrity: sha512-28s5YrwL26/7EUnUOu81IOJGJZLkPf2lPkiSIsd4EnFhimeBqP279bhAoDAEwLW1gv45GKM/49JKduXmdLyT1g==}
     cpu: [x64]
     os: [win32]
 
-  '@effect/tsgo@0.56.0':
-    resolution: {integrity: sha512-/S5G8RJjtaVjE/RhwFNTvWQwFAQyDGc+3Ig4Oynvlo3gJu8le4MUgM/DBjoiwkwBsQ+BhufGDCBpwojplerGlw==}
+  '@effect/tsgo@0.63.0':
+    resolution: {integrity: sha512-bRbvVj+YLE/nBmcBWGAwsul3mjEYlqqOmWMxvwSVKq/oNnJEuZYgi2OFDeUf7q49E2g3w+oMHMWyN2QayZ77RQ==}
     hasBin: true
 
-  '@effect/vitest@https://pkg.pr.new/@effect/vitest@f73059d':
-    resolution: {tarball: https://pkg.pr.new/@effect/vitest@f73059d}
-    version: 4.0.6
+  '@effect/vitest@4.1.0':
+    resolution: {integrity: sha512-+APF69oTYgGj5WCewowk1/udepH74xz4ONyH7d+UfcK0SrF3osiSwsWEyODUpJvWd6MIk5F5PcFJiE4evMuG2A==}
     peerDependencies:
-      effect: ^4.0.6
+      effect: ^4.1.0
       vitest: '>=5.0.0 <6.0.0'
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -2947,9 +2943,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@https://pkg.pr.new/effect@f73059d:
-    resolution: {tarball: https://pkg.pr.new/effect@f73059d}
-    version: 4.0.6
+  effect@4.1.0:
+    resolution: {integrity: sha512-lGx2MJJyrXA8RZb2UpQ/0Nkb5Utaimby7oD92+18noBxLPE85IFOvptdzau8dvcxAOwfwHo9iqapbKeFzqQM/Q==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -5860,54 +5855,54 @@ snapshots:
 
   '@dotenvx/primitives@0.8.0': {}
 
-  '@effect/ai-openai@https://pkg.pr.new/@effect/ai-openai@f73059d(effect@https://pkg.pr.new/effect@f73059d)':
+  '@effect/ai-openai@4.1.0(effect@4.1.0)':
     dependencies:
-      effect: https://pkg.pr.new/effect@f73059d
+      effect: 4.1.0
 
-  '@effect/atom-react@https://pkg.pr.new/@effect/atom-react@f73059d(effect@https://pkg.pr.new/effect@f73059d)(react@19.3.1)(scheduler@0.28.0)':
+  '@effect/atom-react@4.1.0(effect@4.1.0)(react@19.3.1)(scheduler@0.28.0)':
     dependencies:
-      effect: https://pkg.pr.new/effect@f73059d
+      effect: 4.1.0
       react: 19.3.1
       scheduler: 0.28.0
 
-  '@effect/platform-browser@https://pkg.pr.new/@effect/platform-browser@f73059d(effect@https://pkg.pr.new/effect@f73059d)':
+  '@effect/platform-browser@4.1.0(effect@4.1.0)':
     dependencies:
-      effect: https://pkg.pr.new/effect@f73059d
+      effect: 4.1.0
 
-  '@effect/tsgo-darwin-arm64@0.56.0':
+  '@effect/tsgo-darwin-arm64@0.63.0':
     optional: true
 
-  '@effect/tsgo-darwin-x64@0.56.0':
+  '@effect/tsgo-darwin-x64@0.63.0':
     optional: true
 
-  '@effect/tsgo-linux-arm64@0.56.0':
+  '@effect/tsgo-linux-arm64@0.63.0':
     optional: true
 
-  '@effect/tsgo-linux-arm@0.56.0':
+  '@effect/tsgo-linux-arm@0.63.0':
     optional: true
 
-  '@effect/tsgo-linux-x64@0.56.0':
+  '@effect/tsgo-linux-x64@0.63.0':
     optional: true
 
-  '@effect/tsgo-win32-arm64@0.56.0':
+  '@effect/tsgo-win32-arm64@0.63.0':
     optional: true
 
-  '@effect/tsgo-win32-x64@0.56.0':
+  '@effect/tsgo-win32-x64@0.63.0':
     optional: true
 
-  '@effect/tsgo@0.56.0':
+  '@effect/tsgo@0.63.0':
     optionalDependencies:
-      '@effect/tsgo-darwin-arm64': 0.56.0
-      '@effect/tsgo-darwin-x64': 0.56.0
-      '@effect/tsgo-linux-arm': 0.56.0
-      '@effect/tsgo-linux-arm64': 0.56.0
-      '@effect/tsgo-linux-x64': 0.56.0
-      '@effect/tsgo-win32-arm64': 0.56.0
-      '@effect/tsgo-win32-x64': 0.56.0
+      '@effect/tsgo-darwin-arm64': 0.63.0
+      '@effect/tsgo-darwin-x64': 0.63.0
+      '@effect/tsgo-linux-arm': 0.63.0
+      '@effect/tsgo-linux-arm64': 0.63.0
+      '@effect/tsgo-linux-x64': 0.63.0
+      '@effect/tsgo-win32-arm64': 0.63.0
+      '@effect/tsgo-win32-x64': 0.63.0
 
-  '@effect/vitest@https://pkg.pr.new/@effect/vitest@f73059d(effect@https://pkg.pr.new/effect@f73059d)(vitest@5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)))':
+  '@effect/vitest@4.1.0(effect@4.1.0)(vitest@5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)))':
     dependencies:
-      effect: https://pkg.pr.new/effect@f73059d
+      effect: 4.1.0
       vitest: 5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -7815,7 +7810,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@https://pkg.pr.new/effect@f73059d: {}
+  effect@4.1.0: {}
 
   ejs@3.1.10:
     dependencies:
